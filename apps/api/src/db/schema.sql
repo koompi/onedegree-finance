@@ -1,3 +1,6 @@
+-- OneDegree Finance Schema
+-- Run this on the database to add missing indexes
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TABLE IF NOT EXISTS users (
@@ -80,10 +83,23 @@ CREATE TABLE IF NOT EXISTS payables (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_transactions_company_id ON transactions(company_id);
-CREATE INDEX IF NOT EXISTS idx_transactions_occurred_at ON transactions(occurred_at DESC);
-CREATE INDEX IF NOT EXISTS idx_receivables_company_id ON receivables(company_id);
-CREATE INDEX IF NOT EXISTS idx_payables_company_id ON payables(company_id);
+-- Indexes for performance
+CREATE INDEX IF NOT EXISTS idx_transactions_company ON transactions(company_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_occurred ON transactions(occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_transactions_company_month ON transactions(company_id, to_char(occurred_at, 'YYYY-MM'));
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(company_id, type);
+
+CREATE INDEX IF NOT EXISTS idx_receivables_company ON receivables(company_id);
+CREATE INDEX IF NOT EXISTS idx_receivables_status ON receivables(company_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_payables_company ON payables(company_id);
+CREATE INDEX IF NOT EXISTS idx_payables_status ON payables(company_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_accounts_company ON accounts(company_id);
+CREATE INDEX IF NOT EXISTS idx_categories_company ON categories(company_id);
+
+CREATE INDEX IF NOT EXISTS idx_companies_owner ON companies(owner_id);
 
 -- System default categories
 INSERT INTO categories (name, name_km, type, icon, is_system) VALUES

@@ -18,8 +18,8 @@ reports.get('/:companyId/reports/monthly', async (c) => {
 
   const [txResult, accountsResult, receivablesResult, payablesResult] = await Promise.all([
     pool.query(
-      `SELECT type, category_id, c.name as category_name, c.name_km as category_name_km,
-              SUM(amount_cents) as total_cents
+      `SELECT t.type, t.category_id, c.name as category_name, c.name_km as category_name_km,
+              SUM(t.amount_cents) as total_cents
        FROM transactions t
        LEFT JOIN categories c ON t.category_id = c.id
        WHERE t.company_id = $1 AND to_char(t.occurred_at, 'YYYY-MM') = $2
