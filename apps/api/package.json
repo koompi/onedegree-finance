@@ -1,0 +1,21 @@
+{
+  "name": "@onedegree/api",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "hono": "^4.0.0",
+    "@hono/zod-validator": "^0.4.0",
+    "zod": "^3.22.0",
+    "jose": "^5.0.0",
+    "pg": "^8.11.0",
+    "@onedegree/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/pg": "^8.10.0"
+  }
+}

@@ -1,0 +1,16 @@
+export const en: Record<string, string | Record<string, string>> = {
+  income: 'Income', expense: 'Expense', profit: 'Profit', cashFlow: 'Cash Flow',
+  thisMonth: 'This Month', today: 'Today', save: 'Save', cancel: 'Cancel',
+  add: 'Add', edit: 'Edit', delete: 'Delete',
+  receivables: 'People who owe me', payables: 'I owe people',
+  companies: 'Companies', accounts: 'Accounts', categories: 'Categories',
+  report: 'Report', settings: 'Settings', dashboard: 'Dashboard',
+  totalIncome: 'Total Income', totalExpense: 'Total Expense', netProfit: 'Net Profit',
+  addCompany: 'Add Company', companyName: 'Company Name',
+  amount: 'Amount', note: 'Note', date: 'Date', category: 'Category', account: 'Account',
+  welcome: 'Welcome',
+  privacyNote: 'Your data is private. We never share with tax authorities.',
+  whoOwesMe: 'Who owes me', iOwe: 'I owe',
+  status: { pending: 'Pending', partial: 'Partial', paid: 'Paid' },
+  businessType: { agro: 'Agriculture', general: 'General', retail: 'Retail', service: 'Service', other: 'Other' },
+}

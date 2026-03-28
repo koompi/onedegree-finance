@@ -1,0 +1,8 @@
+{
+  "name": "@onedegree/shared",
+  "version": "0.1.0",
+  "main": "src/types.ts",
+  "dependencies": {
+    "zod": "^3.22.0"
+  }
+}
