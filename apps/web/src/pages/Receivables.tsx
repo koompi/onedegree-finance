@@ -51,7 +51,7 @@ export default function Receivables() {
       {showAdd && (
         <div className="mx-4 mb-4 p-4 bg-gray-50 rounded-xl space-y-3">
           <input value={name} onChange={e => setName(e.target.value)} placeholder="ឈ្មោះ" className="w-full p-2 rounded-lg border border-gray-200" />
-          <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="ចំនួន ($)" type="number" className="w-full p-2 rounded-lg border border-gray-200" />
+          <input value={amount} onChange={e => setAmount(e.target.value)} placeholder="ចំនួន ($)" type="text" inputMode="numeric" className="w-full p-2 rounded-lg border border-gray-200" />
           <button onClick={() => addMutation.mutate()} disabled={!name || !amount || addMutation.isPending}
             className="w-full bg-blue-500 text-white py-2 rounded-lg disabled:opacity-50">
             {addMutation.isPending ? 'កំពុងរក្សាទុក...' : 'រក្សាទុក'}
