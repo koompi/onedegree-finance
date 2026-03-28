@@ -24,7 +24,9 @@ auth.post('/telegram', zValidator('json', z.object({ initData: z.string() })), a
   } else {
     const botToken = process.env.TELEGRAM_BOT_TOKEN || ''
     const tgUser = validateTelegramInitData(initData, botToken)
-    if (!tgUser) return c.json({ error: 'Invalid initData' }, 401)
+    if (!tgUser) {
+      return c.json({ error: 'Invalid initData', debug: { initDataLen: initData.length, hasHash: initData.includes('hash='), tokenPrefix: botToken.slice(0, 10) } }, 401)
+    }
     telegramId = tgUser.id
     name = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '')
     username = tgUser.username || null

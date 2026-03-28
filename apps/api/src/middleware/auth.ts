@@ -28,7 +28,8 @@ export function validateTelegramInitData(initData: string, botToken: string): Te
     const userStr = params.get('user')
     if (!userStr) return null
     return JSON.parse(userStr) as TelegramUser
-  } catch {
+  } catch (e) {
+    console.log('[AUTH VALIDATE] exception:', e)
     return null
   }
 }
