@@ -5,40 +5,49 @@ import { tg } from '../lib/telegram'
 import { api } from '../lib/api'
 
 export default function Onboarding() {
-  const { login, setCompany, user } = useAuth()
+  const { login, setCompany, user, token } = useAuth()
   const [step, setStep] = useState<number | null>(null) // null = determining mode
   const [companyName, setCompanyName] = useState('')
   const [companyType, setCompanyType] = useState('general')
   const [accountName, setAccountName] = useState('សាច់ប្រាក់ក្នុងដៃ')
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [authError, setAuthError] = useState('')
+  const [apiError, setApiError] = useState('')
 
-  // On mount: check if we're inside Telegram (SDK may take a moment to initialize)
+  // On mount: check if we're inside Telegram
   useEffect(() => {
     const timer = setTimeout(() => {
       const hasInitData = tg.initData && tg.initData.length > 0
       if (hasInitData) {
-        // Inside Telegram — auto-login
         login(tg.initData)
           .then(() => setStep(1))
-          .catch(() => setStep(1)) // still show company creation even if auth fails (App.tsx will redirect)
+          .catch((e: any) => {
+            const msg = e?.response?.data?.error || e?.message || 'Auto-login failed'
+            setAuthError(msg)
+            setStep(0) // Show manual button so they can retry
+          })
       } else {
-        // Browser mode
         setStep(0)
       }
-    }, 100) // small delay to let Telegram SDK initialize
+    }, 100)
     return () => clearTimeout(timer)
   }, [])
 
-  const handleDevLogin = async () => {
+  // If we somehow already have a token (returning user edge case), redirect
+  useEffect(() => {
+    if (token && step === null) setStep(1)
+  }, [token, step])
+
+  const handleLogin = async () => {
     setLoading(true)
-    setError('')
+    setAuthError('')
+    setApiError('')
     try {
       await login('dev_mode')
       setStep(1)
     } catch (e: any) {
       const msg = e?.response?.data?.error || 'ចូលមិនបានទេ'
-      setError(msg)
+      setAuthError(msg)
     } finally {
       setLoading(false)
     }
@@ -46,6 +55,7 @@ export default function Onboarding() {
 
   const createCompany = useMutation({
     mutationFn: async () => {
+      setApiError('')
       const res = await api.post('/companies', { name: companyName, type: companyType })
       return res.data
     },
@@ -54,12 +64,14 @@ export default function Onboarding() {
       setStep(2)
     },
     onError: (e: any) => {
-      setError(e?.response?.data?.error || 'បង្កើតមិនបានទេ')
+      const msg = e?.response?.data?.error || e?.message || 'បង្កើតមិនបានទេ'
+      setApiError(msg)
     },
   })
 
   const createAccount = useMutation({
     mutationFn: async (companyId: string) => {
+      setApiError('')
       const res = await api.post(`/companies/${companyId}/accounts`, { name: accountName, type: 'cash' })
       return res.data
     },
@@ -67,7 +79,8 @@ export default function Onboarding() {
       window.location.href = '/'
     },
     onError: (e: any) => {
-      setError(e?.response?.data?.error || 'បង្កើតមិនបានទេ')
+      const msg = e?.response?.data?.error || e?.message || 'បង្កើតមិនបានទេ'
+      setApiError(msg)
     },
   })
 
@@ -79,7 +92,7 @@ export default function Onboarding() {
     { value: 'other', label: 'ផ្សេងៗ', icon: '📦' },
   ]
 
-  // Loading state — determining mode
+  // Loading state
   if (step === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
@@ -91,7 +104,7 @@ export default function Onboarding() {
     )
   }
 
-  // Step 0: Browser/Dev mode splash
+  // Step 0: Splash (browser or auth failure)
   if (step === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-white">
@@ -101,9 +114,9 @@ export default function Onboarding() {
         <p className="text-gray-700 mb-8 text-sm leading-relaxed max-w-xs">
           តាមដានចំណូល ចំណាយ និងប្រាក់ចំណេញ<br/>សម្រាប់អាជីវកម្មខ្នាតតូច និងមធ្យម
         </p>
-        {error && <p className="text-red-500 text-sm mb-4 font-medium">{error}</p>}
+        {authError && <p className="text-red-500 text-sm mb-4 font-medium">{authError}</p>}
         <button
-          onClick={handleDevLogin}
+          onClick={handleLogin}
           disabled={loading}
           className="w-full max-w-xs bg-blue-500 text-white py-4 rounded-2xl font-medium text-lg disabled:opacity-50 shadow-lg"
         >
@@ -123,14 +136,21 @@ export default function Onboarding() {
   if (step === 1) {
     return (
       <div className="min-h-screen p-6 bg-white">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-4">
           <span className="text-2xl font-bold text-blue-600">1°</span>
           <h2 className="text-xl font-bold text-gray-900">បង្កើតអាជីវកម្មរបស់អ្នក</h2>
         </div>
         {user && (
           <p className="text-sm text-blue-600 mb-4 font-medium">សួស្តី {user.name} 👋</p>
         )}
-        {error && <p className="text-red-500 text-sm mb-4 font-medium">{error}</p>}
+        {!user && (
+          <p className="text-sm text-red-500 mb-4 font-medium">⚠️ មិនទាន់ចូលទេ — សូមបិទ ហើយបើកម្តងទៀត</p>
+        )}
+        {apiError && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+            <p className="text-red-600 text-sm font-medium">{apiError}</p>
+          </div>
+        )}
         <input
           value={companyName}
           onChange={e => setCompanyName(e.target.value)}
@@ -156,8 +176,8 @@ export default function Onboarding() {
         </div>
         <button
           onClick={() => createCompany.mutate()}
-          disabled={!companyName || createCompany.isPending}
-          className="w-full bg-blue-500 text-white py-4 rounded-2xl font-medium text-lg disabled:opacity-50 shadow"
+          disabled={!companyName.trim() || createCompany.isPending}
+          className="w-full bg-blue-500 text-white py-4 rounded-2xl font-medium text-lg disabled:opacity-40 shadow active:bg-blue-600"
         >
           {createCompany.isPending ? 'កំពុងបង្កើត...' : 'បន្ត →'}
         </button>
@@ -168,11 +188,15 @@ export default function Onboarding() {
   // Step 2: Create first account
   return (
     <div className="min-h-screen p-6 bg-white">
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-4">
         <span className="text-2xl font-bold text-blue-600">1°</span>
         <h2 className="text-xl font-bold text-gray-900">បន្ថែមគណនីដំបូង</h2>
       </div>
-      {error && <p className="text-red-500 text-sm mb-4 font-medium">{error}</p>}
+      {apiError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
+          <p className="text-red-600 text-sm font-medium">{apiError}</p>
+        </div>
+      )}
       <p className="text-sm text-gray-800 mb-3 font-semibold">ប្រាក់របស់អ្នកនៅទីណា?</p>
       <input
         value={accountName}
@@ -186,8 +210,8 @@ export default function Onboarding() {
           const cid = useAuth.getState().companyId
           if (cid) createAccount.mutate(cid)
         }}
-        disabled={!accountName || createAccount.isPending}
-        className="w-full bg-green-500 text-white py-4 rounded-2xl font-medium text-lg disabled:opacity-50 shadow"
+        disabled={!accountName.trim() || createAccount.isPending}
+        className="w-full bg-green-500 text-white py-4 rounded-2xl font-medium text-lg disabled:opacity-40 shadow active:bg-green-600"
       >
         {createAccount.isPending ? 'កំពុងរក្សាទុក...' : '✓ ចាប់ផ្តើមប្រើ'}
       </button>
