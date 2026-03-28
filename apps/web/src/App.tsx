@@ -1,8 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { initTelegram } from './lib/telegram'
-import { setupOfflineSync } from './lib/offline'
 import { useAuth } from './store/auth'
 import Dashboard from './pages/Dashboard'
 import AddTransaction from './pages/AddTransaction'
@@ -18,7 +17,24 @@ const queryClient = new QueryClient()
 
 export default function App() {
   const { token } = useAuth()
-  useEffect(() => { initTelegram(); setupOfflineSync() }, [])
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    initTelegram()
+    // Small delay to let zustand persist hydrate from localStorage
+    setTimeout(() => setHydrated(true), 50)
+  }, [])
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="text-5xl font-bold text-blue-600 mb-3">1°</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
