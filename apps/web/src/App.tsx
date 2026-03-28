@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { initTelegram, tg } from './lib/telegram'
+import { initTelegram } from './lib/telegram'
 import { setupOfflineSync } from './lib/offline'
 import { useAuth } from './store/auth'
 import Dashboard from './pages/Dashboard'
@@ -17,39 +17,8 @@ import OfflineBanner from './components/OfflineBanner'
 const queryClient = new QueryClient()
 
 export default function App() {
-  const { token, login } = useAuth()
-  const [autoAuthDone, setAutoAuthDone] = useState(false)
-
-  useEffect(() => {
-    initTelegram()
-    setupOfflineSync()
-  }, [])
-
-  // Auto-login when launched inside Telegram with initData
-  useEffect(() => {
-    if (token || autoAuthDone) return
-    const initData = tg.initData
-    if (initData && initData.length > 0) {
-      login(initData)
-        .then(() => setAutoAuthDone(true))
-        .catch(() => setAutoAuthDone(true))
-    } else {
-      setAutoAuthDone(true)
-    }
-  }, [token, autoAuthDone, login])
-
-  // Show loading spinner during auto-auth
-  if (!token && !autoAuthDone) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="text-5xl font-bold text-blue-600 mb-2">1°</div>
-          <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        </div>
-      </div>
-    )
-  }
-
+  const { token } = useAuth()
+  useEffect(() => { initTelegram(); setupOfflineSync() }, [])
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
