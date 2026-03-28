@@ -68,7 +68,7 @@ export default function Onboarding() {
       <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center bg-white">
         <div className="text-7xl mb-2 font-bold text-blue-600">1°</div>
         <h1 className="text-2xl font-bold mb-1">OneDegree Finance</h1>
-        <p className="text-gray-400 text-xs mb-8">by KOOMPI</p>
+        <p className="text-gray-500 text-xs mb-8">by KOOMPI</p>
         <p className="text-gray-500 mb-8 text-sm leading-relaxed max-w-xs">
           តាមដានចំណូល ចំណាយ និងប្រាក់ចំណេញ<br/>សម្រាប់អាជីវកម្មខ្នាតតូច និងមធ្យម
         </p>
@@ -83,7 +83,7 @@ export default function Onboarding() {
         <p className="text-xs text-amber-500 mt-4 max-w-xs">
           ⚠️ Browser preview mode — open via Telegram for full experience
         </p>
-        <p className="text-xs text-gray-400 mt-6 max-w-xs leading-relaxed">
+        <p className="text-xs text-gray-500 mt-6 max-w-xs leading-relaxed">
           ទិន្នន័យរបស់អ្នកមានសុវត្ថិភាព។<br/>យើងមិនចែករំលែកជាមួយស្ថាប័នពន្ធដារទេ។
         </p>
       </div>
@@ -103,7 +103,7 @@ export default function Onboarding() {
           placeholder="ឈ្មោះអាជីវកម្ម"
           className="w-full p-4 border-2 border-gray-200 rounded-2xl mb-6 text-lg focus:border-blue-400 outline-none"
         />
-        <p className="text-sm text-gray-500 mb-3 font-medium">ប្រភេទអាជីវកម្ម</p>
+        <p className="text-sm text-gray-700 mb-3 font-semibold">ប្រភេទអាជីវកម្ម</p>
         <div className="grid grid-cols-3 gap-3 mb-8">
           {types.map(t => (
             <button
@@ -112,7 +112,7 @@ export default function Onboarding() {
               className={`p-3 rounded-2xl text-center text-sm border-2 transition-all ${
                 companyType === t.value
                   ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-100 text-gray-600'
+                  : 'border-gray-200 text-gray-700'
               }`}
             >
               <div className="text-2xl mb-1">{t.icon}</div>
@@ -137,14 +137,14 @@ export default function Onboarding() {
         <span className="text-2xl font-bold text-blue-600">1°</span>
         <h2 className="text-xl font-bold">បន្ថែមគណនីដំបូង</h2>
       </div>
-      <p className="text-sm text-gray-500 mb-3">ប្រាក់របស់អ្នកនៅទីណា?</p>
+      <p className="text-sm text-gray-700 mb-3">ប្រាក់របស់អ្នកនៅទីណា?</p>
       <input
         value={accountName}
         onChange={e => setAccountName(e.target.value)}
         placeholder="ឈ្មោះគណនី"
         className="w-full p-4 border-2 border-gray-200 rounded-2xl mb-2 text-lg focus:border-blue-400 outline-none"
       />
-      <p className="text-xs text-gray-400 mb-8">ឧ. សាច់ប្រាក់ក្នុងដៃ, ABA Bank, Wing</p>
+      <p className="text-xs text-gray-500 mb-8">ឧ. សាច់ប្រាក់ក្នុងដៃ, ABA Bank, Wing</p>
       <button
         onClick={() => {
           const cid = useAuth.getState().companyId

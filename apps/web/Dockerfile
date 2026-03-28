@@ -1,4 +1,6 @@
 FROM node:20-alpine AS builder
+ARG VITE_API_URL=https://onedegree-api.tunnel.koompi.cloud
+ENV VITE_API_URL=$VITE_API_URL
 WORKDIR /app
 COPY package.json ./
 RUN npm install --legacy-peer-deps
