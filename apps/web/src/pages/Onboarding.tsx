@@ -14,7 +14,7 @@ const types = [
 ]
 
 export default function Onboarding() {
-  const { login, token, setCompany, user } = useAuth()
+  const { login, setCompany, user } = useAuth()
   const [screen, setScreen] = useState<'loading' | 'company' | 'account'>('loading')
   const [companyName, setCompanyName] = useState('')
   const [companyType, setCompanyType] = useState('general')
