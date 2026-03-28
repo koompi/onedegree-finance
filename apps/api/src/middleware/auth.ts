@@ -12,12 +12,37 @@ export interface TelegramUser {
   language_code?: string
 }
 
+function computeHmac(dataCheckString: string, botToken: string): string {
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest()
+  return crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
+}
+
 export function validateTelegramInitData(initData: string, botToken: string): TelegramUser | null {
   try {
-    // Split raw initData into key=value pairs WITHOUT URL-decoding
-    // Telegram requires data_check_string built from raw encoded values
-    const pairs = initData.split('&')
+    // Try both approaches: raw split and URLSearchParams
+    // Telegram WebApp SDK may send initData in either form
     
+    // Approach 1: Split raw (preserves encoding)
+    const attempt1 = tryValidateRaw(initData, botToken)
+    if (attempt1) return attempt1
+
+    // Approach 2: URLSearchParams (decoded values)
+    const attempt2 = tryValidateDecoded(initData, botToken)
+    if (attempt2) return attempt2
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Both HMAC validation approaches failed for initData:', initData.substring(0, 100))
+    }
+    return null
+  } catch (err) {
+    console.error('validateTelegramInitData error:', err)
+    return null
+  }
+}
+
+function tryValidateRaw(initData: string, botToken: string): TelegramUser | null {
+  try {
+    const pairs = initData.split('&')
     let hash: string | null = null
     const dataLines: string[] = []
     let userRaw: string | null = null
@@ -27,44 +52,46 @@ export function validateTelegramInitData(initData: string, botToken: string): Te
       if (eqIdx === -1) continue
       const key = pair.substring(0, eqIdx)
       const rawValue = pair.substring(eqIdx + 1)
-      
       if (key === 'hash') {
         hash = rawValue
       } else {
-        // Keep raw encoded value for data_check_string
         dataLines.push(`${key}=${rawValue}`)
-        if (key === 'user') {
-          // Decode user JSON for parsing
-          userRaw = decodeURIComponent(rawValue)
-        }
+        if (key === 'user') userRaw = decodeURIComponent(rawValue)
       }
     }
 
     if (!hash || !userRaw) return null
 
-    // Sort alphabetically and join with newline — use raw encoded values
-    dataLines.sort((a, b) => {
-      const keyA = a.substring(0, a.indexOf('='))
-      const keyB = b.substring(0, b.indexOf('='))
-      return keyA.localeCompare(keyB)
-    })
+    dataLines.sort((a, b) => a.substring(0, a.indexOf('=')).localeCompare(b.substring(0, b.indexOf('='))))
     const dataCheckString = dataLines.join('\n')
+    const expectedHash = computeHmac(dataCheckString, botToken)
 
-    // HMAC-SHA256 with key = HMAC-SHA256("WebAppData", botToken)
-    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest()
-    const expectedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
-
-    if (expectedHash !== hash) {
-      // Debug log in development
-      if (process.env.NODE_ENV !== 'production') {
-        console.error('Hash mismatch:', { expected: expectedHash, received: hash, dataCheckString })
-      }
-      return null
-    }
-
+    if (expectedHash !== hash) return null
     return JSON.parse(userRaw) as TelegramUser
-  } catch (err) {
-    console.error('validateTelegramInitData error:', err)
+  } catch {
+    return null
+  }
+}
+
+function tryValidateDecoded(initData: string, botToken: string): TelegramUser | null {
+  try {
+    const params = new URLSearchParams(initData)
+    const hash = params.get('hash')
+    if (!hash) return null
+    params.delete('hash')
+
+    const dataCheckString = Array.from(params.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([k, v]) => `${k}=${v}`)
+      .join('\n')
+
+    const expectedHash = computeHmac(dataCheckString, botToken)
+    if (expectedHash !== hash) return null
+
+    const userStr = params.get('user')
+    if (!userStr) return null
+    return JSON.parse(userStr) as TelegramUser
+  } catch {
     return null
   }
 }
