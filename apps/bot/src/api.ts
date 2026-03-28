@@ -53,27 +53,10 @@ async function apiRequest<T>(path: string, options: {
 }
 
 export async function authenticate(telegramId: number, firstName: string, lastName?: string, username?: string): Promise<AuthResponse> {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN ?? ''
-  const checkDataString = `auth_date=${Math.floor(Date.now() / 1000)}\nfirst_name=${firstName}${lastName ? `\nlast_name=${lastName}` : ''}\nid=${telegramId}${username ? `\nusername=${username}` : ''}`
-
-  const crypto = await import('crypto')
-  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest()
-  const hash = crypto.createHmac('sha256', secretKey).update(checkDataString).digest('hex')
-
-  const initData = new URLSearchParams({
-    auth_date: String(Math.floor(Date.now() / 1000)),
-    hash,
-    user: JSON.stringify({
-      id: telegramId,
-      first_name: firstName,
-      last_name: lastName ?? '',
-      username: username ?? '',
-    }),
-  }).toString()
-
-  return apiRequest<AuthResponse>('/auth/telegram', {
+  const secret = process.env.BOT_AUTH_SECRET ?? ''
+  return apiRequest<AuthResponse>('/auth/bot', {
     method: 'POST',
-    body: { initData },
+    body: { telegramId, firstName, lastName, username, secret },
   })
 }
 
