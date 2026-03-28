@@ -23,8 +23,7 @@ export default function Settings() {
       haptic.success()
       queryClient.invalidateQueries({ queryKey: ['companies'] })
       setCompany(res.data.id)
-      setShowNewCompany(false)
-      setNewName('')
+      setShowNewCompany(false); setNewName('')
     },
   })
 
@@ -37,42 +36,47 @@ export default function Settings() {
   })
 
   return (
-    <div className="min-h-screen pb-4">
+    <div className="min-h-screen bg-[#FBFBFA] pb-4">
       <div className="flex items-center p-4">
-        <button onClick={() => navigate('/')} className="text-2xl mr-3">&larr;</button>
-        <h1 className="text-xl font-bold flex-1">ការកំណត់</h1>
+        <button type="button" onClick={() => navigate('/')} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
+        <h1 className="text-xl font-bold text-gray-900 flex-1">ការកំណត់</h1>
       </div>
 
       <div className="px-4 space-y-4">
-        <div className="bg-white rounded-xl p-4 border border-gray-100">
+        <div className="bg-white rounded-2xl p-4 border border-gray-100">
           <div className="flex items-center justify-between mb-3">
-            <p className="font-medium">ក្រុមហ៊ុន</p>
-            <button onClick={() => setShowNewCompany(!showNewCompany)} className="text-blue-500 text-sm">+ បន្ថែម</button>
+            <p className="font-semibold text-gray-900">ក្រុមហ៊ុន</p>
+            <button type="button" onClick={() => setShowNewCompany(!showNewCompany)}
+              className="text-indigo-600 text-sm font-medium active:opacity-70">+ បន្ថែម</button>
           </div>
 
           {showNewCompany && (
             <div className="mb-3 flex gap-2">
-              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="ឈ្មោះក្រុមហ៊ុន"
-                className="flex-1 p-2 border border-gray-200 rounded-lg text-sm" />
-              <button onClick={() => createCompany.mutate()} disabled={!newName}
-                className="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm disabled:opacity-50">រក្សាទុក</button>
+              <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="ឈ្មោះក្រុមហ៊ុន"
+                autoComplete="off" className="flex-1 p-2.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm text-gray-900 placeholder-gray-400" />
+              <button type="button" onClick={() => createCompany.mutate()} disabled={!newName}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40 active:scale-[0.98] transition-all">
+                រក្សាទុក
+              </button>
             </div>
           )}
 
           {companies?.map((c: { id: string; name: string; type: string }) => (
-            <div key={c.id} className={`flex items-center justify-between py-2 ${companyId === c.id ? 'font-bold' : ''}`}>
-              <button onClick={() => setCompany(c.id)} className="text-left flex-1">
-                <p className="text-sm">{c.name}</p>
+            <div key={c.id} className={`flex items-center justify-between py-2.5 ${companyId === c.id ? '' : 'border-t border-gray-50'}`}>
+              <button type="button" onClick={() => setCompany(c.id)} className="text-left flex-1">
+                <p className={`text-sm ${companyId === c.id ? 'font-semibold text-indigo-600' : 'text-gray-800'}`}>{c.name}</p>
                 <p className="text-xs text-gray-400">{c.type}</p>
               </button>
-              <button onClick={() => { if (confirm('លុបក្រុមហ៊ុន?')) deleteCompany.mutate(c.id) }}
-                className="text-red-400 text-xs">លុប</button>
+              {companies.length > 1 && (
+                <button type="button" onClick={() => { if (confirm('លុបក្រុមហ៊ុន?')) deleteCompany.mutate(c.id) }}
+                  className="text-rose-400 text-xs font-medium active:opacity-70">លុប</button>
+              )}
             </div>
           ))}
         </div>
 
-        <button onClick={() => { logout(); navigate('/') }}
-          className="w-full bg-red-50 text-red-500 py-3 rounded-xl font-medium border border-red-100">
+        <button type="button" onClick={() => { logout(); navigate('/') }}
+          className="w-full bg-rose-50 text-rose-600 py-3 rounded-2xl font-semibold border border-rose-100 active:scale-[0.98] transition-all">
           ចាកចេញ
         </button>
       </div>

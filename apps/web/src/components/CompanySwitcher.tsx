@@ -9,17 +9,24 @@ export default function CompanySwitcher() {
     queryFn: () => api.get('/companies').then(r => r.data),
   })
 
-  if (!companies?.length) return null
+  if (!companies?.length || companies.length <= 1) {
+    return companies?.[0] ? (
+      <p className="text-sm font-semibold text-gray-900">{companies[0].name}</p>
+    ) : null
+  }
 
   return (
-    <select
-      value={companyId || ''}
-      onChange={e => setCompany(e.target.value)}
-      className="w-full p-2 rounded-lg border border-gray-200 text-sm font-medium bg-white"
-    >
+    <div className="flex gap-2 overflow-x-auto pb-1">
       {companies.map((c: { id: string; name: string }) => (
-        <option key={c.id} value={c.id}>{c.name}</option>
+        <button key={c.id} type="button" onClick={() => setCompany(c.id)}
+          className={`px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all duration-200 active:scale-[0.98] ${
+            companyId === c.id
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'bg-white text-gray-500 border border-gray-100'
+          }`}>
+          {c.name}
+        </button>
       ))}
-    </select>
+    </div>
   )
 }

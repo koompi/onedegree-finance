@@ -10,11 +10,14 @@ export default function CurrencyInput({ value, onChange }: Props) {
     onChange(cents, currency)
   }
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-3 items-center">
       <input type="text" inputMode="decimal" value={display} onChange={e => handleChange(e.target.value)}
-        className="flex-1 text-2xl font-bold border-b-2 border-gray-300 focus:border-blue-500 outline-none py-2" />
-      <button onClick={() => setCurrency(c => c === 'USD' ? 'KHR' : 'USD')}
-        className="px-3 py-2 bg-gray-100 rounded-lg font-mono text-sm font-bold">
+        className="flex-1 text-3xl font-bold text-gray-900 focus:outline-none placeholder-gray-300 py-1"
+        placeholder="0.00" autoComplete="off" />
+      <button type="button" onClick={() => setCurrency(c => c === 'USD' ? 'KHR' : 'USD')}
+        className={`px-4 py-2 rounded-xl font-mono text-sm font-bold transition-all duration-200 active:scale-[0.98] ${
+          currency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'
+        }`}>
         {currency}
       </button>
     </div>

@@ -47,8 +47,11 @@ export default function Onboarding() {
 
   if (screen === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-5xl font-bold text-blue-600">1°</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#FBFBFA]">
+        <div className="flex flex-col items-center gap-4">
+          <div className="text-5xl font-bold text-indigo-600">1°</div>
+          <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        </div>
       </div>
     )
   }
@@ -88,32 +91,56 @@ export default function Onboarding() {
 
   if (screen === 'company') {
     return (
-      <div className="min-h-screen p-6 bg-white">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-2xl font-bold text-blue-600">1°</span>
-          <h2 className="text-xl font-bold text-gray-900">បង្កើតអាជីវកម្មរបស់អ្នក</h2>
+      <div className="min-h-screen p-6 bg-[#FBFBFA]">
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-3xl font-bold text-indigo-600">1°</span>
         </div>
-        {user && <p className="text-sm text-blue-600 mb-4 font-medium">សួស្តី {user.name} 👋</p>}
-        {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4"><p className="text-red-600 text-sm">{error}</p></div>}
-        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
-          placeholder="ឈ្មោះអាជីវកម្ម"
-          className="w-full p-4 border-2 border-gray-200 rounded-2xl mb-6 text-lg focus:border-blue-400 outline-none text-gray-900 placeholder-gray-400"
-          autoComplete="off" autoCorrect="off" />
-        <p className="text-sm text-gray-800 mb-3 font-semibold">ប្រភេទអាជីវកម្ម</p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-1">បង្កើតអាជីវកម្មរបស់អ្នក</h1>
+        {user && <p className="text-sm text-gray-500 mb-6">សួស្ដី {user.name} 👋</p>}
+        {!user && <p className="text-sm text-gray-400 mb-6">ចាប់ផ្ដើមគ្រប់គ្រងហិរញ្ញប្បទានរបស់អ្នក</p>}
+
+        {error && (
+          <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 mb-4">
+            <p className="text-rose-600 text-sm">{error}</p>
+          </div>
+        )}
+
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">ឈ្មោះអាជីវកម្ម</label>
+        <input
+          type="text"
+          value={companyName}
+          onChange={e => setCompanyName(e.target.value)}
+          placeholder="ឧ. ហាងលក់គ្រឿងទេស"
+          className="w-full p-4 bg-white border border-gray-200 rounded-xl mb-6 text-lg text-gray-900 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all duration-200"
+          autoComplete="off"
+          autoCorrect="off"
+        />
+
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">ប្រភេទអាជីវកម្ម</label>
         <div className="grid grid-cols-3 gap-3 mb-8">
           {types.map(t => (
-            <button key={t.value} type="button" onClick={() => setCompanyType(t.value)}
-              className={`p-3 rounded-2xl text-center text-sm border-2 ${
+            <button
+              key={t.value}
+              type="button"
+              onClick={() => setCompanyType(t.value)}
+              className={`p-3 rounded-xl text-center text-sm border transition-all duration-200 ${
                 companyType === t.value
-                  ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
-                  : 'border-gray-200 text-gray-700 bg-white'
-              }`}>
-              <div className="text-2xl mb-1">{t.icon}</div>{t.label}
+                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold scale-[1.02]'
+                  : 'border-gray-200 text-gray-600 bg-white hover:border-gray-300'
+              }`}
+            >
+              <div className="text-2xl mb-1">{t.icon}</div>
+              <div className="text-xs">{t.label}</div>
             </button>
           ))}
         </div>
-        <button type="button" onClick={handleCreateCompany} disabled={!companyName.trim() || busy}
-          className="w-full bg-blue-600 text-white py-4 rounded-2xl font-semibold text-lg disabled:opacity-40 active:bg-blue-700">
+
+        <button
+          type="button"
+          onClick={handleCreateCompany}
+          disabled={!companyName.trim() || busy}
+          className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold text-lg disabled:opacity-40 active:scale-[0.98] transition-all duration-200 hover:bg-indigo-700"
+        >
           {busy ? 'កំពុងបង្កើត...' : 'បន្ត →'}
         </button>
       </div>
@@ -121,21 +148,37 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-white">
-      <div className="flex items-center gap-3 mb-4">
-        <span className="text-2xl font-bold text-blue-600">1°</span>
-        <h2 className="text-xl font-bold text-gray-900">បន្ថែមគណនីដំបូង</h2>
+    <div className="min-h-screen p-6 bg-[#FBFBFA]">
+      <div className="flex items-center gap-3 mb-2">
+        <span className="text-3xl font-bold text-indigo-600">1°</span>
       </div>
-      {error && <div className="bg-red-50 border border-red-200 rounded-xl p-3 mb-4"><p className="text-red-600 text-sm">{error}</p></div>}
-      <p className="text-sm text-gray-800 mb-3 font-semibold">ប្រាក់របស់អ្នកនៅទីណា?</p>
-      <input type="text" value={accountName} onChange={e => setAccountName(e.target.value)}
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">បន្ថែមគណនីដំបូង</h1>
+
+      {error && (
+        <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 mb-4">
+          <p className="text-rose-600 text-sm">{error}</p>
+        </div>
+      )}
+
+      <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">ប្រាក់របស់អ្នកនៅទីណា?</label>
+      <input
+        type="text"
+        value={accountName}
+        onChange={e => setAccountName(e.target.value)}
         placeholder="ឈ្មោះគណនី"
-        className="w-full p-4 border-2 border-gray-200 rounded-2xl mb-2 text-lg focus:border-blue-400 outline-none text-gray-900 placeholder-gray-400"
-        autoComplete="off" autoCorrect="off" />
-      <p className="text-xs text-gray-500 mb-8">ឧ. សាច់ប្រាក់ក្នុងដៃ, ABA Bank, Wing</p>
-      <button type="button" onClick={handleCreateAccount} disabled={!accountName.trim() || busy}
-        className="w-full bg-green-600 text-white py-4 rounded-2xl font-semibold text-lg disabled:opacity-40 active:bg-green-700">
-        {busy ? 'កំពុងរក្សាទុក...' : '✓ ចាប់ផ្តើមប្រើ'}
+        className="w-full p-4 bg-white border border-gray-200 rounded-xl mb-2 text-lg text-gray-900 placeholder-gray-400 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none transition-all duration-200"
+        autoComplete="off"
+        autoCorrect="off"
+      />
+      <p className="text-xs text-gray-400 mb-8">ឧ. សាច់ប្រាក់ក្នុងដៃ, ABA Bank, Wing</p>
+
+      <button
+        type="button"
+        onClick={handleCreateAccount}
+        disabled={!accountName.trim() || busy}
+        className="w-full bg-emerald-600 text-white py-4 rounded-xl font-semibold text-lg disabled:opacity-40 active:scale-[0.98] transition-all duration-200 hover:bg-emerald-700"
+      >
+        {busy ? 'កំពុងរក្សាទុក...' : '✓ ចាប់ផ្ដើមប្រើ'}
       </button>
     </div>
   )

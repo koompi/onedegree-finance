@@ -52,76 +52,73 @@ export default function AddTransaction() {
   const filteredCategories = categories?.filter((c: { type: string }) => c.type === type) || []
 
   return (
-    <div className="min-h-screen p-4">
-      <div className="flex items-center mb-6">
-        <button onClick={() => navigate(-1)} className="text-2xl mr-3">&larr;</button>
-        <h1 className="text-xl font-bold">{type === 'income' ? 'ចំណូល' : 'ចំណាយ'}</h1>
+    <div className="min-h-screen bg-[#FBFBFA] pb-4">
+      <div className="flex items-center p-4">
+        <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
+        <h1 className="text-xl font-bold text-gray-900 flex-1">{type === 'income' ? 'ចំណូល' : 'ចំណាយ'}</h1>
       </div>
 
-      <div className="flex gap-2 mb-6">
-        <button
-          onClick={() => setType('income')}
-          className={`flex-1 py-2 rounded-xl font-medium text-sm ${type === 'income' ? 'bg-green-500 text-white' : 'bg-gray-100'}`}
-        >ចំណូល</button>
-        <button
-          onClick={() => setType('expense')}
-          className={`flex-1 py-2 rounded-xl font-medium text-sm ${type === 'expense' ? 'bg-red-500 text-white' : 'bg-gray-100'}`}
-        >ចំណាយ</button>
-      </div>
-
-      <div className="mb-6">
-        <CurrencyInput value={amountCents} onChange={(cents, cur) => { setAmountCents(cents); setCurrencyInput(cur) }} />
-      </div>
-
-      <div className="mb-4">
-        <p className="text-sm text-gray-500 mb-2">ប្រភេទ</p>
-        <div className="grid grid-cols-4 gap-2">
-          {filteredCategories.map((c: { id: string; name_km: string; name: string; icon: string }) => (
-            <button
-              key={c.id}
-              onClick={() => setCategoryId(c.id)}
-              className={`p-2 rounded-xl text-center text-xs border-2 ${
-                categoryId === c.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100'
-              }`}
-            >
-              <div className="text-xl">{c.icon}</div>
-              <div className="truncate">{c.name_km || c.name}</div>
-            </button>
-          ))}
+      <div className="px-4 space-y-4">
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setType('income')}
+            className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              type === 'income' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100'
+            }`}>ចំណូល</button>
+          <button type="button" onClick={() => setType('expense')}
+            className={`flex-1 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+              type === 'expense' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-100'
+            }`}>ចំណាយ</button>
         </div>
-      </div>
 
-      <div className="mb-4">
-        <p className="text-sm text-gray-500 mb-2">គណនី</p>
-        <div className="flex gap-2 flex-wrap">
-          {accounts?.map((a: { id: string; name: string }) => (
-            <button
-              key={a.id}
-              onClick={() => setAccountId(a.id)}
-              className={`px-4 py-2 rounded-xl text-sm border-2 ${
-                accountId === a.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100'
-              }`}
-            >{a.name}</button>
-          ))}
+        <div className="bg-white rounded-2xl p-4 border border-gray-100">
+          <CurrencyInput value={amountCents} onChange={(cents, cur) => { setAmountCents(cents); setCurrencyInput(cur) }} />
         </div>
+
+        {filteredCategories.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 border border-gray-100">
+            <p className="text-sm font-semibold text-gray-800 mb-3">ប្រភេទ</p>
+            <div className="grid grid-cols-4 gap-2">
+              {filteredCategories.map((c: { id: string; name_km: string; name: string; icon: string }) => (
+                <button key={c.id} type="button" onClick={() => setCategoryId(c.id)}
+                  className={`p-2.5 rounded-xl text-center border-2 transition-all duration-200 ${
+                    categoryId === c.id ? 'border-indigo-500 bg-indigo-50' : 'border-gray-100 bg-white'
+                  }`}>
+                  <div className="text-xl">{c.icon}</div>
+                  <div className="text-[11px] mt-1 truncate text-gray-600">{c.name_km || c.name}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {accounts?.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 border border-gray-100">
+            <p className="text-sm font-semibold text-gray-800 mb-3">គណនី</p>
+            <div className="flex gap-2 flex-wrap">
+              {accounts.map((a: { id: string; name: string }) => (
+                <button key={a.id} type="button" onClick={() => setAccountId(a.id)}
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    accountId === a.id ? 'bg-indigo-600 text-white' : 'bg-gray-50 text-gray-600 border border-gray-100'
+                  }`}>{a.name}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="bg-white rounded-2xl p-4 border border-gray-100">
+          <input type="text" value={note} onChange={e => setNote(e.target.value)}
+            placeholder="កំណត់ចំណាំ (ស្រេចចិត្ត)" autoComplete="off" autoCorrect="off"
+            className="w-full p-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900 placeholder-gray-400 text-sm" />
+        </div>
+
+        <button type="button" onClick={() => mutation.mutate()}
+          disabled={!amountCents || !accountId || mutation.isPending}
+          className={`w-full py-3.5 rounded-xl font-semibold text-white disabled:opacity-40 transition-all duration-200 active:scale-[0.98] ${
+            type === 'income' ? 'bg-emerald-600' : 'bg-rose-600'
+          }`}>
+          {mutation.isPending ? 'កំពុងរក្សាទុក...' : 'រក្សាទុក'}
+        </button>
       </div>
-
-      <input
-        value={note}
-        onChange={e => setNote(e.target.value)}
-        placeholder="កំណត់ចំណាំ (ស្រេចចិត្ត)"
-        className="w-full p-3 border border-gray-200 rounded-xl mb-6"
-      />
-
-      <button
-        onClick={() => mutation.mutate()}
-        disabled={!amountCents || !accountId || mutation.isPending}
-        className={`w-full py-3 rounded-xl font-medium text-white disabled:opacity-50 ${
-          type === 'income' ? 'bg-green-500' : 'bg-red-500'
-        }`}
-      >
-        {mutation.isPending ? 'កំពុងរក្សាទុក...' : 'រក្សាទុក'}
-      </button>
     </div>
   )
 }

@@ -28,37 +28,37 @@ export default function Dashboard() {
   })
 
   return (
-    <div className="min-h-screen pb-32">
+    <div className="min-h-screen pb-32 bg-[#FBFBFA]">
       <div className="p-4">
         <CompanySwitcher />
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center h-40">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
         </div>
       ) : report ? (
         <div className="px-4 space-y-4">
           <ProfitPulse netProfitCents={report.net_profit_cents} />
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
-              <p className="text-xs text-gray-400">ចំណូល</p>
-              <p className="text-lg font-bold text-green-600">${(report.total_income_cents / 100).toFixed(2)}</p>
+            <div className="bg-white rounded-2xl p-4 border border-gray-100">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">ចំណូល</p>
+              <p className="text-xl font-bold text-emerald-600">${(report.total_income_cents / 100).toFixed(2)}</p>
             </div>
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
-              <p className="text-xs text-gray-400">ចំណាយ</p>
-              <p className="text-lg font-bold text-red-600">${(report.total_expense_cents / 100).toFixed(2)}</p>
+            <div className="bg-white rounded-2xl p-4 border border-gray-100">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">ចំណាយ</p>
+              <p className="text-xl font-bold text-rose-600">${(report.total_expense_cents / 100).toFixed(2)}</p>
             </div>
           </div>
 
           {report.accounts?.length > 0 && (
-            <div className="bg-white rounded-xl p-4 border border-gray-100">
-              <p className="text-xs text-gray-400 mb-2">គណនី</p>
+            <div className="bg-white rounded-2xl p-4 border border-gray-100">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">គណនី</p>
               {report.accounts.map((a: { id: string; name: string; balance_cents: number }) => (
-                <div key={a.id} className="flex justify-between py-1">
-                  <span className="text-sm">{a.name}</span>
-                  <span className="text-sm font-medium">${(a.balance_cents / 100).toFixed(2)}</span>
+                <div key={a.id} className="flex justify-between py-2 border-b border-gray-50 last:border-0">
+                  <span className="text-sm text-gray-700">{a.name}</span>
+                  <span className="text-sm font-medium text-gray-900">${(a.balance_cents / 100).toFixed(2)}</span>
                 </div>
               ))}
             </div>
@@ -66,13 +66,21 @@ export default function Dashboard() {
 
           {(receivables?.length > 0 || payables?.length > 0) && (
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => navigate('/receivables')} className="bg-orange-50 rounded-xl p-3 text-left border border-orange-100">
-                <p className="text-xs text-orange-500">គេជំពាក់ខ្ញុំ</p>
-                <p className="text-lg font-bold text-orange-600">{receivables?.length || 0}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/receivables')}
+                className="bg-amber-50 rounded-2xl p-4 text-left border border-amber-100 active:scale-[0.98] transition-all duration-200"
+              >
+                <p className="text-xs text-amber-600 uppercase tracking-wide mb-1">គេជំពាក់ខ្ញុំ</p>
+                <p className="text-2xl font-bold text-amber-600">{receivables?.length || 0}</p>
               </button>
-              <button onClick={() => navigate('/payables')} className="bg-purple-50 rounded-xl p-3 text-left border border-purple-100">
-                <p className="text-xs text-purple-500">ខ្ញុំជំពាក់គេ</p>
-                <p className="text-lg font-bold text-purple-600">{payables?.length || 0}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/payables')}
+                className="bg-violet-50 rounded-2xl p-4 text-left border border-violet-100 active:scale-[0.98] transition-all duration-200"
+              >
+                <p className="text-xs text-violet-600 uppercase tracking-wide mb-1">ខ្ញុំជំពាក់គេ</p>
+                <p className="text-2xl font-bold text-violet-600">{payables?.length || 0}</p>
               </button>
             </div>
           )}
@@ -82,28 +90,54 @@ export default function Dashboard() {
       )}
 
       <div className="fixed bottom-14 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex gap-3">
-        <button onClick={() => navigate('/transaction/new?type=income')}
-          className="flex-1 bg-green-500 text-white py-3 rounded-xl font-medium text-sm">
+        <button
+          type="button"
+          onClick={() => navigate('/transaction/new?type=income')}
+          className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-medium text-sm active:scale-[0.98] transition-all duration-200 hover:bg-emerald-700"
+        >
           + ចំណូល
         </button>
-        <button onClick={() => navigate('/transaction/new?type=expense')}
-          className="flex-1 bg-red-500 text-white py-3 rounded-xl font-medium text-sm">
+        <button
+          type="button"
+          onClick={() => navigate('/transaction/new?type=expense')}
+          className="flex-1 bg-rose-600 text-white py-3 rounded-xl font-medium text-sm active:scale-[0.98] transition-all duration-200 hover:bg-rose-700"
+        >
           + ចំណាយ
         </button>
       </div>
 
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-2">
-        <button onClick={() => navigate('/')} className="text-blue-500 text-xs flex flex-col items-center">
-          <span className="text-lg">🏠</span>ដើម
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="text-indigo-600 text-xs flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity"
+        >
+          <span className="text-lg">🏠</span>
+          <span>ដើម</span>
         </button>
-        <button onClick={() => navigate('/transactions')} className="text-gray-400 text-xs flex flex-col items-center">
-          <span className="text-lg">📋</span>ប្រតិបត្តិការ
+        <button
+          type="button"
+          onClick={() => navigate('/transactions')}
+          className="text-gray-400 text-xs flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity"
+        >
+          <span className="text-lg">📋</span>
+          <span>ប្រតិបត្តិការ</span>
         </button>
-        <button onClick={() => navigate('/report')} className="text-gray-400 text-xs flex flex-col items-center">
-          <span className="text-lg">📊</span>របាយការណ៍
+        <button
+          type="button"
+          onClick={() => navigate('/report')}
+          className="text-gray-400 text-xs flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity"
+        >
+          <span className="text-lg">📊</span>
+          <span>របាយការណ៍</span>
         </button>
-        <button onClick={() => navigate('/settings')} className="text-gray-400 text-xs flex flex-col items-center">
-          <span className="text-lg">⚙️</span>កំណត់
+        <button
+          type="button"
+          onClick={() => navigate('/settings')}
+          className="text-gray-400 text-xs flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity"
+        >
+          <span className="text-lg">⚙️</span>
+          <span>កំណត់</span>
         </button>
       </nav>
     </div>
