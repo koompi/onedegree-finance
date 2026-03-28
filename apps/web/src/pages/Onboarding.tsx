@@ -62,7 +62,7 @@ export default function Onboarding() {
       if (initData && initData.length > 0) {
         login(initData)
           .then(() => setScreen('company'))
-          .catch((e: any) => { console.log('Login error:', e?.response?.data); setScreen('company') })
+          .catch((e: any) => { alert(JSON.stringify(e?.response?.data)); setScreen('company') })
       } else {
         setScreen('company')
       }
