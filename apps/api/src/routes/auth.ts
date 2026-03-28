@@ -11,16 +11,31 @@ const auth = new Hono()
 
 auth.post('/telegram', zValidator('json', z.object({ initData: z.string() })), async (c) => {
   const { initData } = c.req.valid('json')
-  const botToken = process.env.TELEGRAM_BOT_TOKEN || ''
-  const tgUser = validateTelegramInitData(initData, botToken)
-  if (!tgUser) return c.json({ error: 'Invalid initData' }, 401)
+
+  let telegramId: number
+  let name: string
+  let username: string | null = null
+
+  // Dev/browser preview mode
+  if (initData === 'dev_mode' && process.env.NODE_ENV !== 'production') {
+    telegramId = 0
+    name = 'Preview User'
+    username = 'preview'
+  } else {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN || ''
+    const tgUser = validateTelegramInitData(initData, botToken)
+    if (!tgUser) return c.json({ error: 'Invalid initData' }, 401)
+    telegramId = tgUser.id
+    name = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '')
+    username = tgUser.username || null
+  }
 
   const result = await pool.query(
     `INSERT INTO users (telegram_id, name, username)
      VALUES ($1, $2, $3)
      ON CONFLICT (telegram_id) DO UPDATE SET name = EXCLUDED.name, username = EXCLUDED.username
      RETURNING id, telegram_id, name, username, lang`,
-    [tgUser.id, tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : ''), tgUser.username || null]
+    [telegramId, name, username]
   )
   const user = result.rows[0]
   const [accessToken, refreshToken] = await Promise.all([
