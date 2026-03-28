@@ -2,7 +2,8 @@ import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth'
 import pool from '../db/client'
 
-const reports = new Hono()
+type Variables = { userId: string; companyId?: string }
+const reports = new Hono<{ Variables: Variables }>()
 reports.use('*', authMiddleware)
 
 async function ownsCompany(userId: string, companyId: string): Promise<boolean> {

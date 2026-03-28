@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { authMiddleware } from '../middleware/auth'
 import pool from '../db/client'
 
-const companies = new Hono()
+type Variables = { userId: string; companyId?: string }
+const companies = new Hono<{ Variables: Variables }>()
 companies.use('*', authMiddleware)
 
 companies.get('/', async (c) => {

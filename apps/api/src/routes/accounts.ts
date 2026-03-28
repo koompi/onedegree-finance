@@ -4,7 +4,8 @@ import { z } from 'zod'
 import { authMiddleware } from '../middleware/auth'
 import pool from '../db/client'
 
-const accounts = new Hono()
+type Variables = { userId: string; companyId?: string }
+const accounts = new Hono<{ Variables: Variables }>()
 accounts.use('*', authMiddleware)
 
 async function ownsCompany(userId: string, companyId: string): Promise<boolean> {

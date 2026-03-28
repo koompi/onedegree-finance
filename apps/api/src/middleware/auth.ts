@@ -14,22 +14,57 @@ export interface TelegramUser {
 
 export function validateTelegramInitData(initData: string, botToken: string): TelegramUser | null {
   try {
-    const params = new URLSearchParams(initData)
-    const hash = params.get('hash')
-    if (!hash) return null
-    params.delete('hash')
-    const dataCheckString = Array.from(params.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}=${v}`)
-      .join('\n')
+    // Split raw initData into key=value pairs WITHOUT URL-decoding
+    // Telegram requires data_check_string built from raw encoded values
+    const pairs = initData.split('&')
+    
+    let hash: string | null = null
+    const dataLines: string[] = []
+    let userRaw: string | null = null
+
+    for (const pair of pairs) {
+      const eqIdx = pair.indexOf('=')
+      if (eqIdx === -1) continue
+      const key = pair.substring(0, eqIdx)
+      const rawValue = pair.substring(eqIdx + 1)
+      
+      if (key === 'hash') {
+        hash = rawValue
+      } else {
+        // Keep raw encoded value for data_check_string
+        dataLines.push(`${key}=${rawValue}`)
+        if (key === 'user') {
+          // Decode user JSON for parsing
+          userRaw = decodeURIComponent(rawValue)
+        }
+      }
+    }
+
+    if (!hash || !userRaw) return null
+
+    // Sort alphabetically and join with newline — use raw encoded values
+    dataLines.sort((a, b) => {
+      const keyA = a.substring(0, a.indexOf('='))
+      const keyB = b.substring(0, b.indexOf('='))
+      return keyA.localeCompare(keyB)
+    })
+    const dataCheckString = dataLines.join('\n')
+
+    // HMAC-SHA256 with key = HMAC-SHA256("WebAppData", botToken)
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest()
     const expectedHash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex')
-    if (expectedHash !== hash) return null
-    const userStr = params.get('user')
-    if (!userStr) return null
-    return JSON.parse(userStr) as TelegramUser
-  } catch (e) {
-    console.log('[AUTH VALIDATE] exception:', e)
+
+    if (expectedHash !== hash) {
+      // Debug log in development
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Hash mismatch:', { expected: expectedHash, received: hash, dataCheckString })
+      }
+      return null
+    }
+
+    return JSON.parse(userRaw) as TelegramUser
+  } catch (err) {
+    console.error('validateTelegramInitData error:', err)
     return null
   }
 }
