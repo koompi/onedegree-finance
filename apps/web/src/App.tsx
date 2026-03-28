@@ -16,32 +16,36 @@ import OfflineBanner from './components/OfflineBanner'
 const queryClient = new QueryClient()
 
 export default function App() {
-  const { token } = useAuth()
+  const { token, companyId } = useAuth()
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => {
     initTelegram()
-    // Small delay to let zustand persist hydrate from localStorage
     setTimeout(() => setHydrated(true), 50)
   }, [])
 
   if (!hydrated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-[#F8F7FF]">
         <div className="text-center">
-          <div className="text-5xl font-bold text-blue-600 mb-3">1°</div>
+          <div className="text-5xl font-bold text-indigo-600 mb-3">1°</div>
         </div>
       </div>
     )
   }
+
+  const needsOnboarding = !token || !companyId
 
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <OfflineBanner />
         <Routes>
-          {!token ? (
-            <Route path="*" element={<Onboarding />} />
+          {needsOnboarding ? (
+            <>
+              <Route path="/onboarding" element={<Onboarding />} />
+              <Route path="*" element={<Navigate to="/onboarding" />} />
+            </>
           ) : (
             <>
               <Route path="/" element={<Dashboard />} />

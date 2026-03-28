@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { haptic } from '../lib/telegram'
+import BottomNav from '../components/BottomNav'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -36,14 +37,14 @@ export default function Settings() {
   })
 
   return (
-    <div className="min-h-screen bg-[#FBFBFA] pb-4">
+    <div className="min-h-screen bg-[#F8F7FF] pb-20 animate-fadeIn">
       <div className="flex items-center p-4">
         <button type="button" onClick={() => navigate('/')} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">ការកំណត់</h1>
       </div>
 
       <div className="px-4 space-y-4">
-        <div className="bg-white rounded-2xl p-4 border border-gray-100">
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
             <p className="font-semibold text-gray-900">ក្រុមហ៊ុន</p>
             <button type="button" onClick={() => setShowNewCompany(!showNewCompany)}
@@ -55,7 +56,7 @@ export default function Settings() {
               <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="ឈ្មោះក្រុមហ៊ុន"
                 autoComplete="off" className="flex-1 p-2.5 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm text-gray-900 placeholder-gray-400" />
               <button type="button" onClick={() => createCompany.mutate()} disabled={!newName}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40 active:scale-[0.98] transition-all">
+                className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40 active:scale-[0.98] transition-all shadow-sm">
                 រក្សាទុក
               </button>
             </div>
@@ -76,10 +77,12 @@ export default function Settings() {
         </div>
 
         <button type="button" onClick={() => { logout(); navigate('/') }}
-          className="w-full bg-rose-50 text-rose-600 py-3 rounded-2xl font-semibold border border-rose-100 active:scale-[0.98] transition-all">
+          className="w-full bg-rose-50 text-rose-600 py-3 rounded-2xl font-semibold border border-rose-100 active:scale-[0.98] transition-all shadow-sm">
           ចាកចេញ
         </button>
       </div>
+
+      <BottomNav />
     </div>
   )
 }

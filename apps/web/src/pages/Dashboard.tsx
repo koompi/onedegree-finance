@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import ProfitPulse from '../components/ProfitPulse'
 import CompanySwitcher from '../components/CompanySwitcher'
+import BottomNav from '../components/BottomNav'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -27,119 +28,111 @@ export default function Dashboard() {
     enabled: !!companyId,
   })
 
+  const recCount = receivables?.length || 0
+  const payCount = payables?.length || 0
+
   return (
-    <div className="min-h-screen pb-32 bg-[#FBFBFA]">
+    <div className="min-h-screen pb-36 bg-[#F8F7FF] animate-fadeIn">
       <div className="p-4">
         <CompanySwitcher />
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-40">
-          <div className="w-8 h-8 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="px-4 space-y-4">
+          <div className="h-32 bg-white rounded-2xl shadow-sm animate-pulse" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="h-20 bg-white rounded-2xl shadow-sm animate-pulse" />
+            <div className="h-20 bg-white rounded-2xl shadow-sm animate-pulse" />
+          </div>
+          <div className="h-24 bg-white rounded-2xl shadow-sm animate-pulse" />
         </div>
       ) : report ? (
         <div className="px-4 space-y-4">
           <ProfitPulse netProfitCents={report.net_profit_cents} />
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white rounded-2xl p-4 border border-gray-100">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">ចំណូល</p>
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm">📈</span>
+                <p className="text-xs text-gray-400 uppercase tracking-wide">ចំណូល</p>
+              </div>
               <p className="text-xl font-bold text-emerald-600">${(report.total_income_cents / 100).toFixed(2)}</p>
             </div>
-            <div className="bg-white rounded-2xl p-4 border border-gray-100">
-              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">ចំណាយ</p>
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm">📉</span>
+                <p className="text-xs text-gray-400 uppercase tracking-wide">ចំណាយ</p>
+              </div>
               <p className="text-xl font-bold text-rose-600">${(report.total_expense_cents / 100).toFixed(2)}</p>
             </div>
           </div>
 
           {report.accounts?.length > 0 && (
-            <div className="bg-white rounded-2xl p-4 border border-gray-100">
+            <div className="bg-white rounded-2xl p-4 shadow-sm">
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-3">គណនី</p>
               {report.accounts.map((a: { id: string; name: string; balance_cents: number }) => (
-                <div key={a.id} className="flex justify-between py-2 border-b border-gray-50 last:border-0">
+                <div key={a.id} className="flex justify-between py-2.5 border-b border-gray-50 last:border-0">
                   <span className="text-sm text-gray-700">{a.name}</span>
-                  <span className="text-sm font-medium text-gray-900">${(a.balance_cents / 100).toFixed(2)}</span>
+                  <span className="text-sm font-bold text-gray-900">${(a.balance_cents / 100).toFixed(2)}</span>
                 </div>
               ))}
             </div>
           )}
 
-          {(receivables?.length > 0 || payables?.length > 0) && (
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => navigate('/receivables')}
-                className="bg-amber-50 rounded-2xl p-4 text-left border border-amber-100 active:scale-[0.98] transition-all duration-200"
-              >
-                <p className="text-xs text-amber-600 uppercase tracking-wide mb-1">គេជំពាក់ខ្ញុំ</p>
-                <p className="text-2xl font-bold text-amber-600">{receivables?.length || 0}</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/payables')}
-                className="bg-violet-50 rounded-2xl p-4 text-left border border-violet-100 active:scale-[0.98] transition-all duration-200"
-              >
-                <p className="text-xs text-violet-600 uppercase tracking-wide mb-1">ខ្ញុំជំពាក់គេ</p>
-                <p className="text-2xl font-bold text-violet-600">{payables?.length || 0}</p>
-              </button>
-            </div>
-          )}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => navigate('/receivables')}
+              className="bg-white rounded-2xl p-4 text-left shadow-sm active:scale-[0.98] transition-all duration-200"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-amber-600 uppercase tracking-wide">គេជំពាក់ខ្ញុំ</p>
+                {recCount > 0 && (
+                  <span className="bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{recCount}</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-bold text-amber-600">{recCount}</p>
+                <span className="text-gray-300">→</span>
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/payables')}
+              className="bg-white rounded-2xl p-4 text-left shadow-sm active:scale-[0.98] transition-all duration-200"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-violet-600 uppercase tracking-wide">ខ្ញុំជំពាក់គេ</p>
+                {payCount > 0 && (
+                  <span className="bg-violet-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">{payCount}</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-2xl font-bold text-violet-600">{payCount}</p>
+                <span className="text-gray-300">→</span>
+              </div>
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="text-center text-gray-400 py-12">សូមជ្រើសរើសក្រុមហ៊ុន</div>
+        <div className="text-center py-16 px-4">
+          <div className="text-6xl mb-4">📊</div>
+          <p className="text-lg font-semibold text-gray-700 mb-1">មិនទាន់មានប្រតិបត្តិការ</p>
+          <p className="text-sm text-gray-400">ចុចប៊ូតុង + ខាងក្រោមដើម្បីចាប់ផ្ដើម</p>
+        </div>
       )}
 
-      <div className="fixed bottom-14 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex gap-3">
-        <button
-          type="button"
-          onClick={() => navigate('/transaction/new?type=income')}
-          className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-medium text-sm active:scale-[0.98] transition-all duration-200 hover:bg-emerald-700"
-        >
-          + ចំណូល
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/transaction/new?type=expense')}
-          className="flex-1 bg-rose-600 text-white py-3 rounded-xl font-medium text-sm active:scale-[0.98] transition-all duration-200 hover:bg-rose-700"
-        >
-          + ចំណាយ
-        </button>
-      </div>
+      {/* FAB — New Transaction */}
+      <button
+        type="button"
+        onClick={() => navigate('/transaction/new')}
+        className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-indigo-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl font-light active:scale-95 transition-all duration-200 hover:bg-indigo-700"
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        +
+      </button>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex justify-around py-2">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="text-indigo-600 text-xs flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity"
-        >
-          <span className="text-lg">🏠</span>
-          <span>ដើម</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/transactions')}
-          className="text-gray-400 text-xs flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity"
-        >
-          <span className="text-lg">📋</span>
-          <span>ប្រតិបត្តិការ</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/report')}
-          className="text-gray-400 text-xs flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity"
-        >
-          <span className="text-lg">📊</span>
-          <span>របាយការណ៍</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/settings')}
-          className="text-gray-400 text-xs flex flex-col items-center gap-0.5 active:opacity-70 transition-opacity"
-        >
-          <span className="text-lg">⚙️</span>
-          <span>កំណត់</span>
-        </button>
-      </nav>
+      <BottomNav />
     </div>
   )
 }
