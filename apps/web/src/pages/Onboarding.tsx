@@ -9,7 +9,7 @@ const IS_TELEGRAM = Boolean(tg.initData && tg.initData.length > 0)
 
 export default function Onboarding() {
   const { login, setCompany } = useAuth()
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState(IS_TELEGRAM ? 1 : 0) // Skip welcome screen in Telegram
   const [companyName, setCompanyName] = useState('')
   const [companyType, setCompanyType] = useState('general')
   const [accountName, setAccountName] = useState('សាច់ប្រាក់ក្នុងដៃ')
@@ -78,13 +78,11 @@ export default function Onboarding() {
           disabled={loading}
           className="w-full max-w-xs bg-blue-500 text-white py-4 rounded-2xl font-medium text-lg disabled:opacity-50 shadow-lg"
         >
-          {loading ? 'កំពុងចូល...' : IS_TELEGRAM ? 'ចាប់ផ្តើម' : '▶ Preview Demo'}
+          {loading ? 'កំពុងចូល...' : '▶ Preview Demo'}
         </button>
-        {!IS_TELEGRAM && (
-          <p className="text-xs text-amber-500 mt-4 max-w-xs">
-            ⚠️ Browser preview mode — open via Telegram for full experience
-          </p>
-        )}
+        <p className="text-xs text-amber-500 mt-4 max-w-xs">
+          ⚠️ Browser preview mode — open via Telegram for full experience
+        </p>
         <p className="text-xs text-gray-400 mt-6 max-w-xs leading-relaxed">
           ទិន្នន័យរបស់អ្នកមានសុវត្ថិភាព។<br/>យើងមិនចែករំលែកជាមួយស្ថាប័នពន្ធដារទេ។
         </p>
