@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { haptic } from '../lib/telegram'
 import BottomNav from '../components/BottomNav'
+import { ArrowDownLeft } from 'lucide-react'
 
 export default function Receivables() {
   const navigate = useNavigate()
@@ -71,7 +72,9 @@ export default function Receivables() {
         </div>
       ) : !items?.length ? (
         <div className="text-center py-16">
-          <div className="text-5xl mb-3">💵</div>
+          <div className="flex justify-center mb-3">
+            <ArrowDownLeft size={40} className="text-gray-300" />
+          </div>
           <p className="text-gray-400">គ្មានអ្នកជំពាក់</p>
         </div>
       ) : (

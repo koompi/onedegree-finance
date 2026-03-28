@@ -1,11 +1,13 @@
 import { useNavigate, useLocation } from 'react-router-dom'
+import { Home, ArrowLeftRight, BarChart2, ArrowDownLeft, Settings } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
-const tabs = [
-  { path: '/', icon: '🏠', label: 'ដើម' },
-  { path: '/transactions', icon: '📋', label: 'ប្រតិបត្តិការ' },
-  { path: '/report', icon: '📊', label: 'របាយការណ៍' },
-  { path: '/receivables', icon: '💵', label: 'គេជំពាក់' },
-  { path: '/settings', icon: '⚙️', label: 'កំណត់' },
+const tabs: { path: string; icon: LucideIcon; label: string }[] = [
+  { path: '/', icon: Home, label: 'ដើម' },
+  { path: '/transactions', icon: ArrowLeftRight, label: 'ប្រតិបត្តិការ' },
+  { path: '/report', icon: BarChart2, label: 'របាយការណ៍' },
+  { path: '/receivables', icon: ArrowDownLeft, label: 'គេជំពាក់' },
+  { path: '/settings', icon: Settings, label: 'កំណត់' },
 ]
 
 export default function BottomNav() {
@@ -17,6 +19,7 @@ export default function BottomNav() {
       style={{ height: `calc(64px + env(safe-area-inset-bottom))` }}>
       {tabs.map(tab => {
         const active = tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
+        const Icon = tab.icon
         return (
           <button
             key={tab.path}
@@ -26,7 +29,7 @@ export default function BottomNav() {
               active ? 'text-indigo-600' : 'text-gray-400'
             }`}
           >
-            <span className="text-xl">{tab.icon}</span>
+            <Icon size={20} />
             <span className="text-[10px] font-medium">{tab.label}</span>
           </button>
         )

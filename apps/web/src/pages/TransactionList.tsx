@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import BottomNav from '../components/BottomNav'
+import { ArrowLeftRight, DollarSign } from 'lucide-react'
 
 export default function TransactionList() {
   const navigate = useNavigate()
@@ -52,7 +53,9 @@ export default function TransactionList() {
         </div>
       ) : Object.keys(grouped).length === 0 ? (
         <div className="text-center py-16">
-          <div className="text-5xl mb-3">📋</div>
+          <div className="flex justify-center mb-3">
+            <ArrowLeftRight size={40} className="text-gray-300" />
+          </div>
           <p className="text-gray-400">គ្មានប្រតិបត្តិការ</p>
         </div>
       ) : (
@@ -61,7 +64,11 @@ export default function TransactionList() {
             <p className="px-4 text-xs text-gray-400 font-medium mb-1">{day}</p>
             {txs.map(tx => (
               <div key={tx.id} className="flex items-center px-4 py-3 mx-4 mb-1 bg-white rounded-2xl shadow-sm">
-                <span className="text-2xl mr-3">{tx.category_icon || '💵'}</span>
+                {tx.category_icon ? (
+                  <span className="text-2xl mr-3">{tx.category_icon}</span>
+                ) : (
+                  <span className="mr-3"><DollarSign size={24} className="text-gray-400" /></span>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-gray-900">{tx.category_name_km || tx.category_name || 'ផ្សេងៗ'}</p>
                   {tx.note && <p className="text-xs text-gray-400 truncate">{tx.note}</p>}

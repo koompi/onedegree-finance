@@ -5,6 +5,7 @@ import { useAuth } from '../store/auth'
 import ProfitPulse from '../components/ProfitPulse'
 import CompanySwitcher from '../components/CompanySwitcher'
 import BottomNav from '../components/BottomNav'
+import { TrendingUp, TrendingDown, BarChart2 } from 'lucide-react'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -53,14 +54,14 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm">📈</span>
+                <TrendingUp size={16} className="text-emerald-500" />
                 <p className="text-xs text-gray-400 uppercase tracking-wide">ចំណូល</p>
               </div>
               <p className="text-xl font-bold text-emerald-600">${(report.total_income_cents / 100).toFixed(2)}</p>
             </div>
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm">📉</span>
+                <TrendingDown size={16} className="text-rose-500" />
                 <p className="text-xs text-gray-400 uppercase tracking-wide">ចំណាយ</p>
               </div>
               <p className="text-xl font-bold text-rose-600">${(report.total_expense_cents / 100).toFixed(2)}</p>
@@ -93,7 +94,7 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-bold text-amber-600">{recCount}</p>
-                <span className="text-gray-300">→</span>
+                <span className="text-gray-300">&rarr;</span>
               </div>
             </button>
             <button
@@ -109,14 +110,16 @@ export default function Dashboard() {
               </div>
               <div className="flex items-center justify-between">
                 <p className="text-2xl font-bold text-violet-600">{payCount}</p>
-                <span className="text-gray-300">→</span>
+                <span className="text-gray-300">&rarr;</span>
               </div>
             </button>
           </div>
         </div>
       ) : (
         <div className="text-center py-16 px-4">
-          <div className="text-6xl mb-4">📊</div>
+          <div className="flex justify-center mb-4">
+            <BarChart2 size={48} className="text-gray-300" />
+          </div>
           <p className="text-lg font-semibold text-gray-700 mb-1">មិនទាន់មានប្រតិបត្តិការ</p>
           <p className="text-sm text-gray-400">ចុចប៊ូតុង + ខាងក្រោមដើម្បីចាប់ផ្ដើម</p>
         </div>

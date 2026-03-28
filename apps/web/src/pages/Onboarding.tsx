@@ -4,15 +4,17 @@ import { useAuth } from '../store/auth'
 import { tg } from '../lib/telegram'
 import axios from 'axios'
 import type { AxiosError } from 'axios'
+import { Leaf, Store, ShoppingCart, Wrench, Package, Wallet, Landmark, CheckCircle } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 const API_URL = 'https://onedegree-api.tunnel.koompi.cloud'
 
-const types = [
-  { value: 'agro', label: 'កសិកម្ម', icon: '🌾' },
-  { value: 'general', label: 'ទូទៅ', icon: '🏪' },
-  { value: 'retail', label: 'លក់រាយ', icon: '🛒' },
-  { value: 'service', label: 'សេវាកម្ម', icon: '🔧' },
-  { value: 'other', label: 'ផ្សេងៗ', icon: '📦' },
+const types: { value: string; label: string; icon: LucideIcon }[] = [
+  { value: 'agro', label: 'កសិកម្ម', icon: Leaf },
+  { value: 'general', label: 'ទូទៅ', icon: Store },
+  { value: 'retail', label: 'លក់រាយ', icon: ShoppingCart },
+  { value: 'service', label: 'សេវាកម្ម', icon: Wrench },
+  { value: 'other', label: 'ផ្សេងៗ', icon: Package },
 ]
 
 function getHeaders(): Record<string, string> {
@@ -51,7 +53,6 @@ export default function Onboarding() {
   const companyIdRef = useRef<string | null>(null)
 
   useEffect(() => {
-    // If user already has token, skip login — go straight to company creation
     if (token) {
       setScreen('company')
       return
@@ -121,9 +122,11 @@ export default function Onboarding() {
         </div>
 
         <div className="text-center mb-6">
-          <div className="text-6xl mb-3">💰</div>
+          <div className="flex justify-center mb-3">
+            <Wallet size={48} className="text-indigo-500" />
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-1">បង្កើតអាជីវកម្មរបស់អ្នក</h1>
-          {user && <p className="text-sm text-gray-500">សួស្ដី {user.name} 👋</p>}
+          {user && <p className="text-sm text-gray-500">សួស្ដី {user.name}</p>}
           {!user && <p className="text-sm text-gray-400">ចាប់ផ្ដើមគ្រប់គ្រងហិរញ្ញប្បទានរបស់អ្នក</p>}
         </div>
 
@@ -148,21 +151,26 @@ export default function Onboarding() {
 
         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">ប្រភេទអាជីវកម្ម</label>
         <div className="grid grid-cols-3 gap-3 mb-8">
-          {types.map(t => (
-            <button
-              key={t.value}
-              type="button"
-              onClick={() => setCompanyType(t.value)}
-              className={`p-4 rounded-2xl text-center border-2 transition-all duration-200 shadow-sm ${
-                companyType === t.value
-                  ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold scale-[1.02]'
-                  : 'border-gray-100 text-gray-600 bg-white hover:border-gray-300'
-              }`}
-            >
-              <div className="text-3xl mb-1.5">{t.icon}</div>
-              <div className="text-xs font-medium">{t.label}</div>
-            </button>
-          ))}
+          {types.map(t => {
+            const Icon = t.icon
+            return (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setCompanyType(t.value)}
+                className={`p-4 rounded-2xl text-center border-2 transition-all duration-200 shadow-sm ${
+                  companyType === t.value
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-semibold scale-[1.02]'
+                    : 'border-gray-100 text-gray-600 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className="flex justify-center mb-1.5">
+                  <Icon size={28} />
+                </div>
+                <div className="text-xs font-medium">{t.label}</div>
+              </button>
+            )
+          })}
         </div>
 
         <button
@@ -184,7 +192,9 @@ export default function Onboarding() {
       </div>
 
       <div className="text-center mb-6">
-        <div className="text-6xl mb-3">🏦</div>
+        <div className="flex justify-center mb-3">
+          <Landmark size={48} className="text-indigo-500" />
+        </div>
         <h1 className="text-2xl font-bold text-gray-900 mb-1">បន្ថែមគណនីដំបូង</h1>
         <p className="text-sm text-gray-400">ប្រាក់របស់អ្នកនៅទីណា?</p>
       </div>
@@ -215,7 +225,10 @@ export default function Onboarding() {
         disabled={!accountName.trim() || busy}
         className="w-full bg-emerald-600 text-white py-4 rounded-2xl font-semibold text-lg disabled:opacity-40 active:scale-[0.98] transition-all duration-200 hover:bg-emerald-700 shadow-sm"
       >
-        {busy ? 'កំពុងរក្សាទុក...' : '✓ ចាប់ផ្ដើមប្រើ'}
+        <span className="flex items-center justify-center gap-2">
+          <CheckCircle size={20} />
+          {busy ? 'កំពុងរក្សាទុក...' : 'ចាប់ផ្ដើមប្រើ'}
+        </span>
       </button>
     </div>
   )
