@@ -22,6 +22,7 @@ export default function TransactionList() {
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
   const [search, setSearch] = useState('')
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactions', companyId, month],
@@ -130,12 +131,23 @@ export default function TransactionList() {
                       className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-50 text-indigo-600 py-2 rounded-xl text-sm font-medium active:opacity-70">
                       <Pencil size={14} /> កែប្រែ
                     </button>
-                    <button type="button" onClick={() => {
-                      if (confirm('លុបប្រតិបត្តិការនេះ?')) deleteMutation.mutate(tx.id)
-                    }}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-rose-50 text-rose-600 py-2 rounded-xl text-sm font-medium active:opacity-70">
-                      <Trash2 size={14} /> លុប
-                    </button>
+                    {confirmDeleteId === tx.id ? (
+                      <div className="flex-1 flex gap-1">
+                        <button type="button" onClick={() => { deleteMutation.mutate(tx.id); setConfirmDeleteId(null) }}
+                          className="flex-1 bg-rose-600 text-white py-2 rounded-xl text-sm font-bold active:opacity-70">
+                          លុបពិតប្រាកដ
+                        </button>
+                        <button type="button" onClick={() => setConfirmDeleteId(null)}
+                          className="flex-1 bg-gray-100 text-gray-600 py-2 rounded-xl text-sm font-medium active:opacity-70">
+                          បោះបង់
+                        </button>
+                      </div>
+                    ) : (
+                      <button type="button" onClick={() => setConfirmDeleteId(tx.id)}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-rose-50 text-rose-600 py-2 rounded-xl text-sm font-medium active:opacity-70">
+                        <Trash2 size={14} /> លុប
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

@@ -216,7 +216,7 @@ export default function Settings() {
                   <span className="text-2xl">{c.icon}</span>
                   <span className="flex-1 text-sm text-gray-800">{c.name_km || c.name}</span>
                   {!c.is_default && (
-                    <button type="button" onClick={() => { if (confirm('លុបប្រភេទនេះ?')) deleteCategory.mutate(c.id) }}
+                    <button type="button" onClick={() => deleteCategory.mutate(c.id)}
                       className="text-rose-400 text-xs active:opacity-70">លុប</button>
                   )}
                 </div>
@@ -247,7 +247,7 @@ export default function Settings() {
                 <p className="text-xs text-gray-400">{c.type}</p>
               </button>
               {companies.length > 1 && (
-                <button type="button" onClick={() => { if (confirm('លុបក្រុមហ៊ុន?')) deleteCompany.mutate(c.id) }}
+                <button type="button" onClick={() => deleteCompany.mutate(c.id)}
                   className="text-rose-400 text-xs font-medium active:opacity-70">លុប</button>
               )}
             </div>
