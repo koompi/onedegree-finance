@@ -23,7 +23,7 @@ export default function App() {
 
   useEffect(() => {
     initTelegram()
-    setTimeout(() => setHydrated(true), 50)
+    setTimeout(() => setHydrated(true), 1500)
   }, [])
 
   if (!hydrated) {
