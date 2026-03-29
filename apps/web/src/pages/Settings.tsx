@@ -256,6 +256,18 @@ export default function Settings() {
           ))}
         </div>
 
+        {/* About */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm text-center">
+          <p className="text-2xl font-bold text-indigo-600 mb-1">1°</p>
+          <p className="text-sm font-semibold text-gray-800">OneDegree Finance</p>
+          <p className="text-xs text-gray-400 mt-0.5">កម្មវិធីគ្រប់គ្រងហិរញ្ញវត្ថុ</p>
+          <p className="text-xs text-gray-400 mt-2">v1.0.0</p>
+          <button type="button" onClick={() => window.open('https://t.me/Onedegreefinance_bot', '_blank')}
+            className="mt-3 text-xs text-indigo-600 font-medium active:opacity-70">
+            @Onedegreefinance_bot
+          </button>
+        </div>
+
         <button type="button" onClick={() => { logout(); navigate('/') }}
           className="w-full bg-rose-50 text-rose-600 py-3 rounded-2xl font-semibold border border-rose-100 active:opacity-70 shadow-sm">
           ចាកចេញ

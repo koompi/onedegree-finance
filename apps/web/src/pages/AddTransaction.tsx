@@ -6,8 +6,20 @@ import { useAuth } from '../store/auth'
 import CurrencyInput from '../components/CurrencyInput'
 import { haptic, tg } from '../lib/telegram'
 
+const KHR_RATE = 4100
+
 type Account = { id: string; name: string }
 type Category = { id: string; name_km: string; name: string; icon: string; type: string }
+
+function getDateOptions() {
+  const today = new Date()
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  return {
+    today: today.toISOString().slice(0, 10),
+    yesterday: yesterday.toISOString().slice(0, 10),
+  }
+}
 
 export default function AddTransaction() {
   const navigate = useNavigate()
@@ -22,6 +34,12 @@ export default function AddTransaction() {
   const [note, setNote] = useState('')
   const [showSuccess, setShowSuccess] = useState(false)
   const safeTop = Math.max((tg as any).safeAreaInset?.top ?? 0, (tg as any).contentSafeAreaInset?.top ?? 0)
+
+  const dates = getDateOptions()
+  const [dateMode, setDateMode] = useState<'today' | 'yesterday' | 'custom'>('today')
+  const [customDate, setCustomDate] = useState(dates.today)
+
+  const occurredAt = dateMode === 'today' ? dates.today : dateMode === 'yesterday' ? dates.yesterday : customDate
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['categories', companyId],
@@ -40,6 +58,14 @@ export default function AddTransaction() {
     if (accounts?.length && !accountId) setAccountId(accounts[0].id)
   }, [accounts])
 
+  const resetForm = () => {
+    setAmountCents(0)
+    setCurrencyInput('USD')
+    setCategoryId('')
+    setNote('')
+    setDateMode('today')
+  }
+
   const mutation = useMutation({
     mutationFn: () => api.post(`/companies/${companyId}/transactions`, {
       account_id: accountId || undefined,
@@ -48,19 +74,29 @@ export default function AddTransaction() {
       amount_cents: amountCents,
       currency_input: currencyInput,
       note: note || undefined,
-      occurred_at: new Date().toISOString(),
+      occurred_at: new Date(occurredAt + 'T12:00:00').toISOString(),
     }),
     onSuccess: () => {
       haptic.success()
       queryClient.invalidateQueries({ queryKey: ['report'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['today-tx'] })
       setShowSuccess(true)
-      setTimeout(() => navigate('/'), 800)
     },
     onError: () => haptic.error(),
   })
 
+  const handleLogAnother = () => {
+    resetForm()
+    setShowSuccess(false)
+  }
+
   const filteredCategories = categories?.filter(c => c.type === type) || []
+
+  // KHR equivalent display
+  const khrEquiv = currencyInput === 'USD'
+    ? Math.round(amountCents / 100 * KHR_RATE)
+    : Math.round(amountCents) // already in cents USD equivalent
 
   return (
     <div className="min-h-screen bg-[#F8F7FF] pb-8 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
@@ -83,6 +119,37 @@ export default function AddTransaction() {
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
           <CurrencyInput onChange={(cents, cur) => { setAmountCents(cents); setCurrencyInput(cur) }} />
+          {amountCents > 0 && (
+            <p className="text-center text-xs text-gray-400 mt-2">
+              {currencyInput === 'USD'
+                ? `≈ ${khrEquiv.toLocaleString()} ៛`
+                : `≈ $${(amountCents / 100).toFixed(2)}`
+              }
+            </p>
+          )}
+        </div>
+
+        {/* Date Picker */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <p className="text-sm font-semibold text-gray-800 mb-3">កាលបរិច្ឆេទ</p>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setDateMode('today')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                dateMode === 'today' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-50 text-gray-500'
+              }`}>ថ្ងៃនេះ</button>
+            <button type="button" onClick={() => setDateMode('yesterday')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                dateMode === 'yesterday' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-50 text-gray-500'
+              }`}>ម្សិលមិញ</button>
+            <button type="button" onClick={() => setDateMode('custom')}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                dateMode === 'custom' ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-50 text-gray-500'
+              }`}>ផ្សេង</button>
+          </div>
+          {dateMode === 'custom' && (
+            <input type="date" value={customDate} onChange={e => setCustomDate(e.target.value)}
+              className="mt-3 w-full p-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900 text-sm" />
+          )}
         </div>
 
         {filteredCategories.length > 0 && (
@@ -133,9 +200,19 @@ export default function AddTransaction() {
 
       {showSuccess && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl p-8 text-center shadow-lg">
-            <div className="text-5xl mb-3">✓</div>
+          <div className="bg-white rounded-2xl p-8 text-center shadow-lg space-y-4">
+            <div className="text-5xl mb-1">✓</div>
             <p className="font-semibold text-gray-900">រក្សាទុកបានសម្រេច!</p>
+            <div className="flex gap-3">
+              <button type="button" onClick={handleLogAnother}
+                className="flex-1 py-3 rounded-2xl font-semibold text-sm bg-indigo-600 text-white active:scale-[0.98] shadow-sm">
+                បន្ថែមទៀត
+              </button>
+              <button type="button" onClick={() => navigate('/')}
+                className="flex-1 py-3 rounded-2xl font-semibold text-sm bg-gray-100 text-gray-700 active:scale-[0.98]">
+                ត្រឡប់ក្រោយ
+              </button>
+            </div>
           </div>
         </div>
       )}

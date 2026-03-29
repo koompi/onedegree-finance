@@ -81,10 +81,21 @@ export default function Report() {
       ) : report ? (
         <div className="px-4 space-y-4">
           <div className={`rounded-2xl p-6 text-center shadow-sm ${report.net_profit_cents >= 0 ? 'bg-emerald-50 border border-emerald-100' : 'bg-rose-50 border border-rose-100'}`}>
-            <p className="text-sm text-gray-500 font-medium">Net Profit</p>
+            <p className="text-sm text-gray-500 font-medium">ប្រាក់ចំណេញសុទ្ធ</p>
             <p className={`text-3xl font-bold mt-1 ${report.net_profit_cents >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               ${(report.net_profit_cents / 100).toFixed(2)}
             </p>
+            {(() => {
+              const margin = report.total_income_cents > 0
+                ? Math.round((report.net_profit_cents / report.total_income_cents) * 100)
+                : 0
+              const mColor = margin >= 20 ? 'text-emerald-600 bg-emerald-100' : margin >= 10 ? 'text-amber-600 bg-amber-100' : 'text-rose-600 bg-rose-100'
+              return (
+                <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold ${mColor}`}>
+                  Margin: {margin}%
+                </span>
+              )
+            })()}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
