@@ -4,7 +4,6 @@ import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { haptic, tg } from '../lib/telegram'
 import { ArrowLeft, Plus, ArrowDownToLine, ArrowUpFromLine, Trash2, AlertTriangle, Calculator, X } from 'lucide-react'
-import BottomNav from '../components/BottomNav'
 
 type InventoryItem = {
   id: string; name: string; name_km: string | null; unit: string
@@ -297,7 +296,6 @@ export default function Inventory() {
             )}
           </div>
         </div>
-        <BottomNav />
       </div>
     )
   }
@@ -367,7 +365,6 @@ export default function Inventory() {
           </div>
         )}
       </div>
-      <BottomNav />
     </div>
   )
 }

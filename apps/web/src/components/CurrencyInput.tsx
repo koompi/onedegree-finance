@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 interface Props {
   value?: number
@@ -13,13 +13,13 @@ export default function CurrencyInput({ onChange, initialCents }: Props) {
   const [raw, setRaw] = useState(() => initialCents ? (initialCents / 100).toFixed(2) : '')
   const [inited, setInited] = useState(!initialCents)
 
-  // Set initial value when initialCents arrives (e.g. from API)
-  if (initialCents && !inited) {
-    const v = (initialCents / 100).toFixed(2)
-    setRaw(v)
-    setInited(true)
-    onChange(initialCents, 'USD')
-  }
+  useEffect(() => {
+    if (initialCents && !inited) {
+      setRaw((initialCents / 100).toFixed(2))
+      setInited(true)
+      onChange(initialCents, 'USD')
+    }
+  }, [initialCents, inited, onChange])
   const inputRef = useRef<HTMLInputElement>(null)
 
   const toCents = (str: string, cur: 'USD' | 'KHR') => {

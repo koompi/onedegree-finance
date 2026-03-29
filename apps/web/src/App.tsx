@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { initTelegram } from './lib/telegram'
 import { useAuth } from './store/auth'
+import BottomNav from './components/BottomNav'
 import Dashboard from './pages/Dashboard'
 import AddTransaction from './pages/AddTransaction'
 import TransactionList from './pages/TransactionList'
@@ -17,6 +18,16 @@ import Onboarding from './pages/Onboarding'
 import OfflineBanner from './components/OfflineBanner'
 
 const queryClient = new QueryClient()
+
+function AppLayout() {
+  return (
+    <>
+      <OfflineBanner />
+      <Outlet />
+      <BottomNav />
+    </>
+  )
+}
 
 export default function App() {
   const { token, companyId } = useAuth()
@@ -42,7 +53,6 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <OfflineBanner />
         <Routes>
           {needsOnboarding ? (
             <>
@@ -50,7 +60,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/onboarding" />} />
             </>
           ) : (
-            <>
+            <Route element={<AppLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/transaction/new" element={<AddTransaction />} />
               <Route path="/transaction/edit/:id" element={<EditTransaction />} />
@@ -62,7 +72,7 @@ export default function App() {
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/accounts" element={<Accounts />} />
               <Route path="*" element={<Navigate to="/" />} />
-            </>
+            </Route>
           )}
         </Routes>
       </BrowserRouter>

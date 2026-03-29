@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { tg } from '../lib/telegram'
 import { useAuth } from '../store/auth'
-import BottomNav from '../components/BottomNav'
 import { TrendingUp, TrendingDown, Share2 } from 'lucide-react'
 
 const KHR_RATE = 4100
@@ -91,17 +90,6 @@ export default function Report() {
             </p>
             <p className="text-xs text-gray-400 mt-1">{fmtKHR(report.net_profit_cents)}</p>
             <p className={`text-sm font-bold mt-2 ${marginColor}`}>Margin: {profitMargin}%</p>
-            {(() => {
-              const margin = report.total_income_cents > 0
-                ? Math.round((report.net_profit_cents / report.total_income_cents) * 100)
-                : 0
-              const mColor = margin >= 20 ? 'text-emerald-600 bg-emerald-100' : margin >= 10 ? 'text-amber-600 bg-amber-100' : 'text-rose-600 bg-rose-100'
-              return (
-                <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold ${mColor}`}>
-                  Margin: {margin}%
-                </span>
-              )
-            })()}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -175,13 +163,12 @@ export default function Report() {
       ) : null}
 
       {/* Month nav at bottom */}
-      <div className="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex items-center justify-between px-6 py-2 z-20">
+      <div className="fixed bottom-20 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex items-center justify-between px-6 py-2 z-40">
         <button type="button" onClick={prevMonth} className="p-2 text-gray-400 active:text-gray-600 text-lg">‹</button>
         <span className="font-semibold text-gray-700 text-sm">{month}</span>
         <button type="button" onClick={nextMonth} className="p-2 text-gray-400 active:text-gray-600 text-lg">›</button>
       </div>
 
-      <BottomNav />
     </div>
   )
 }

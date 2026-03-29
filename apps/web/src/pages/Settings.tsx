@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { haptic, tg } from '../lib/telegram'
-import BottomNav from '../components/BottomNav'
 import { Download, User } from 'lucide-react'
 
 type Category = { id: string; name: string; name_km?: string; icon: string; type: 'income' | 'expense'; is_default?: boolean }
@@ -192,7 +191,7 @@ export default function Settings() {
                 ))}
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-2">រើorg សញ្ញា</p>
+                <p className="text-xs text-gray-500 mb-2">រើសសញ្ញា</p>
                 <div className="flex flex-wrap gap-2">
                   {EMOJIS.map(e => (
                     <button key={e} type="button" onClick={() => setCatEmoji(e)}
@@ -274,7 +273,6 @@ export default function Settings() {
         </button>
       </div>
 
-      <BottomNav />
     </div>
   )
 }

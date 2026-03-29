@@ -5,7 +5,6 @@ import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { haptic, tg } from '../lib/telegram'
 import { Toast, useToast } from '../components/Toast'
-import BottomNav from '../components/BottomNav'
 import { CreditCard } from 'lucide-react'
 
 export default function Payables() {
@@ -39,8 +38,19 @@ export default function Payables() {
       haptic.success()
       showToast('បានរក្សាទុករួចរាល់! ✓')
       queryClient.invalidateQueries({ queryKey: ['payables'] })
-      setShowAdd(false); setName(''); setAmount(''); setDueDate(''); setNote(''); setNote('')
+      setShowAdd(false); setName(''); setAmount(''); setDueDate(''); setNote('')
     },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/companies/${companyId}/payables/${id}`),
+    onSuccess: () => {
+      haptic.success()
+      showToast('បានលុបរួចរាល់!')
+      queryClient.invalidateQueries({ queryKey: ['payables'] })
+      setConfirmDeleteId(null)
+    },
+    onError: () => haptic.error(),
   })
 
   const markPaid = useMutation({
@@ -97,26 +107,13 @@ export default function Payables() {
       ) : (
         <div className="px-4 space-y-2">
           {items.map((item: { id: string; contact_name: string; amount_cents: number; status: string; due_date?: string; note?: string }) => {
-          
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/companies/${companyId}/payables/${id}`),
-    onSuccess: () => {
-      haptic.success()
-      showToast('បានលុបរួចរាល់!')
-      queryClient.invalidateQueries({ queryKey: ['payables'] })
-      setConfirmDeleteId(null)
-    },
-    onError: () => haptic.error(),
-  })
-
-  const isOverdue = item.due_date && item.due_date < today && item.status !== 'paid'
+          const isOverdue = item.due_date && item.due_date < today && item.status !== 'paid'
             return (
               <div key={item.id} className={`flex items-center p-4 rounded-2xl shadow-sm transition-all duration-200 ${
                 item.status === 'paid' ? 'bg-emerald-50' : isOverdue ? 'bg-rose-50 border border-rose-200' : 'bg-white'
               }`}>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900">{item.contact_name}</p>
-                {(item as any).note && <p className="text-xs text-gray-400 mt-0.5">{(item as any).note}</p>}
                   <p className={`text-lg font-bold mt-0.5 ${
                     item.status === 'paid' ? 'text-emerald-600 line-through' : isOverdue ? 'text-rose-600' : 'text-violet-600'
                   }`}>${(item.amount_cents / 100).toFixed(2)}</p>
@@ -152,7 +149,6 @@ export default function Payables() {
         </div>
       )}
 
-      <BottomNav />
     </div>
   )
 }

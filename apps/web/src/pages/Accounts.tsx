@@ -5,7 +5,6 @@ import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { haptic, tg } from '../lib/telegram'
 import { Toast, useToast } from '../components/Toast'
-import BottomNav from '../components/BottomNav'
 import { Wallet } from 'lucide-react'
 
 export default function Accounts() {
@@ -114,7 +113,6 @@ export default function Accounts() {
         </div>
       )}
 
-      <BottomNav />
     </div>
   )
 }

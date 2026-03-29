@@ -5,7 +5,6 @@ import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { haptic, tg } from '../lib/telegram'
 import { Toast, useToast } from '../components/Toast'
-import BottomNav from '../components/BottomNav'
 import { ArrowDownLeft, Send } from 'lucide-react'
 
 export default function Receivables() {
@@ -39,8 +38,19 @@ export default function Receivables() {
       haptic.success()
       showToast('បានរក្សាទុករួចរាល់! ✓')
       queryClient.invalidateQueries({ queryKey: ['receivables'] })
-      setShowAdd(false); setName(''); setAmount(''); setDueDate(''); setNote(''); setNote('')
+      setShowAdd(false); setName(''); setAmount(''); setDueDate(''); setNote('')
     },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/companies/${companyId}/receivables/${id}`),
+    onSuccess: () => {
+      haptic.success()
+      showToast('បានលុបរួចរាល់!')
+      queryClient.invalidateQueries({ queryKey: ['receivables'] })
+      setConfirmDeleteId(null)
+    },
+    onError: () => haptic.error(),
   })
 
   const markPaid = useMutation({
@@ -97,26 +107,13 @@ export default function Receivables() {
       ) : (
         <div className="px-4 space-y-2">
           {items.map((item: { id: string; contact_name: string; amount_cents: number; status: string; due_date?: string; note?: string }) => {
-          
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete(`/companies/${companyId}/receivables/${id}`),
-    onSuccess: () => {
-      haptic.success()
-      showToast('បានលុបរួចរាល់!')
-      queryClient.invalidateQueries({ queryKey: ['receivables'] })
-      setConfirmDeleteId(null)
-    },
-    onError: () => haptic.error(),
-  })
-
-  const isOverdue = item.due_date && item.due_date < today && item.status !== 'paid'
+          const isOverdue = item.due_date && item.due_date < today && item.status !== 'paid'
             return (
               <div key={item.id} className={`flex items-center p-4 rounded-2xl shadow-sm transition-all duration-200 ${
                 item.status === 'paid' ? 'bg-emerald-50' : isOverdue ? 'bg-rose-50 border border-rose-200' : 'bg-white'
               }`}>
                 <div className="flex-1">
                   <p className="font-semibold text-gray-900">{item.contact_name}</p>
-                {(item as any).note && <p className="text-xs text-gray-400 mt-0.5">{(item as any).note}</p>}
                   <p className={`text-lg font-bold mt-0.5 ${
                     item.status === 'paid' ? 'text-emerald-600 line-through' : isOverdue ? 'text-rose-600' : 'text-amber-600'
                   }`}>${(item.amount_cents / 100).toFixed(2)}</p>
@@ -128,12 +125,6 @@ export default function Receivables() {
                   {item.note && <p className="text-xs text-gray-400 mt-0.5">{item.note}</p>}
                 </div>
                 <div className="flex flex-col gap-1 items-end shrink-0">
-                  {item.status !== 'paid' && (
-                    <button type="button" onClick={() => {
-                      const msg = `សួស្ដី ${item.contact_name}, សូមជូនដំណឹងថា អ្នកនៅជំពាក់ $${(item.amount_cents/100).toFixed(2)}។ សូមទូទាត់នៅពេលអាច។ អរគុណ! 🙏`
-                      window.open(`https://t.me/share/url?text=${encodeURIComponent(msg)}`)
-                    }} className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg text-xs font-medium active:opacity-70">📩</button>
-                  )}
                   {item.status !== 'paid' && (
                     <>
                       <button type="button" onClick={() => markPaid.mutate(item.id)}
@@ -168,7 +159,6 @@ export default function Receivables() {
         </div>
       )}
 
-      <BottomNav />
     </div>
   )
 }

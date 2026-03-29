@@ -23,7 +23,7 @@ export default function AddTransaction() {
   const [searchParams] = useSearchParams()
   const { companyId } = useAuth()
   const [type, setType] = useState<'income' | 'expense'>(
-    searchParams.get('type') as 'income' | 'expense' || 'expense'
+    (searchParams.get('type') as 'income' | 'expense') || 'expense'
   )
   const [amountCents, setAmountCents] = useState(0)
   const [currencyInput, setCurrencyInput] = useState<'USD' | 'KHR'>('USD')
@@ -80,7 +80,7 @@ export default function AddTransaction() {
   const khrEquiv = currencyInput === 'USD' ? Math.round(amountCents / 100 * KHR_RATE) : 0
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] pb-40 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
+    <div className="min-h-screen bg-[#F8F7FF] pb-56 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
         <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">
@@ -158,7 +158,7 @@ export default function AddTransaction() {
       </div>
 
       {/* Bottom bar — income/expense toggle + save */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4 space-y-3 z-30">
+      <div className="fixed bottom-24 left-0 right-0 bg-white border-t border-gray-100 p-4 space-y-3 z-30">
         <div className="flex gap-2">
           <button type="button" onClick={() => { haptic.light(); setType('income'); setCategoryId('') }}
             className={`flex-1 py-3 rounded-2xl font-semibold text-sm transition-all ${

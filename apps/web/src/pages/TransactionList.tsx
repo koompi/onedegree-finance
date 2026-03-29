@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { haptic, tg } from '../lib/telegram'
 import { useAuth } from '../store/auth'
-import BottomNav from '../components/BottomNav'
 import { ArrowLeftRight, DollarSign, Search, Pencil, Trash2 } from 'lucide-react'
 
 type Transaction = {
@@ -153,13 +152,12 @@ export default function TransactionList() {
       )}
 
       {/* Month nav at bottom */}
-      <div className="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex items-center justify-between px-6 py-2 z-20">
+      <div className="fixed bottom-20 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex items-center justify-between px-6 py-2 z-40">
         <button type="button" onClick={prevMonth} className="p-2 text-gray-400 active:text-gray-600 text-lg">‹</button>
         <span className="font-semibold text-gray-700 text-sm">{month}</span>
         <button type="button" onClick={nextMonth} className="p-2 text-gray-400 active:text-gray-600 text-lg">›</button>
       </div>
 
-      <BottomNav />
     </div>
   )
 }

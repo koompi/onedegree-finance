@@ -5,7 +5,6 @@ import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { tg, haptic } from '../lib/telegram'
 import CompanySwitcher from '../components/CompanySwitcher'
-import BottomNav from '../components/BottomNav'
 import { TrendingUp, TrendingDown, AlertCircle, Lightbulb, Plus, Minus, WifiOff } from 'lucide-react'
 
 const KHR_RATE = 4100
@@ -84,7 +83,7 @@ export default function Dashboard() {
   const marginColor = profitMargin >= 20 ? 'text-emerald-600' : profitMargin >= 10 ? 'text-amber-600' : 'text-rose-600'
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] pb-24 animate-fadeIn">
+    <div className="min-h-screen bg-[#F8F7FF] pb-48 animate-fadeIn">
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 pb-3" style={{ paddingTop: `${safeTop + 12}px` }}>
         <div className="flex items-center justify-between">
@@ -229,7 +228,7 @@ export default function Dashboard() {
       </div>
 
       {/* FAB — split income/expense */}
-      <div className="fixed bottom-20 left-0 right-0 px-6 flex gap-3 z-40">
+      <div className="fixed bottom-24 left-0 right-0 px-6 flex gap-3 z-40">
         <button type="button"
           onClick={() => { haptic.medium(); navigate('/transaction/new?type=income') }}
           className="flex-1 bg-emerald-600 text-white py-3.5 rounded-2xl font-semibold text-sm shadow-lg flex items-center justify-center gap-2 active:opacity-80">
@@ -242,7 +241,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      <BottomNav />
     </div>
   )
 }
