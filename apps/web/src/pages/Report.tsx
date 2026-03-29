@@ -61,7 +61,7 @@ export default function Report() {
   )
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] pb-20 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
+    <div className="min-h-screen bg-[#F8F7FF] pb-32 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
         <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">Report</h1>
@@ -72,11 +72,7 @@ export default function Report() {
         )}
       </div>
 
-      <div className="flex items-center justify-between px-4 mb-4">
-        <button type="button" onClick={prevMonth} className="p-2 text-gray-400 active:text-gray-600">&larr;</button>
-        <span className="font-semibold text-gray-800">{month}</span>
-        <button type="button" onClick={nextMonth} className="p-2 text-gray-400 active:text-gray-600">&rarr;</button>
-      </div>
+
 
       {isLoading ? (
         <div className="px-4 space-y-4">
@@ -177,6 +173,13 @@ export default function Report() {
           </div>
         </div>
       ) : null}
+
+      {/* Month nav at bottom */}
+      <div className="fixed bottom-16 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex items-center justify-between px-6 py-2 z-20">
+        <button type="button" onClick={prevMonth} className="p-2 text-gray-400 active:text-gray-600 text-lg">‹</button>
+        <span className="font-semibold text-gray-700 text-sm">{month}</span>
+        <button type="button" onClick={nextMonth} className="p-2 text-gray-400 active:text-gray-600 text-lg">›</button>
+      </div>
 
       <BottomNav />
     </div>
