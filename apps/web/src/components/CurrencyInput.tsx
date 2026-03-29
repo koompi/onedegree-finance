@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 interface Props {
   value?: number
@@ -10,25 +10,22 @@ const KHR_RATE = 4100
 export default function CurrencyInput({ onChange }: Props) {
   const [currency, setCurrency] = useState<'USD' | 'KHR'>('USD')
   const [raw, setRaw] = useState('')
-  const [open, setOpen] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
-  const press = (key: string) => {
-    let next = raw
-    if (key === 'DEL') {
-      next = raw.slice(0, -1)
-    } else if (key === '.') {
-      if (currency === 'KHR') return
-      if (raw.includes('.')) return
-      next = (raw || '0') + '.'
-    } else {
-      if (raw.includes('.') && currency === 'USD') {
-        const parts = raw.split('.')
-        if (parts[1].length >= 2) return
-      }
-      next = raw === '0' ? key : raw + key
+  const handleChange = (v: string) => {
+    // Strip anything that's not digit or dot
+    let cleaned = v.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1')
+    // Max 2 decimal places for USD
+    if (currency === 'USD' && cleaned.includes('.')) {
+      const [int, dec] = cleaned.split('.')
+      cleaned = int + '.' + dec.slice(0, 2)
     }
-    setRaw(next)
-    const num = parseFloat(next) || 0
+    // No decimals for KHR
+    if (currency === 'KHR') {
+      cleaned = cleaned.replace('.', '')
+    }
+    setRaw(cleaned)
+    const num = parseFloat(cleaned) || 0
     const cents = currency === 'USD' ? Math.round(num * 100) : Math.round((num / KHR_RATE) * 100)
     onChange(cents, currency)
   }
@@ -47,62 +44,34 @@ export default function CurrencyInput({ onChange }: Props) {
     setCurrency(next)
     setRaw(newRaw)
     onChange(cents, next)
+    // Keep focus on input
+    setTimeout(() => inputRef.current?.focus(), 50)
   }
 
-  const display = raw || (currency === 'USD' ? '0.00' : '0')
-  const isEmpty = !raw
-
-  const keys = [
-    ['1', '2', '3'],
-    ['4', '5', '6'],
-    ['7', '8', '9'],
-    [currency === 'USD' ? '.' : '', '0', 'DEL'],
-  ]
-
   return (
-    <div className="space-y-3">
-      {/* Tappable amount display */}
+    <div className="flex items-center gap-3">
+      <input
+        ref={inputRef}
+        type="text"
+        inputMode={currency === 'KHR' ? 'numeric' : 'decimal'}
+        pattern="[0-9]*"
+        value={raw}
+        onChange={e => handleChange(e.target.value)}
+        placeholder={currency === 'USD' ? '0.00' : '0'}
+        autoComplete="off"
+        autoCorrect="off"
+        className="flex-1 text-4xl font-bold text-gray-900 bg-transparent outline-none text-right placeholder-gray-300"
+        style={{ caretColor: '#6366f1' }}
+      />
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
-        className="w-full flex items-center gap-3"
+        onClick={toggleCurrency}
+        className={`px-4 py-2 rounded-xl font-mono text-sm font-bold transition-colors shrink-0 ${
+          currency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-amber-500 text-white'
+        }`}
       >
-        <span className={`flex-1 text-4xl font-bold text-right pr-2 tracking-wide ${isEmpty ? 'text-gray-300' : 'text-gray-900'}`}>
-          {display}
-        </span>
-        <span
-          onClick={e => { e.stopPropagation(); toggleCurrency() }}
-          className={`px-4 py-2 rounded-xl font-mono text-sm font-bold transition-colors cursor-pointer ${
-            currency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-amber-500 text-white'
-          }`}
-        >
-          {currency}
-        </span>
-        <span className="text-gray-400 text-sm">{open ? '▲' : '▼'}</span>
+        {currency}
       </button>
-
-      {/* Keypad — shown only when open */}
-      {open && (
-        <div className="grid grid-cols-3 gap-2">
-          {keys.flat().map((key, i) => {
-            if (key === '') return <div key={i} />
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => press(key)}
-                className={`py-4 rounded-2xl text-xl font-semibold select-none transition-colors ${
-                  key === 'DEL'
-                    ? 'bg-gray-100 text-gray-500 text-base active:bg-gray-200'
-                    : 'bg-gray-50 text-gray-800 active:bg-gray-100'
-                }`}
-              >
-                {key === 'DEL' ? '⌫' : key}
-              </button>
-            )
-          })}
-        </div>
-      )}
     </div>
   )
 }
