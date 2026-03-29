@@ -45,7 +45,21 @@ export default function CurrencyInput({ onChange }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="w-full">
+      {/* Currency toggle row */}
+      <div className="flex justify-end mb-2">
+        <button
+          type="button"
+          onClick={toggleCurrency}
+          className={`px-4 py-1.5 rounded-xl font-mono text-sm font-bold transition-colors ${
+            currency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-amber-500 text-white'
+          }`}
+        >
+          {currency}
+        </button>
+      </div>
+
+      {/* Full-width amount input — no flex sibling to cause shift */}
       <input
         ref={inputRef}
         type="text"
@@ -56,18 +70,9 @@ export default function CurrencyInput({ onChange }: Props) {
         autoComplete="off"
         autoCorrect="off"
         spellCheck={false}
-        className="flex-1 text-4xl font-bold text-gray-900 bg-transparent outline-none text-right placeholder-gray-300"
+        className="w-full text-5xl font-bold text-gray-900 bg-transparent outline-none text-center placeholder-gray-300"
         style={{ caretColor: '#6366f1' }}
       />
-      <button
-        type="button"
-        onClick={toggleCurrency}
-        className={`px-4 py-2 rounded-xl font-mono text-sm font-bold transition-colors shrink-0 ${
-          currency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-amber-500 text-white'
-        }`}
-      >
-        {currency}
-      </button>
     </div>
   )
 }
