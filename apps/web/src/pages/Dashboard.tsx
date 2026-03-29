@@ -2,17 +2,15 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
+import { tg } from '../lib/telegram'
 import ProfitPulse from '../components/ProfitPulse'
 import CompanySwitcher from '../components/CompanySwitcher'
 import BottomNav from '../components/BottomNav'
 import { TrendingUp, TrendingDown, BarChart2 } from 'lucide-react'
-import { tg } from '../lib/telegram'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { companyId } = useAuth()
-  const now = new Date()
-  const monthLabel = new Intl.DateTimeFormat('km-KH', { month: 'long', year: 'numeric' }).format(now)
   const safeTop = Math.max((tg as any).safeAreaInset?.top ?? 0, (tg as any).contentSafeAreaInset?.top ?? 0)
 
   const { data: report, isLoading } = useQuery({
@@ -36,11 +34,20 @@ export default function Dashboard() {
   const recCount = receivables?.length || 0
   const payCount = payables?.length || 0
 
+  // Khmer month label
+  let monthLabel = ''
+  try {
+    monthLabel = new Intl.DateTimeFormat('km-KH', { month: 'long', year: 'numeric' }).format(new Date())
+  } catch {
+    const now = new Date()
+    monthLabel = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  }
+
   return (
-    <div className="min-h-screen pb-36 bg-[#F8F7FF] animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
-      <div className="p-4">
+    <div className="min-h-screen pb-36 bg-[#F8F7FF] animate-fadeIn">
+      <div className="sticky top-0 z-30 bg-[#F8F7FF] p-4" style={{ paddingTop: `${safeTop + 16}px` }}>
         <CompanySwitcher />
-        <p className="text-xs text-gray-400 mt-1 font-medium">{monthLabel}</p>
+        <p className="text-sm text-gray-500 mt-1">{monthLabel}</p>
       </div>
 
       {isLoading ? (
@@ -86,11 +93,8 @@ export default function Dashboard() {
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => navigate('/receivables')}
-              className="bg-white rounded-2xl p-4 text-left shadow-sm active:scale-[0.98] transition-all duration-200"
-            >
+            <button type="button" onClick={() => navigate('/receivables')}
+              className="bg-white rounded-2xl p-4 text-left shadow-sm active:scale-[0.98] transition-all duration-200">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-xs text-amber-600 uppercase tracking-wide">គេជំពាក់ខ្ញុំ</p>
                 {recCount > 0 && (
@@ -102,11 +106,8 @@ export default function Dashboard() {
                 <span className="text-gray-300">&rarr;</span>
               </div>
             </button>
-            <button
-              type="button"
-              onClick={() => navigate('/payables')}
-              className="bg-white rounded-2xl p-4 text-left shadow-sm active:scale-[0.98] transition-all duration-200"
-            >
+            <button type="button" onClick={() => navigate('/payables')}
+              className="bg-white rounded-2xl p-4 text-left shadow-sm active:scale-[0.98] transition-all duration-200">
               <div className="flex items-center justify-between mb-1">
                 <p className="text-xs text-violet-600 uppercase tracking-wide">ខ្ញុំជំពាក់គេ</p>
                 {payCount > 0 && (
@@ -126,23 +127,13 @@ export default function Dashboard() {
             <BarChart2 size={48} className="text-gray-300" />
           </div>
           <p className="text-lg font-semibold text-gray-700 mb-1">មិនទាន់មានប្រតិបត្តិការ</p>
-          <p className="text-sm text-gray-400 mb-5">ចុចប៊ូតុង + ខាងក្រោមដើម្បីចាប់ផ្ដើម</p>
-          <button type="button" onClick={() => navigate('/transaction/new')}
-            className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium active:scale-[0.98] transition-all shadow-sm">
-            + បន្ថែមប្រតិបត្តិការ
-          </button>
+          <p className="text-sm text-gray-400">ចុចប៊ូតុង + ខាងក្រោមដើម្បីចាប់ផ្ដើម</p>
         </div>
       )}
 
-      {/* FAB — New Transaction */}
-      <button
-        type="button"
-        onClick={() => navigate('/transaction/new')}
+      <button type="button" onClick={() => navigate('/transaction/new')}
         className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 bg-indigo-600 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center text-2xl font-light active:scale-95 transition-all duration-200 hover:bg-indigo-700"
-        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        +
-      </button>
+        style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>+</button>
 
       <BottomNav />
     </div>

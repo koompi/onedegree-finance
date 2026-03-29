@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { tg, haptic } from '../lib/telegram'
+import { tg } from '../lib/telegram'
 import { useAuth } from '../store/auth'
 import BottomNav from '../components/BottomNav'
 import { TrendingUp, TrendingDown, Share2 } from 'lucide-react'
@@ -24,7 +24,6 @@ export default function Report() {
     const d = new Date(month + '-01'); d.setMonth(d.getMonth() - 1)
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
-
   const nextMonth = () => {
     const d = new Date(month + '-01'); d.setMonth(d.getMonth() + 1)
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
@@ -32,13 +31,11 @@ export default function Report() {
 
   const shareReport = () => {
     if (!report) return
-    const text = `1° OneDegree Finance ${month}\nចំណូល: $${(report.total_income_cents/100).toFixed(2)}\nចំណាយ: $${(report.total_expense_cents/100).toFixed(2)}\nចំណេញ: $${(report.net_profit_cents/100).toFixed(2)}`
-    if (navigator.share) {
-      navigator.share({ title: `OneDegree Finance ${month}`, text }).catch(() => {})
-    } else {
-      window.open(`https://t.me/share/url?url=${encodeURIComponent('https://t.me/Onedegreefinance_bot')}&text=${encodeURIComponent(text)}`)
-    }
-    haptic.success()
+    const income = (report.total_income_cents / 100).toFixed(2)
+    const expense = (report.total_expense_cents / 100).toFixed(2)
+    const profit = (report.net_profit_cents / 100).toFixed(2)
+    const text = `1° OneDegree Finance ${month}: ចំណូល $${income} | ចំណាយ $${expense} | ចំណេញ $${profit}`
+    window.open(`https://t.me/share/url?url=${encodeURIComponent(text)}`)
   }
 
   const maxAmount = Math.max(
@@ -142,11 +139,11 @@ export default function Report() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <p className="text-xs text-gray-400 font-medium mb-1">គេជំពាក់ខ្ញុំ</p>
-              <p className="text-lg font-bold text-amber-600">${((report.receivables_total_cents || 0) / 100).toFixed(2)}</p>
+              <p className="text-lg font-bold text-amber-600">${(report.receivables_total_cents / 100).toFixed(2)}</p>
             </div>
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <p className="text-xs text-gray-400 font-medium mb-1">ខ្ញុំជំពាក់គេ</p>
-              <p className="text-lg font-bold text-violet-600">${((report.payables_total_cents || 0) / 100).toFixed(2)}</p>
+              <p className="text-lg font-bold text-violet-600">${(report.payables_total_cents / 100).toFixed(2)}</p>
             </div>
           </div>
         </div>
