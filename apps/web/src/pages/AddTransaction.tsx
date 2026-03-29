@@ -121,11 +121,11 @@ export default function AddTransaction() {
         </div>
 
         <button type="button" onClick={() => mutation.mutate()}
-          disabled={!amountCents || mutation.isPending}
+          disabled={mutation.isPending}
           className={`w-full py-4 rounded-2xl font-semibold text-white disabled:opacity-40 transition-all duration-200 active:scale-[0.98] shadow-sm ${
             type === 'income' ? 'bg-emerald-600' : 'bg-rose-600'
           }`}>
-          {mutation.isPending ? 'កំពុងរក្សាទុក...' : 'រក្សាទុក'}
+          {mutation.isPending ? 'កំពុងរក្សាទុក...' : !amountCents ? 'បញ្ចូលចំនួនទឹកប្រាក់' : 'រក្សាទុក'}
         </button>
       </div>
     </div>
