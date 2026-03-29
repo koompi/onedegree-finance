@@ -60,6 +60,7 @@ export default function CurrencyInput({ onChange }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Amount display */}
       <div className="flex items-center gap-3">
         <span className={`flex-1 text-4xl font-bold text-right pr-2 tracking-wide ${isEmpty ? 'text-gray-300' : 'text-gray-900'}`}>
           {display}
@@ -67,7 +68,7 @@ export default function CurrencyInput({ onChange }: Props) {
         <button
           type="button"
           onClick={toggleCurrency}
-          className={`px-4 py-2 rounded-xl font-mono text-sm font-bold transition-all duration-200 active:scale-95 shadow-sm ${
+          className={`px-4 py-2 rounded-xl font-mono text-sm font-bold transition-colors ${
             currency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-amber-500 text-white'
           }`}
         >
@@ -75,6 +76,7 @@ export default function CurrencyInput({ onChange }: Props) {
         </button>
       </div>
 
+      {/* Keypad — no scale animation to prevent layout shift */}
       <div className="grid grid-cols-3 gap-2">
         {keys.flat().map((key, i) => {
           if (key === '') return <div key={i} />
@@ -83,10 +85,10 @@ export default function CurrencyInput({ onChange }: Props) {
               key={i}
               type="button"
               onClick={() => press(key)}
-              className={`py-4 rounded-2xl text-xl font-semibold transition-all duration-100 active:scale-95 select-none ${
+              className={`py-4 rounded-2xl text-xl font-semibold select-none transition-colors ${
                 key === 'DEL'
-                  ? 'bg-gray-100 text-gray-500 text-base'
-                  : 'bg-gray-50 text-gray-800 active:bg-gray-200'
+                  ? 'bg-gray-100 text-gray-500 text-base active:bg-gray-200'
+                  : 'bg-gray-50 text-gray-800 active:bg-gray-100'
               }`}
             >
               {key === 'DEL' ? '⌫' : key}
