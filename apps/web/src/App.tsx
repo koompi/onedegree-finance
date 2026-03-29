@@ -10,6 +10,7 @@ import Receivables from './pages/Receivables'
 import Payables from './pages/Payables'
 import Report from './pages/Report'
 import Settings from './pages/Settings'
+import Accounts from './pages/Accounts'
 import Onboarding from './pages/Onboarding'
 import OfflineBanner from './components/OfflineBanner'
 
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="/payables" element={<Payables />} />
               <Route path="/report" element={<Report />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/accounts" element={<Accounts />} />
               <Route path="*" element={<Navigate to="/" />} />
             </>
           )}
