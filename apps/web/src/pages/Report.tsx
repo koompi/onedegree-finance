@@ -7,6 +7,9 @@ import { useAuth } from '../store/auth'
 import BottomNav from '../components/BottomNav'
 import { TrendingUp, TrendingDown, Share2 } from 'lucide-react'
 
+const KHR_RATE = 4100
+function fmtKHR(cents: number) { return `${Math.round(cents / 100 * KHR_RATE).toLocaleString()}៛` }
+
 export default function Report() {
   const navigate = useNavigate()
   const { companyId } = useAuth()
@@ -45,6 +48,11 @@ export default function Report() {
       navigator.clipboard.writeText(text)
     }
   }
+
+  const profitMargin = (report?.total_income_cents || 0) > 0
+    ? Math.round(((report?.net_profit_cents || 0) / report.total_income_cents) * 100)
+    : 0
+  const marginColor = profitMargin >= 20 ? 'text-emerald-600' : profitMargin >= 10 ? 'text-amber-600' : 'text-rose-600'
 
   const maxAmount = Math.max(
     ...(report?.income_by_category?.map((c: { amount_cents: number }) => c.amount_cents) || [0]),
@@ -85,6 +93,8 @@ export default function Report() {
             <p className={`text-3xl font-bold mt-1 ${report.net_profit_cents >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               ${(report.net_profit_cents / 100).toFixed(2)}
             </p>
+            <p className="text-xs text-gray-400 mt-1">{fmtKHR(report.net_profit_cents)}</p>
+            <p className={`text-sm font-bold mt-2 ${marginColor}`}>Margin: {profitMargin}%</p>
             {(() => {
               const margin = report.total_income_cents > 0
                 ? Math.round((report.net_profit_cents / report.total_income_cents) * 100)

@@ -129,6 +129,12 @@ export default function Receivables() {
                 </div>
                 <div className="flex flex-col gap-1 items-end shrink-0">
                   {item.status !== 'paid' && (
+                    <button type="button" onClick={() => {
+                      const msg = `សួស្ដី ${item.contact_name}, សូមជូនដំណឹងថា អ្នកនៅជំពាក់ $${(item.amount_cents/100).toFixed(2)}។ សូមទូទាត់នៅពេលអាច។ អរគុណ! 🙏`
+                      window.open(`https://t.me/share/url?text=${encodeURIComponent(msg)}`)
+                    }} className="bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg text-xs font-medium active:opacity-70">📩</button>
+                  )}
+                  {item.status !== 'paid' && (
                     <>
                       <button type="button" onClick={() => markPaid.mutate(item.id)}
                         className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-medium active:opacity-70 shadow-sm">
