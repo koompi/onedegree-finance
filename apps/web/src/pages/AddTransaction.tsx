@@ -71,7 +71,7 @@ export default function AddTransaction() {
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <CurrencyInput value={amountCents} onChange={(cents, cur) => { setAmountCents(cents); setCurrencyInput(cur) }} />
+          <CurrencyInput onChange={(cents, cur) => { setAmountCents(cents); setCurrencyInput(cur) }} />
         </div>
 
         {filteredCategories.length > 0 && (
