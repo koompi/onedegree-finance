@@ -45,7 +45,7 @@ transactions.get('/:companyId/transactions', async (c) => {
 })
 
 const TxBody = z.object({
-  account_id: z.string().uuid(),
+  account_id: z.string().uuid().optional(),
   category_id: z.string().uuid().optional(),
   type: z.enum(['income', 'expense', 'transfer']),
   amount_cents: z.number().int().positive(),
@@ -71,7 +71,7 @@ transactions.post('/:companyId/transactions', zValidator('json', TxBody), async 
        body.amount_khr || null, body.exchange_rate || null, body.currency_input, body.note || null, body.occurred_at]
     )
     const delta = body.type === 'income' ? body.amount_cents : -body.amount_cents
-    await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, body.account_id])
+    if (body.account_id) await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, body.account_id])
     await client.query('COMMIT')
     return c.json(result.rows[0], 201)
   } catch (e) {
@@ -106,3 +106,71 @@ transactions.delete('/:companyId/transactions/:id', async (c) => {
 })
 
 export default transactions
+
+// GET single transaction (for EditTransaction pre-fill)
+transactions.get('/:companyId/transactions/:id', async (c) => {
+  const userId = c.get('userId')
+  const { companyId, id } = c.req.param()
+  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+  const result = await pool.query(
+    `SELECT t.*, c.name as category_name, c.name_km as category_name_km, c.icon as category_icon,
+            a.name as account_name
+     FROM transactions t
+     LEFT JOIN categories c ON t.category_id = c.id
+     LEFT JOIN accounts a ON t.account_id = a.id
+     WHERE t.id = $1 AND t.company_id = $2`,
+    [id, companyId]
+  )
+  if (result.rows.length === 0) return c.json({ error: 'Not found' }, 404)
+  return c.json(result.rows[0])
+})
+
+const PatchTxBody = z.object({
+  account_id: z.string().uuid().optional(),
+  category_id: z.string().uuid().optional(),
+  type: z.enum(['income', 'expense', 'transfer']).optional(),
+  amount_cents: z.number().int().positive().optional(),
+  currency_input: z.enum(['USD', 'KHR']).optional(),
+  note: z.string().max(500).optional().nullable(),
+})
+
+// PATCH transaction (for EditTransaction save)
+transactions.patch('/:companyId/transactions/:id', zValidator('json', PatchTxBody), async (c) => {
+  const userId = c.get('userId')
+  const { companyId, id } = c.req.param()
+  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+  const body = c.req.valid('json')
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const existing = await client.query('SELECT * FROM transactions WHERE id = $1 AND company_id = $2', [id, companyId])
+    if (existing.rows.length === 0) { await client.query('ROLLBACK'); return c.json({ error: 'Not found' }, 404) }
+    const old = existing.rows[0]
+    // Reverse old balance effect
+    const oldDelta = old.type === 'income' ? -old.amount_cents : old.amount_cents
+    await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [oldDelta, old.account_id])
+    // Apply updates
+    const newType = body.type ?? old.type
+    const newAmount = body.amount_cents ?? old.amount_cents
+    const newAccountId = body.account_id ?? old.account_id
+    const result = await client.query(
+      `UPDATE transactions SET
+        account_id = $1, category_id = $2, type = $3, amount_cents = $4,
+        currency_input = $5, note = $6, updated_at = NOW()
+       WHERE id = $7 AND company_id = $8 RETURNING *`,
+      [newAccountId, body.category_id ?? old.category_id, newType, newAmount,
+       body.currency_input ?? old.currency_input, body.note !== undefined ? body.note : old.note,
+       id, companyId]
+    )
+    // Apply new balance effect
+    const newDelta = newType === 'income' ? newAmount : -newAmount
+    await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [newDelta, newAccountId])
+    await client.query('COMMIT')
+    return c.json(result.rows[0])
+  } catch (e) {
+    await client.query('ROLLBACK')
+    throw e
+  } finally {
+    client.release()
+  }
+})
