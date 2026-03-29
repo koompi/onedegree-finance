@@ -1,10 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import CurrencyInput from '../components/CurrencyInput'
 import { haptic } from '../lib/telegram'
+
+type Account = { id: string; name: string }
+type Category = { id: string; name_km: string; name: string; icon: string; type: string }
 
 export default function AddTransaction() {
   const navigate = useNavigate()
@@ -18,21 +21,26 @@ export default function AddTransaction() {
   const [accountId, setAccountId] = useState('')
   const [note, setNote] = useState('')
 
-  const { data: categories } = useQuery({
+  const { data: categories } = useQuery<Category[]>({
     queryKey: ['categories', companyId],
     queryFn: () => api.get(`/companies/${companyId}/categories`).then(r => r.data),
     enabled: !!companyId,
   })
 
-  const { data: accounts } = useQuery({
+  const { data: accounts } = useQuery<Account[]>({
     queryKey: ['accounts', companyId],
     queryFn: () => api.get(`/companies/${companyId}/accounts`).then(r => r.data),
     enabled: !!companyId,
   })
 
+  // Auto-select first account
+  useEffect(() => {
+    if (accounts?.length && !accountId) setAccountId(accounts[0].id)
+  }, [accounts])
+
   const mutation = useMutation({
     mutationFn: () => api.post(`/companies/${companyId}/transactions`, {
-      account_id: accountId,
+      account_id: accountId || undefined,
       category_id: categoryId || undefined,
       type,
       amount_cents: amountCents,
@@ -49,10 +57,10 @@ export default function AddTransaction() {
     onError: () => haptic.error(),
   })
 
-  const filteredCategories = categories?.filter((c: { type: string }) => c.type === type) || []
+  const filteredCategories = categories?.filter(c => c.type === type) || []
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] pb-4 animate-fadeIn">
+    <div className="min-h-screen bg-[#F8F7FF] pb-8 animate-fadeIn">
       <div className="flex items-center p-4">
         <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">{type === 'income' ? 'ចំណូល' : 'ចំណាយ'}</h1>
@@ -60,14 +68,14 @@ export default function AddTransaction() {
 
       <div className="px-4 space-y-4">
         <div className="flex gap-2">
-          <button type="button" onClick={() => setType('income')}
+          <button type="button" onClick={() => { setType('income'); setCategoryId('') }}
             className={`flex-1 py-3 rounded-2xl font-medium text-sm transition-all duration-200 ${
               type === 'income' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white text-gray-500 shadow-sm'
-            }`}>ចំណូល</button>
-          <button type="button" onClick={() => setType('expense')}
+            }`}>+ ចំណូល</button>
+          <button type="button" onClick={() => { setType('expense'); setCategoryId('') }}
             className={`flex-1 py-3 rounded-2xl font-medium text-sm transition-all duration-200 ${
               type === 'expense' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white text-gray-500 shadow-sm'
-            }`}>ចំណាយ</button>
+            }`}>- ចំណាយ</button>
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -78,8 +86,8 @@ export default function AddTransaction() {
           <div className="bg-white rounded-2xl p-4 shadow-sm">
             <p className="text-sm font-semibold text-gray-800 mb-3">ប្រភេទ</p>
             <div className="grid grid-cols-4 gap-2">
-              {filteredCategories.map((c: { id: string; name_km: string; name: string; icon: string }) => (
-                <button key={c.id} type="button" onClick={() => setCategoryId(c.id)}
+              {filteredCategories.map(c => (
+                <button key={c.id} type="button" onClick={() => setCategoryId(c.id === categoryId ? '' : c.id)}
                   className={`p-3 rounded-2xl text-center border-2 transition-all duration-200 ${
                     categoryId === c.id ? 'border-indigo-500 bg-indigo-50' : 'border-transparent bg-gray-50'
                   }`}>
@@ -91,11 +99,11 @@ export default function AddTransaction() {
           </div>
         )}
 
-        {accounts?.length > 0 && (
+        {accounts && accounts.length > 0 && (
           <div className="bg-white rounded-2xl p-4 shadow-sm">
             <p className="text-sm font-semibold text-gray-800 mb-3">គណនី</p>
             <div className="flex gap-2 flex-wrap">
-              {accounts.map((a: { id: string; name: string }) => (
+              {accounts.map(a => (
                 <button key={a.id} type="button" onClick={() => setAccountId(a.id)}
                   className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                     accountId === a.id ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-50 text-gray-600'
@@ -112,7 +120,7 @@ export default function AddTransaction() {
         </div>
 
         <button type="button" onClick={() => mutation.mutate()}
-          disabled={!amountCents || !accountId || mutation.isPending}
+          disabled={!amountCents || mutation.isPending}
           className={`w-full py-4 rounded-2xl font-semibold text-white disabled:opacity-40 transition-all duration-200 active:scale-[0.98] shadow-sm ${
             type === 'income' ? 'bg-emerald-600' : 'bg-rose-600'
           }`}>
