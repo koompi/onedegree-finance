@@ -27,6 +27,13 @@ export default function Settings() {
   const [catNameKm, setCatNameKm] = useState('')
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('expense')
 
+  // Preferences stored in localStorage
+  const [lang, setLang] = useState(() => localStorage.getItem('od-lang') || 'km')
+  const [currency, setCurrency] = useState(() => localStorage.getItem('od-currency') || 'USD')
+
+  const toggleLang = (v: string) => { setLang(v); localStorage.setItem('od-lang', v); haptic.light() }
+  const toggleCurrency = (v: string) => { setCurrency(v); localStorage.setItem('od-currency', v); haptic.light() }
+
   const { data: companies } = useQuery({
     queryKey: ['companies'],
     queryFn: () => api.get('/companies').then(r => r.data),
@@ -90,6 +97,35 @@ export default function Settings() {
 
       <div className="px-4 space-y-4">
 
+        {/* Language & Currency Preferences */}
+        <div className="bg-white rounded-2xl p-4 shadow-sm space-y-4">
+          <p className="font-semibold text-gray-900">ចំណូលចិត្ត / Preferences</p>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-2 block">ភាសា / Language</label>
+            <div className="flex gap-2">
+              {[{ v: 'km', l: '🇰🇭 ខ្មែរ' }, { v: 'en', l: '🇺🇸 English' }].map(opt => (
+                <button key={opt.v} type="button" onClick={() => toggleLang(opt.v)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    lang === opt.v ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-50 text-gray-500'
+                  }`}>{opt.l}</button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-500 mb-2 block">រូបិយប័ណ្ណ / Currency</label>
+            <div className="flex gap-2">
+              {[{ v: 'USD', l: '$ USD' }, { v: 'KHR', l: '៛ KHR' }].map(opt => (
+                <button key={opt.v} type="button" onClick={() => toggleCurrency(opt.v)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                    currency === opt.v ? 'bg-indigo-600 text-white shadow-sm' : 'bg-gray-50 text-gray-500'
+                  }`}>{opt.l}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Categories */}
         <div className="bg-white rounded-2xl p-4 shadow-sm">
           <div className="flex items-center justify-between mb-3">
@@ -129,7 +165,7 @@ export default function Settings() {
               </div>
 
               <div>
-                <p className="text-xs text-gray-500 mb-2">រើសសញ្ញា</p>
+                <p className="text-xs text-gray-500 mb-2">Icon</p>
                 <div className="flex flex-wrap gap-2">
                   {EMOJIS.map(e => (
                     <button key={e} type="button" onClick={() => setCatEmoji(e)}

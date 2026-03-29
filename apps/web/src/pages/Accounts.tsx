@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import { haptic, tg } from '../lib/telegram'
+import BottomNav from '../components/BottomNav'
+import { Wallet } from 'lucide-react'
 
 export default function Accounts() {
   const navigate = useNavigate()
@@ -43,59 +45,72 @@ export default function Accounts() {
   }
 
   return (
-    <div className="min-h-screen pb-4" style={{ paddingTop: `${safeTop}px` }}>
+    <div className="min-h-screen bg-[#F8F7FF] pb-20 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
-        <button onClick={() => navigate('/')} className="text-2xl mr-3">&larr;</button>
-        <h1 className="text-xl font-bold flex-1">គណនី / Accounts</h1>
-        <button onClick={() => setShowAdd(!showAdd)} className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm">+ បន្ថែម</button>
+        <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
+        <h1 className="text-xl font-bold text-gray-900 flex-1">គណនី / Accounts</h1>
+        <button type="button" onClick={() => setShowAdd(!showAdd)} className="bg-indigo-600 text-white px-3 py-2 rounded-xl text-sm font-medium active:scale-[0.98] transition-all shadow-sm">+ បន្ថែម</button>
       </div>
 
       {showAdd && (
-        <div className="mx-4 mb-4 p-4 bg-gray-50 rounded-xl space-y-3">
+        <div className="mx-4 mb-4 p-4 bg-white rounded-2xl shadow-sm space-y-3">
           <input value={name} onChange={e => setName(e.target.value)} placeholder="ឈ្មោះគណនី"
-            className="w-full p-2 rounded-lg border border-gray-200" />
+            autoComplete="off" className="w-full p-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900 placeholder-gray-400 text-sm" />
           <div>
             <label className="text-xs text-gray-500 mb-1 block">ប្រភេទ / Type</label>
             <div className="flex gap-2">
               {(['cash', 'bank', 'mobile_money'] as const).map(t => (
-                <button key={t} onClick={() => setType(t)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-medium ${type === t ? 'bg-blue-500 text-white' : 'bg-white border border-gray-200'}`}>
+                <button key={t} type="button" onClick={() => setType(t)}
+                  className={`flex-1 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 ${type === t ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-500'}`}>
                   {typeLabels[t]}
                 </button>
               ))}
             </div>
           </div>
-          <input value={balance} onChange={e => setBalance(e.target.value)} placeholder="សមតុល្យដំបូង ($)" type="number"
-            className="w-full p-2 rounded-lg border border-gray-200" />
-          <button onClick={() => addMutation.mutate()} disabled={!name || addMutation.isPending}
-            className="w-full bg-blue-500 text-white py-2 rounded-lg disabled:opacity-50">
+          <input value={balance} onChange={e => setBalance(e.target.value)} placeholder="សមតុល្យដំបូង ($)" type="number" inputMode="decimal"
+            autoComplete="off" className="w-full p-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-gray-900 placeholder-gray-400 text-sm" />
+          <button type="button" onClick={() => addMutation.mutate()} disabled={!name || addMutation.isPending}
+            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold text-sm disabled:opacity-40 active:scale-[0.98] transition-all shadow-sm">
             {addMutation.isPending ? 'កំពុងរក្សាទុក...' : 'រក្សាទុក'}
           </button>
         </div>
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" /></div>
+        <div className="px-4 space-y-2">
+          {[1, 2, 3].map(i => <div key={i} className="h-[72px] bg-white rounded-2xl shadow-sm animate-pulse" />)}
+        </div>
       ) : !accounts?.length ? (
-        <p className="text-center text-gray-400 py-12">គ្មានគណនី</p>
+        <div className="text-center py-16">
+          <div className="flex justify-center mb-3">
+            <Wallet size={40} className="text-gray-300" />
+          </div>
+          <p className="text-gray-400 mb-4">គ្មានគណនី</p>
+          <button type="button" onClick={() => setShowAdd(true)}
+            className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium active:scale-[0.98] transition-all shadow-sm">
+            + បន្ថែមគណនី
+          </button>
+        </div>
       ) : (
         <div className="px-4 space-y-2">
           {accounts.map((a: { id: string; name: string; type: string; balance_cents?: number }) => (
-            <div key={a.id} className="flex items-center p-4 bg-white rounded-xl border border-gray-100">
+            <div key={a.id} className="flex items-center p-4 bg-white rounded-2xl shadow-sm">
               <span className="text-2xl mr-3">
                 {a.type === 'bank' ? '🏦' : a.type === 'mobile_money' ? '📱' : '💵'}
               </span>
               <div className="flex-1">
-                <p className="font-medium">{a.name}</p>
+                <p className="font-medium text-gray-900">{a.name}</p>
                 <p className="text-xs text-gray-400">{typeLabels[a.type] || a.type}</p>
               </div>
-              <span className="font-bold text-lg">
+              <span className="font-bold text-lg text-gray-900">
                 ${((a.balance_cents || 0) / 100).toFixed(2)}
               </span>
             </div>
           ))}
         </div>
       )}
+
+      <BottomNav />
     </div>
   )
 }

@@ -1,12 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, ArrowLeftRight, BarChart2, ArrowDownLeft, Settings } from 'lucide-react'
+import { Home, ArrowLeftRight, BarChart2, HandCoins, Settings } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-const tabs: { path: string; icon: LucideIcon; label: string }[] = [
+const tabs: { path: string; matchPaths?: string[]; icon: LucideIcon; label: string }[] = [
   { path: '/', icon: Home, label: 'ដើម' },
   { path: '/transactions', icon: ArrowLeftRight, label: 'ប្រតិបត្តិការ' },
   { path: '/report', icon: BarChart2, label: 'របាយការណ៍' },
-  { path: '/receivables', icon: ArrowDownLeft, label: 'គេជំពាក់' },
+  { path: '/receivables', matchPaths: ['/receivables', '/payables'], icon: HandCoins, label: 'ជំពាក់' },
   { path: '/settings', icon: Settings, label: 'កំណត់' },
 ]
 
@@ -18,7 +18,8 @@ export default function BottomNav() {
     <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-100 flex justify-around pb-[env(safe-area-inset-bottom)] z-50"
       style={{ height: `calc(64px + env(safe-area-inset-bottom))` }}>
       {tabs.map(tab => {
-        const active = tab.path === '/' ? pathname === '/' : pathname.startsWith(tab.path)
+        const paths = tab.matchPaths || [tab.path]
+        const active = tab.path === '/' ? pathname === '/' : paths.some(p => pathname.startsWith(p))
         const Icon = tab.icon
         return (
           <button

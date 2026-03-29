@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
@@ -9,19 +9,25 @@ import { haptic, tg } from '../lib/telegram'
 type Account = { id: string; name: string }
 type Category = { id: string; name_km: string; name: string; icon: string; type: string }
 
-export default function AddTransaction() {
+export default function EditTransaction() {
   const navigate = useNavigate()
+  const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
-  const [searchParams] = useSearchParams()
   const { companyId } = useAuth()
-  const [type, setType] = useState<'income' | 'expense'>(searchParams.get('type') as 'income' | 'expense' || 'expense')
+  const [type, setType] = useState<'income' | 'expense'>('expense')
   const [amountCents, setAmountCents] = useState(0)
   const [currencyInput, setCurrencyInput] = useState<'USD' | 'KHR'>('USD')
   const [categoryId, setCategoryId] = useState('')
   const [accountId, setAccountId] = useState('')
   const [note, setNote] = useState('')
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const safeTop = Math.max((tg as any).safeAreaInset?.top ?? 0, (tg as any).contentSafeAreaInset?.top ?? 0)
+
+  const { data: transaction } = useQuery({
+    queryKey: ['transaction', companyId, id],
+    queryFn: () => api.get(`/companies/${companyId}/transactions/${id}`).then(r => r.data),
+    enabled: !!companyId && !!id,
+  })
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ['categories', companyId],
@@ -35,27 +41,31 @@ export default function AddTransaction() {
     enabled: !!companyId,
   })
 
-  // Auto-select first account
   useEffect(() => {
-    if (accounts?.length && !accountId) setAccountId(accounts[0].id)
-  }, [accounts])
+    if (transaction && !loaded) {
+      setType(transaction.type || 'expense')
+      setAmountCents(transaction.amount_cents || 0)
+      setCategoryId(transaction.category_id || '')
+      setAccountId(transaction.account_id || '')
+      setNote(transaction.note || '')
+      setLoaded(true)
+    }
+  }, [transaction, loaded])
 
   const mutation = useMutation({
-    mutationFn: () => api.post(`/companies/${companyId}/transactions`, {
+    mutationFn: () => api.patch(`/companies/${companyId}/transactions/${id}`, {
       account_id: accountId || undefined,
       category_id: categoryId || undefined,
       type,
       amount_cents: amountCents,
       currency_input: currencyInput,
       note: note || undefined,
-      occurred_at: new Date().toISOString(),
     }),
     onSuccess: () => {
       haptic.success()
-      queryClient.invalidateQueries({ queryKey: ['report'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
-      setShowSuccess(true)
-      setTimeout(() => navigate('/'), 800)
+      queryClient.invalidateQueries({ queryKey: ['report'] })
+      navigate(-1)
     },
     onError: () => haptic.error(),
   })
@@ -66,7 +76,7 @@ export default function AddTransaction() {
     <div className="min-h-screen bg-[#F8F7FF] pb-8 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
         <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
-        <h1 className="text-xl font-bold text-gray-900 flex-1">{type === 'income' ? 'ចំណូល' : 'ចំណាយ'}</h1>
+        <h1 className="text-xl font-bold text-gray-900 flex-1">កែប្រែប្រតិបត្តិការ</h1>
       </div>
 
       <div className="px-4 space-y-4">
@@ -82,7 +92,7 @@ export default function AddTransaction() {
         </div>
 
         <div className="bg-white rounded-2xl p-6 shadow-sm">
-          <CurrencyInput onChange={(cents, cur) => { setAmountCents(cents); setCurrencyInput(cur) }} />
+          <CurrencyInput onChange={(cents, cur) => { setAmountCents(cents); setCurrencyInput(cur) }} initialCents={transaction?.amount_cents} />
         </div>
 
         {filteredCategories.length > 0 && (
@@ -127,18 +137,9 @@ export default function AddTransaction() {
           className={`w-full py-4 rounded-2xl font-semibold text-white disabled:opacity-40 transition-all duration-200 active:scale-[0.98] shadow-sm ${
             type === 'income' ? 'bg-emerald-600' : 'bg-rose-600'
           }`}>
-          {mutation.isPending ? 'កំពុងរក្សាទុក...' : !amountCents ? 'បញ្ចូលចំនួនទឹកប្រាក់' : 'រក្សាទុក'}
+          {mutation.isPending ? 'កំពុងរក្សាទុក...' : 'រក្សាទុក'}
         </button>
       </div>
-
-      {showSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-2xl p-8 text-center shadow-lg">
-            <div className="text-5xl mb-3">✓</div>
-            <p className="font-semibold text-gray-900">រក្សាទុកបានសម្រេច!</p>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

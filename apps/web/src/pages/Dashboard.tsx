@@ -6,10 +6,14 @@ import ProfitPulse from '../components/ProfitPulse'
 import CompanySwitcher from '../components/CompanySwitcher'
 import BottomNav from '../components/BottomNav'
 import { TrendingUp, TrendingDown, BarChart2 } from 'lucide-react'
+import { tg } from '../lib/telegram'
 
 export default function Dashboard() {
   const navigate = useNavigate()
   const { companyId } = useAuth()
+  const now = new Date()
+  const monthLabel = new Intl.DateTimeFormat('km-KH', { month: 'long', year: 'numeric' }).format(now)
+  const safeTop = Math.max((tg as any).safeAreaInset?.top ?? 0, (tg as any).contentSafeAreaInset?.top ?? 0)
 
   const { data: report, isLoading } = useQuery({
     queryKey: ['report', companyId],
@@ -33,9 +37,10 @@ export default function Dashboard() {
   const payCount = payables?.length || 0
 
   return (
-    <div className="min-h-screen pb-36 bg-[#F8F7FF] animate-fadeIn">
+    <div className="min-h-screen pb-36 bg-[#F8F7FF] animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="p-4">
         <CompanySwitcher />
+        <p className="text-xs text-gray-400 mt-1 font-medium">{monthLabel}</p>
       </div>
 
       {isLoading ? (
@@ -121,7 +126,11 @@ export default function Dashboard() {
             <BarChart2 size={48} className="text-gray-300" />
           </div>
           <p className="text-lg font-semibold text-gray-700 mb-1">មិនទាន់មានប្រតិបត្តិការ</p>
-          <p className="text-sm text-gray-400">ចុចប៊ូតុង + ខាងក្រោមដើម្បីចាប់ផ្ដើម</p>
+          <p className="text-sm text-gray-400 mb-5">ចុចប៊ូតុង + ខាងក្រោមដើម្បីចាប់ផ្ដើម</p>
+          <button type="button" onClick={() => navigate('/transaction/new')}
+            className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-medium active:scale-[0.98] transition-all shadow-sm">
+            + បន្ថែមប្រតិបត្តិការ
+          </button>
         </div>
       )}
 

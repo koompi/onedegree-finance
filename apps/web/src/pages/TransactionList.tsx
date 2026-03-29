@@ -1,18 +1,27 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { tg } from '../lib/telegram'
+import { haptic, tg } from '../lib/telegram'
 import { useAuth } from '../store/auth'
 import BottomNav from '../components/BottomNav'
-import { ArrowLeftRight, DollarSign } from 'lucide-react'
+import { ArrowLeftRight, DollarSign, Search, Pencil, Trash2 } from 'lucide-react'
+
+type Transaction = {
+  id: string; type: string; amount_cents: number; category_icon: string;
+  category_name_km: string; category_name: string; note: string;
+  account_name: string; occurred_at: string
+}
 
 export default function TransactionList() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { companyId } = useAuth()
   const safeTop = Math.max((tg as any).safeAreaInset?.top ?? 0, (tg as any).contentSafeAreaInset?.top ?? 0)
   const now = new Date()
   const [month, setMonth] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+  const [search, setSearch] = useState('')
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['transactions', companyId, month],
@@ -20,8 +29,27 @@ export default function TransactionList() {
     enabled: !!companyId,
   })
 
-  const grouped: Record<string, Array<{ id: string; type: string; amount_cents: number; category_icon: string; category_name_km: string; category_name: string; note: string; account_name: string; occurred_at: string }>> = {}
-  transactions?.forEach((t: { id: string; type: string; amount_cents: number; category_icon: string; category_name_km: string; category_name: string; note: string; account_name: string; occurred_at: string }) => {
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/companies/${companyId}/transactions/${id}`),
+    onSuccess: () => {
+      haptic.success()
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
+      queryClient.invalidateQueries({ queryKey: ['report'] })
+      setExpandedId(null)
+    },
+    onError: () => haptic.error(),
+  })
+
+  const filtered = (transactions as Transaction[] | undefined)?.filter(t => {
+    if (!search.trim()) return true
+    const q = search.toLowerCase()
+    return (t.category_name_km || '').toLowerCase().includes(q)
+      || (t.category_name || '').toLowerCase().includes(q)
+      || (t.note || '').toLowerCase().includes(q)
+  })
+
+  const grouped: Record<string, Transaction[]> = {}
+  filtered?.forEach(t => {
     const day = t.occurred_at.slice(0, 10)
     if (!grouped[day]) grouped[day] = []
     grouped[day].push(t)
@@ -39,8 +67,18 @@ export default function TransactionList() {
   return (
     <div className="min-h-screen bg-[#F8F7FF] pb-20 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
-        <button type="button" onClick={() => navigate('/')} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
+        <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">ប្រតិបត្តិការ</h1>
+      </div>
+
+      {/* Search */}
+      <div className="px-4 mb-3">
+        <div className="flex items-center bg-white rounded-xl shadow-sm px-3 py-2.5">
+          <Search size={16} className="text-gray-400 mr-2" />
+          <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+            placeholder="ស្វែងរក..." autoComplete="off"
+            className="flex-1 outline-none text-sm text-gray-900 placeholder-gray-400 bg-transparent" />
+        </div>
       </div>
 
       <div className="flex items-center justify-between px-4 mb-4">
@@ -63,21 +101,43 @@ export default function TransactionList() {
       ) : (
         Object.entries(grouped).map(([day, txs]) => (
           <div key={day} className="mb-2">
-            <p className="px-4 text-xs text-gray-400 font-medium mb-1">{day}</p>
+            <div className="flex justify-between px-4 mb-1">
+              <p className="text-xs text-gray-400 font-medium">{day}</p>
+              <p className="text-xs font-medium text-gray-500">
+                {txs.reduce((sum, t) => t.type === 'income' ? sum + t.amount_cents : sum - t.amount_cents, 0) >= 0 ? '+' : ''}${(txs.reduce((sum, t) => t.type === 'income' ? sum + t.amount_cents : sum - t.amount_cents, 0) / 100).toFixed(2)}
+              </p>
+            </div>
             {txs.map(tx => (
-              <div key={tx.id} className="flex items-center px-4 py-3 mx-4 mb-1 bg-white rounded-2xl shadow-sm">
-                {tx.category_icon ? (
-                  <span className="text-2xl mr-3">{tx.category_icon}</span>
-                ) : (
-                  <span className="mr-3"><DollarSign size={24} className="text-gray-400" /></span>
+              <div key={tx.id} className="mx-4 mb-1">
+                <button type="button" className="w-full flex items-center px-4 py-3 bg-white rounded-2xl shadow-sm text-left"
+                  onClick={() => setExpandedId(expandedId === tx.id ? null : tx.id)}>
+                  {tx.category_icon ? (
+                    <span className="text-2xl mr-3">{tx.category_icon}</span>
+                  ) : (
+                    <span className="mr-3"><DollarSign size={24} className="text-gray-400" /></span>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">{tx.category_name_km || tx.category_name || 'ផ្សេងៗ'}</p>
+                    {tx.note && <p className="text-xs text-gray-400 truncate">{tx.note}</p>}
+                  </div>
+                  <span className={`font-bold text-sm ml-3 ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {tx.type === 'income' ? '+' : '-'}${(tx.amount_cents / 100).toFixed(2)}
+                  </span>
+                </button>
+                {expandedId === tx.id && (
+                  <div className="flex gap-2 mt-1 px-2 pb-1">
+                    <button type="button" onClick={() => navigate(`/transaction/edit/${tx.id}`)}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-indigo-50 text-indigo-600 py-2 rounded-xl text-sm font-medium active:opacity-70">
+                      <Pencil size={14} /> កែប្រែ
+                    </button>
+                    <button type="button" onClick={() => {
+                      if (confirm('លុបប្រតិបត្តិការនេះ?')) deleteMutation.mutate(tx.id)
+                    }}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-rose-50 text-rose-600 py-2 rounded-xl text-sm font-medium active:opacity-70">
+                      <Trash2 size={14} /> លុប
+                    </button>
+                  </div>
                 )}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900">{tx.category_name_km || tx.category_name || 'ផ្សេងៗ'}</p>
-                  {tx.note && <p className="text-xs text-gray-400 truncate">{tx.note}</p>}
-                </div>
-                <span className={`font-bold text-sm ml-3 ${tx.type === 'income' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {tx.type === 'income' ? '+' : '-'}${(tx.amount_cents / 100).toFixed(2)}
-                </span>
               </div>
             ))}
           </div>

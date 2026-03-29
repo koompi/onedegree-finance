@@ -3,13 +3,23 @@ import { useState, useRef } from 'react'
 interface Props {
   value?: number
   onChange: (cents: number, currency: 'USD' | 'KHR') => void
+  initialCents?: number
 }
 
 const KHR_RATE = 4100
 
-export default function CurrencyInput({ onChange }: Props) {
+export default function CurrencyInput({ onChange, initialCents }: Props) {
   const [currency, setCurrency] = useState<'USD' | 'KHR'>('USD')
-  const [raw, setRaw] = useState('')
+  const [raw, setRaw] = useState(() => initialCents ? (initialCents / 100).toFixed(2) : '')
+  const [inited, setInited] = useState(!initialCents)
+
+  // Set initial value when initialCents arrives (e.g. from API)
+  if (initialCents && !inited) {
+    const v = (initialCents / 100).toFixed(2)
+    setRaw(v)
+    setInited(true)
+    onChange(initialCents, 'USD')
+  }
   const inputRef = useRef<HTMLInputElement>(null)
 
   const toCents = (str: string, cur: 'USD' | 'KHR') => {

@@ -2,10 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { tg } from '../lib/telegram'
+import { tg, haptic } from '../lib/telegram'
 import { useAuth } from '../store/auth'
 import BottomNav from '../components/BottomNav'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, Share2 } from 'lucide-react'
 
 export default function Report() {
   const navigate = useNavigate()
@@ -24,9 +24,21 @@ export default function Report() {
     const d = new Date(month + '-01'); d.setMonth(d.getMonth() - 1)
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
+
   const nextMonth = () => {
     const d = new Date(month + '-01'); d.setMonth(d.getMonth() + 1)
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+
+  const shareReport = () => {
+    if (!report) return
+    const text = `1° OneDegree Finance ${month}\nចំណូល: $${(report.total_income_cents/100).toFixed(2)}\nចំណាយ: $${(report.total_expense_cents/100).toFixed(2)}\nចំណេញ: $${(report.net_profit_cents/100).toFixed(2)}`
+    if (navigator.share) {
+      navigator.share({ title: `OneDegree Finance ${month}`, text }).catch(() => {})
+    } else {
+      window.open(`https://t.me/share/url?url=${encodeURIComponent('https://t.me/Onedegreefinance_bot')}&text=${encodeURIComponent(text)}`)
+    }
+    haptic.success()
   }
 
   const maxAmount = Math.max(
@@ -38,8 +50,13 @@ export default function Report() {
   return (
     <div className="min-h-screen bg-[#F8F7FF] pb-20 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
-        <button type="button" onClick={() => navigate('/')} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
+        <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">របាយការណ៍ប្រចាំខែ</h1>
+        {report && (
+          <button type="button" onClick={shareReport} className="p-2 text-indigo-600 active:opacity-60">
+            <Share2 size={20} />
+          </button>
+        )}
       </div>
 
       <div className="flex items-center justify-between px-4 mb-4">
@@ -125,11 +142,11 @@ export default function Report() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <p className="text-xs text-gray-400 font-medium mb-1">គេជំពាក់ខ្ញុំ</p>
-              <p className="text-lg font-bold text-amber-600">${(report.receivables_total_cents / 100).toFixed(2)}</p>
+              <p className="text-lg font-bold text-amber-600">${((report.receivables_total_cents || 0) / 100).toFixed(2)}</p>
             </div>
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <p className="text-xs text-gray-400 font-medium mb-1">ខ្ញុំជំពាក់គេ</p>
-              <p className="text-lg font-bold text-violet-600">${(report.payables_total_cents / 100).toFixed(2)}</p>
+              <p className="text-lg font-bold text-violet-600">${((report.payables_total_cents || 0) / 100).toFixed(2)}</p>
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ import Payables from './pages/Payables'
 import Report from './pages/Report'
 import Settings from './pages/Settings'
 import Accounts from './pages/Accounts'
+import EditTransaction from './pages/EditTransaction'
 import Onboarding from './pages/Onboarding'
 import OfflineBanner from './components/OfflineBanner'
 
@@ -51,6 +52,7 @@ export default function App() {
             <>
               <Route path="/" element={<Dashboard />} />
               <Route path="/transaction/new" element={<AddTransaction />} />
+              <Route path="/transaction/edit/:id" element={<EditTransaction />} />
               <Route path="/transactions" element={<TransactionList />} />
               <Route path="/receivables" element={<Receivables />} />
               <Route path="/payables" element={<Payables />} />
