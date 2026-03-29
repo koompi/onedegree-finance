@@ -15,6 +15,7 @@ export default function Receivables() {
   const safeTop = Math.max((tg as any).safeAreaInset?.top ?? 0, (tg as any).contentSafeAreaInset?.top ?? 0)
   const [showAdd, setShowAdd] = useState(false)
   const { toast, show: showToast } = useToast()
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
@@ -96,7 +97,19 @@ export default function Receivables() {
       ) : (
         <div className="px-4 space-y-2">
           {items.map((item: { id: string; contact_name: string; amount_cents: number; status: string; due_date?: string; note?: string }) => {
-            const isOverdue = item.due_date && item.due_date < today && item.status !== 'paid'
+          
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => api.delete(`/companies/${companyId}/receivables/${id}`),
+    onSuccess: () => {
+      haptic.success()
+      showToast('បានលុបរួចរាល់!')
+      queryClient.invalidateQueries({ queryKey: ['receivables'] })
+      setConfirmDeleteId(null)
+    },
+    onError: () => haptic.error(),
+  })
+
+  const isOverdue = item.due_date && item.due_date < today && item.status !== 'paid'
             return (
               <div key={item.id} className={`flex items-center p-4 rounded-2xl shadow-sm transition-all duration-200 ${
                 item.status === 'paid' ? 'bg-emerald-50' : isOverdue ? 'bg-rose-50 border border-rose-200' : 'bg-white'
@@ -114,12 +127,25 @@ export default function Receivables() {
                   )}
                   {item.note && <p className="text-xs text-gray-400 mt-0.5">{item.note}</p>}
                 </div>
-                {item.status !== 'paid' && (
-                  <button type="button" onClick={() => markPaid.mutate(item.id)}
-                    className="bg-emerald-600 text-white px-3 py-2 rounded-xl text-sm font-medium active:scale-[0.98] transition-all shadow-sm">
-                    បានបង់
-                  </button>
-                )}
+                <div className="flex flex-col gap-1 items-end shrink-0">
+                  {item.status !== 'paid' && (
+                    <button type="button" onClick={() => markPaid.mutate(item.id)}
+                      className="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-medium active:opacity-70 shadow-sm">
+                      បានបង់
+                    </button>
+                  )}
+                  {confirmDeleteId === item.id ? (
+                    <div className="flex gap-1">
+                      <button type="button" onClick={() => deleteMutation.mutate(item.id)}
+                        className="bg-rose-600 text-white px-2 py-1 rounded-lg text-xs font-bold active:opacity-70">លុប</button>
+                      <button type="button" onClick={() => setConfirmDeleteId(null)}
+                        className="bg-gray-100 text-gray-600 px-2 py-1 rounded-lg text-xs active:opacity-70">X</button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => setConfirmDeleteId(item.id)}
+                      className="text-rose-400 text-xs active:opacity-70 px-1">លុប</button>
+                  )}
+                </div>
               </div>
             )
           })}

@@ -20,6 +20,8 @@ export default function Settings() {
   const [showNewCompany, setShowNewCompany] = useState(false)
   const [newName, setNewName] = useState('')
   const [showAddCat, setShowAddCat] = useState(false)
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState<string | null>(null)
+  const [confirmDeleteCompany, setConfirmDeleteCompany] = useState<string | null>(null)
   const [catType, setCatType] = useState<'income' | 'expense'>('expense')
   const [catEmoji, setCatEmoji] = useState('📦')
   const [catName, setCatName] = useState('')
@@ -216,8 +218,8 @@ export default function Settings() {
                   <span className="text-2xl">{c.icon}</span>
                   <span className="flex-1 text-sm text-gray-800">{c.name_km || c.name}</span>
                   {!c.is_default && (
-                    <button type="button" onClick={() => deleteCategory.mutate(c.id)}
-                      className="text-rose-400 text-xs active:opacity-70">លុប</button>
+                    <button type="button" onClick={() => confirmDeleteCat === c.id ? (deleteCategory.mutate(c.id), setConfirmDeleteCat(null)) : setConfirmDeleteCat(c.id)}
+                      className={`text-xs active:opacity-70 font-medium ${confirmDeleteCat === c.id ? "text-white bg-rose-600 px-2 py-1 rounded-lg" : "text-rose-400"}`}>{confirmDeleteCat === c.id ? "លុបពិតប្រាកដ?" : "លុប"}</button>
                   )}
                 </div>
               ))}
@@ -247,8 +249,8 @@ export default function Settings() {
                 <p className="text-xs text-gray-400">{c.type}</p>
               </button>
               {companies.length > 1 && (
-                <button type="button" onClick={() => deleteCompany.mutate(c.id)}
-                  className="text-rose-400 text-xs font-medium active:opacity-70">លុប</button>
+                <button type="button" onClick={() => confirmDeleteCompany === c.id ? (deleteCompany.mutate(c.id), setConfirmDeleteCompany(null)) : setConfirmDeleteCompany(c.id)}
+                  className={`text-xs font-medium active:opacity-70 ${confirmDeleteCompany === c.id ? "text-white bg-rose-600 px-2 py-1 rounded-lg" : "text-rose-400"}`}>{confirmDeleteCompany === c.id ? "លុបពិតប្រាកដ?" : "លុប"}</button>
               )}
             </div>
           ))}

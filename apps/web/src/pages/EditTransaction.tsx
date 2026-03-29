@@ -5,12 +5,14 @@ import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
 import CurrencyInput from '../components/CurrencyInput'
 import { haptic, tg } from '../lib/telegram'
+import { Toast, useToast } from '../components/Toast'
 
 type Account = { id: string; name: string }
 type Category = { id: string; name_km: string; name: string; icon: string; type: string }
 
 export default function EditTransaction() {
   const navigate = useNavigate()
+  const { toast, show: showToast } = useToast()
   const { id } = useParams<{ id: string }>()
   const queryClient = useQueryClient()
   const { companyId } = useAuth()
@@ -63,6 +65,7 @@ export default function EditTransaction() {
     }),
     onSuccess: () => {
       haptic.success()
+      showToast('បានកែប្រែរួចរាល់! ✓')
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
       queryClient.invalidateQueries({ queryKey: ['report'] })
       navigate(-1)
@@ -74,6 +77,7 @@ export default function EditTransaction() {
 
   return (
     <div className="min-h-screen bg-[#F8F7FF] pb-8 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
+      <Toast message={toast.message} visible={toast.visible} type={toast.type} />
       <div className="flex items-center p-4">
         <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">កែប្រែប្រតិបត្តិការ</h1>

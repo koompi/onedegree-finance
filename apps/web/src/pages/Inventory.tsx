@@ -39,6 +39,7 @@ export default function Inventory() {
 
   const [view, setView] = useState<'list' | 'detail' | 'add'>('list')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const [showMovementForm, setShowMovementForm] = useState<'in' | 'out' | null>(null)
   const [showQuote, setShowQuote] = useState(false)
 
@@ -177,7 +178,16 @@ export default function Inventory() {
             <h1 className="text-xl font-bold text-gray-900">{detail.name_km || detail.name}</h1>
             {detail.name_km && <p className="text-sm text-gray-500">{detail.name}</p>}
           </div>
-          <button type="button" onClick={() => deleteItem.mutate(detail.id)} className="text-red-400 active:opacity-60 p-2"><Trash2 size={20} /></button>
+          {confirmDeleteId === detail.id ? (
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => { deleteItem.mutate(detail.id); setConfirmDeleteId(null) }}
+                      className="bg-rose-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold active:opacity-70">លុបពិតប្រាកដ</button>
+                    <button type="button" onClick={() => setConfirmDeleteId(null)}
+                      className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-xl text-xs active:opacity-70">បោះបង់</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setConfirmDeleteId(detail.id)} className="text-rose-400 active:opacity-60 p-2"><Trash2 size={20} /></button>
+                )}
         </div>
 
         <div className="px-4 space-y-4">
