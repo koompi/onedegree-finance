@@ -1,12 +1,12 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Home, ArrowLeftRight, BarChart2, HandCoins, Settings } from 'lucide-react'
+import { Home, ArrowLeftRight, BarChart2, Package, Settings } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 const tabs: { path: string; matchPaths?: string[]; icon: LucideIcon; label: string }[] = [
   { path: '/', icon: Home, label: 'ដើម' },
   { path: '/transactions', icon: ArrowLeftRight, label: 'ប្រតិបត្តិការ' },
   { path: '/report', icon: BarChart2, label: 'របាយការណ៍' },
-  { path: '/receivables', matchPaths: ['/receivables', '/payables'], icon: HandCoins, label: 'ជំពាក់' },
+  { path: '/inventory', icon: Package, label: 'ស្តុក' },
   { path: '/settings', icon: Settings, label: 'កំណត់' },
 ]
 

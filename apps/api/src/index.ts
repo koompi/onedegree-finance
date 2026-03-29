@@ -9,6 +9,7 @@ import transactions from './routes/transactions'
 import receivables from './routes/receivables'
 import payables from './routes/payables'
 import reports from './routes/reports'
+import inventory from './routes/inventory'
 
 const app = new Hono()
 
@@ -26,6 +27,7 @@ app.route('/companies', transactions)
 app.route('/companies', receivables)
 app.route('/companies', payables)
 app.route('/companies', reports)
+app.route('/companies', inventory)
 
 import { serve } from '@hono/node-server'
 
