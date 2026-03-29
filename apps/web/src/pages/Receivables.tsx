@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
-import { haptic } from '../lib/telegram'
+import { haptic, tg } from '../lib/telegram'
 import BottomNav from '../components/BottomNav'
 import { ArrowDownLeft } from 'lucide-react'
 
@@ -11,6 +11,7 @@ export default function Receivables() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { companyId } = useAuth()
+  const safeTop = Math.max((tg as any).safeAreaInset?.top ?? 0, (tg as any).contentSafeAreaInset?.top ?? 0)
   const [showAdd, setShowAdd] = useState(false)
   const [name, setName] = useState('')
   const [amount, setAmount] = useState('')
@@ -43,7 +44,7 @@ export default function Receivables() {
   })
 
   return (
-    <div className="min-h-screen bg-[#F8F7FF] pb-20 animate-fadeIn">
+    <div className="min-h-screen bg-[#F8F7FF] pb-20 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
         <button type="button" onClick={() => navigate('/')} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
         <h1 className="text-xl font-bold text-gray-900 flex-1">គេជំពាក់ខ្ញុំ</h1>

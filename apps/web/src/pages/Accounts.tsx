@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuth } from '../store/auth'
-import { haptic } from '../lib/telegram'
+import { haptic, tg } from '../lib/telegram'
 
 export default function Accounts() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { companyId } = useAuth()
+  const safeTop = Math.max((tg as any).safeAreaInset?.top ?? 0, (tg as any).contentSafeAreaInset?.top ?? 0)
   const [showAdd, setShowAdd] = useState(false)
   const [name, setName] = useState('')
   const [type, setType] = useState<'cash' | 'bank' | 'mobile_money'>('cash')
@@ -42,7 +43,7 @@ export default function Accounts() {
   }
 
   return (
-    <div className="min-h-screen pb-4">
+    <div className="min-h-screen pb-4" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
         <button onClick={() => navigate('/')} className="text-2xl mr-3">&larr;</button>
         <h1 className="text-xl font-bold flex-1">គណនី / Accounts</h1>
