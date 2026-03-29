@@ -10,6 +10,7 @@ const KHR_RATE = 4100
 export default function CurrencyInput({ onChange }: Props) {
   const [currency, setCurrency] = useState<'USD' | 'KHR'>('USD')
   const [raw, setRaw] = useState('')
+  const [open, setOpen] = useState(false)
 
   const press = (key: string) => {
     let next = raw
@@ -59,43 +60,49 @@ export default function CurrencyInput({ onChange }: Props) {
   ]
 
   return (
-    <div className="space-y-4">
-      {/* Amount display */}
-      <div className="flex items-center gap-3">
+    <div className="space-y-3">
+      {/* Tappable amount display */}
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3"
+      >
         <span className={`flex-1 text-4xl font-bold text-right pr-2 tracking-wide ${isEmpty ? 'text-gray-300' : 'text-gray-900'}`}>
           {display}
         </span>
-        <button
-          type="button"
-          onClick={toggleCurrency}
-          className={`px-4 py-2 rounded-xl font-mono text-sm font-bold transition-colors ${
+        <span
+          onClick={e => { e.stopPropagation(); toggleCurrency() }}
+          className={`px-4 py-2 rounded-xl font-mono text-sm font-bold transition-colors cursor-pointer ${
             currency === 'USD' ? 'bg-indigo-600 text-white' : 'bg-amber-500 text-white'
           }`}
         >
           {currency}
-        </button>
-      </div>
+        </span>
+        <span className="text-gray-400 text-sm">{open ? '▲' : '▼'}</span>
+      </button>
 
-      {/* Keypad — no scale animation to prevent layout shift */}
-      <div className="grid grid-cols-3 gap-2">
-        {keys.flat().map((key, i) => {
-          if (key === '') return <div key={i} />
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={() => press(key)}
-              className={`py-4 rounded-2xl text-xl font-semibold select-none transition-colors ${
-                key === 'DEL'
-                  ? 'bg-gray-100 text-gray-500 text-base active:bg-gray-200'
-                  : 'bg-gray-50 text-gray-800 active:bg-gray-100'
-              }`}
-            >
-              {key === 'DEL' ? '⌫' : key}
-            </button>
-          )
-        })}
-      </div>
+      {/* Keypad — shown only when open */}
+      {open && (
+        <div className="grid grid-cols-3 gap-2">
+          {keys.flat().map((key, i) => {
+            if (key === '') return <div key={i} />
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => press(key)}
+                className={`py-4 rounded-2xl text-xl font-semibold select-none transition-colors ${
+                  key === 'DEL'
+                    ? 'bg-gray-100 text-gray-500 text-base active:bg-gray-200'
+                    : 'bg-gray-50 text-gray-800 active:bg-gray-100'
+                }`}
+              >
+                {key === 'DEL' ? '⌫' : key}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
