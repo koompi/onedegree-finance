@@ -18,9 +18,14 @@ companies.get('/', async (c) => {
 })
 
 const CompanyBody = z.object({
-  name: z.string().min(1).max(100),
-  type: z.enum(['agro', 'general', 'retail', 'service', 'other']).default('general'),
-  currency_base: z.enum(['USD', 'KHR']).default('USD'),
+  name: z.string().min(1).max(100).optional(),
+  type: z.enum(['agro', 'general', 'retail', 'service', 'other']).optional(),
+  currency_base: z.enum(['USD', 'KHR']).optional(),
+  business_type: z.enum(['retail', 'service', 'manufacturing', 'agro', 'trading', 'other']).optional(),
+  tax_id: z.string().max(50).optional(),
+  phone: z.string().max(20).optional(),
+  address: z.string().max(500).optional(),
+  logo_url: z.string().url().optional().nullable(),
 })
 
 companies.post('/', zValidator('json', CompanyBody), async (c) => {
@@ -31,8 +36,10 @@ companies.post('/', zValidator('json', CompanyBody), async (c) => {
     return c.json({ error: 'Maximum 3 companies allowed' }, 400)
   }
   const result = await pool.query(
-    'INSERT INTO companies (owner_id, name, type, currency_base) VALUES ($1, $2, $3, $4) RETURNING *',
-    [userId, body.name, body.type, body.currency_base]
+    `INSERT INTO companies (owner_id, name, type, currency_base, business_type, tax_id, phone, address, logo_url) 
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+    [userId, body.name, body.type || 'general', body.currency_base || 'USD', 
+     body.business_type || null, body.tax_id || null, body.phone || null, body.address || null, body.logo_url || null]
   )
   return c.json(result.rows[0], 201)
 })
@@ -44,9 +51,14 @@ companies.patch('/:id', zValidator('json', CompanyBody.partial()), async (c) => 
   const sets: string[] = []
   const values: unknown[] = []
   let i = 1
-  if (body.name) { sets.push(`name = $${i++}`); values.push(body.name) }
-  if (body.type) { sets.push(`type = $${i++}`); values.push(body.type) }
-  if (body.currency_base) { sets.push(`currency_base = $${i++}`); values.push(body.currency_base) }
+  if (body.name !== undefined) { sets.push(`name = $${i++}`); values.push(body.name) }
+  if (body.type !== undefined) { sets.push(`type = $${i++}`); values.push(body.type) }
+  if (body.currency_base !== undefined) { sets.push(`currency_base = $${i++}`); values.push(body.currency_base) }
+  if (body.business_type !== undefined) { sets.push(`business_type = $${i++}`); values.push(body.business_type) }
+  if (body.tax_id !== undefined) { sets.push(`tax_id = $${i++}`); values.push(body.tax_id) }
+  if (body.phone !== undefined) { sets.push(`phone = $${i++}`); values.push(body.phone) }
+  if (body.address !== undefined) { sets.push(`address = $${i++}`); values.push(body.address) }
+  if (body.logo_url !== undefined) { sets.push(`logo_url = $${i++}`); values.push(body.logo_url) }
   if (sets.length === 0) return c.json({ error: 'Nothing to update' }, 400)
   values.push(id, userId)
   const result = await pool.query(

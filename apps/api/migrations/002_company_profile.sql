@@ -1,0 +1,7 @@
+-- Add company profile fields
+ALTER TABLE companies 
+  ADD COLUMN IF NOT EXISTS business_type VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS tax_id VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS phone VARCHAR(20),
+  ADD COLUMN IF NOT EXISTS address TEXT,
+  ADD COLUMN IF NOT EXISTS logo_url TEXT;

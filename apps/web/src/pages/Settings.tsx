@@ -11,6 +11,15 @@ type Category = { id: string; name: string; name_km?: string; icon: string; type
 
 const EMOJIS = ['🛒','🏠','🚗','💊','🍚','📱','⚡','💧','🎓','👗','🛠️','🐄','🌾','🐟','☕','📦','💰','🏦','🤝','📋']
 
+const BUSINESS_TYPES = [
+  { value: 'retail', label: 'គ្រង់ទាត / លក់រាយ' },
+  { value: 'service', label: 'សេវាកម្ម' },
+  { value: 'manufacturing', label: 'ផលិតកម្ម' },
+  { value: 'agro', label: 'កសិកម្ម' },
+  { value: 'trading', label: 'ពាណិជ្ជកម្ម' },
+  { value: 'other', label: 'ផ្សេងៗ' },
+]
+
 export default function Settings() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -29,6 +38,8 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<'income' | 'expense'>('expense')
   const [lang, setLang] = useState(() => localStorage.getItem('lang') || 'KM')
   const [currency, setCurrency] = useState(() => localStorage.getItem('currency') || 'USD')
+  const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', business_type: '', tax_id: '', phone: '', address: '' })
 
   const tgUser = (tg as any).initDataUnsafe?.user
 
@@ -59,6 +70,16 @@ export default function Settings() {
       haptic.success()
       queryClient.invalidateQueries({ queryKey: ['companies'] })
     },
+  })
+
+  const updateCompany = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => api.patch(`/companies/${id}`, data),
+    onSuccess: () => {
+      haptic.success()
+      queryClient.invalidateQueries({ queryKey: ['companies'] })
+      setEditingCompanyId(null)
+    },
+    onError: () => haptic.error(),
   })
 
   const addCategory = useMutation({
@@ -247,15 +268,45 @@ export default function Settings() {
                 className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-40">រក្សាទុក</button>
             </div>
           )}
-          {companies?.map((c: { id: string; name: string; type: string }) => (
-            <div key={c.id} className="flex items-center justify-between py-2.5 border-t border-gray-50 first:border-0">
-              <button type="button" onClick={() => setCompany(c.id)} className="text-left flex-1">
-                <p className={`text-sm ${companyId === c.id ? 'font-semibold text-indigo-600' : 'text-gray-800'}`}>{c.name}</p>
-                <p className="text-xs text-gray-400">{c.type}</p>
-              </button>
-              {companies.length > 1 && (
-                <button type="button" onClick={() => confirmDeleteCompany === c.id ? (deleteCompany.mutate(c.id), setConfirmDeleteCompany(null)) : setConfirmDeleteCompany(c.id)}
-                  className={`text-xs font-medium active:opacity-70 ${confirmDeleteCompany === c.id ? "text-white bg-rose-600 px-2 py-1 rounded-lg" : "text-rose-400"}`}>{confirmDeleteCompany === c.id ? "លុបពិតប្រាកដ?" : "លុប"}</button>
+          {companies?.map((c: any) => (
+            <div key={c.id} className="py-2.5 border-t border-gray-50 first:border-0">
+              {editingCompanyId === c.id ? (
+                <div className="space-y-2">
+                  <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="ឈ្មោះក្រុមហ៊ុន" className="w-full p-2.5 rounded-xl border border-gray-200 text-sm" />
+                  <select value={editForm.business_type} onChange={e => setEditForm({ ...editForm, business_type: e.target.value })}
+                    className="w-full p-2.5 rounded-xl border border-gray-200 text-sm">
+                    <option value="">-- ប្រភេទជំនួញ --</option>
+                    {BUSINESS_TYPES.map(bt => <option key={bt.value} value={bt.value}>{bt.label}</option>)}
+                  </select>
+                  <input type="text" value={editForm.tax_id} onChange={e => setEditForm({ ...editForm, tax_id: e.target.value })}
+                    placeholder="លេខសម្គាល់ពន្ធ (ស្រេចចិត្ត)" className="w-full p-2.5 rounded-xl border border-gray-200 text-sm" />
+                  <input type="tel" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                    placeholder="លេខទូរស័ព្ទ (ស្រេចចិត្ត)" className="w-full p-2.5 rounded-xl border border-gray-200 text-sm" />
+                  <textarea value={editForm.address} onChange={e => setEditForm({ ...editForm, address: e.target.value })}
+                    placeholder="អាសយដ្ឋាន (ស្រេចចិត្ត)" rows={2} className="w-full p-2.5 rounded-xl border border-gray-200 text-sm resize-none" />
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => updateCompany.mutate({ id: c.id, data: editForm })}
+                      className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium">រក្សាទុក</button>
+                    <button type="button" onClick={() => setEditingCompanyId(null)}
+                      className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-xl text-sm font-medium">បោះបង់</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <button type="button" onClick={() => setCompany(c.id)} className="text-left flex-1">
+                    <p className={`text-sm ${companyId === c.id ? 'font-semibold text-indigo-600' : 'text-gray-800'}`}>{c.name}</p>
+                    <p className="text-xs text-gray-400">{c.type}{c.business_type ? ` · ${BUSINESS_TYPES.find(bt => bt.value === c.business_type)?.label}` : ''}</p>
+                  </button>
+                  <div className="flex gap-2 items-center">
+                    <button type="button" onClick={() => { setEditingCompanyId(c.id); setEditForm({ name: c.name, business_type: c.business_type || '', tax_id: c.tax_id || '', phone: c.phone || '', address: c.address || '' }) }}
+                      className="text-xs text-indigo-600 font-medium active:opacity-70">កែ</button>
+                    {companies.length > 1 && (
+                      <button type="button" onClick={() => confirmDeleteCompany === c.id ? (deleteCompany.mutate(c.id), setConfirmDeleteCompany(null)) : setConfirmDeleteCompany(c.id)}
+                        className={`text-xs font-medium active:opacity-70 ${confirmDeleteCompany === c.id ? "text-white bg-rose-600 px-2 py-1 rounded-lg" : "text-rose-400"}`}>{confirmDeleteCompany === c.id ? "លុប?" : "លុប"}</button>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           ))}
