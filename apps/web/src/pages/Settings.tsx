@@ -82,6 +82,11 @@ export default function Settings() {
     onSuccess: () => {
       haptic.success()
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      setConfirmDeleteCat(null)
+    },
+    onError: (err: any) => {
+      haptic.error()
+      console.error('Delete category error:', err?.response?.data || err)
     },
   })
 
