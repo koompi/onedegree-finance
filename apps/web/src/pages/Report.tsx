@@ -5,7 +5,7 @@ import { api } from '../lib/api'
 import { tg } from '../lib/telegram'
 import { useAuth } from '../store/auth'
 import BottomNav from '../components/BottomNav'
-import { TrendingUp, TrendingDown, Share2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, Share2, FileText, Table } from 'lucide-react'
 
 const KHR_RATE = 4100
 function fmtKHR(cents: number) { return `${Math.round(cents / 100 * KHR_RATE).toLocaleString()}៛` }
@@ -31,6 +31,81 @@ export default function Report() {
   const nextMonth = () => {
     const d = new Date(month + '-01'); d.setMonth(d.getMonth() + 1)
     setMonth(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+
+  const exportToCSV = () => {
+    if (!report) return
+    const rows = [
+      ['1° OneDegree Finance Report', month],
+      [''],
+      ['Summary'],
+      ['Income', report.total_income_cents / 100],
+      ['Expense', report.total_expense_cents / 100],
+      ['Net Profit', report.net_profit_cents / 100],
+      ['Profit Margin', profitMargin + '%'],
+      [''],
+      ['Income by Category'],
+      ...report.income_by_category.map((c: any) => [c.name_km || c.name, c.amount_cents / 100]),
+      [''],
+      ['Expense by Category'],
+      ...report.expense_by_category.map((c: any) => [c.name_km || c.name, c.amount_cents / 100]),
+    ]
+    const csv = rows.map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `onedegree-report-${month}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const exportToPDF = () => {
+    if (!report) return
+    // Create a simple HTML-based PDF
+    const html = `
+      <html>
+      <head>
+        <title>OneDegree Report ${month}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; }
+          h1 { color: #4f46e5; }
+          table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+          th, td { border: 1px solid #e5e7eb; padding: 8px; text-align: left; }
+          th { background: #f9fafb; }
+          .positive { color: #059669; }
+          .negative { color: #dc2626; }
+        </style>
+      </head>
+      <body>
+        <h1>1° OneDegree Finance</h1>
+        <h2>Monthly Report: ${month}</h2>
+        <table>
+          <tr><th>Item</th><th>Amount (USD)</th></tr>
+          <tr><td>Total Income</td><td class="positive">$${(report.total_income_cents/100).toFixed(2)}</td></tr>
+          <tr><td>Total Expense</td><td class="negative">$${(report.total_expense_cents/100).toFixed(2)}</td></tr>
+          <tr><td><strong>Net Profit</strong></td><td class="${report.net_profit_cents >= 0 ? 'positive' : 'negative'}"><strong>$${(report.net_profit_cents/100).toFixed(2)}</strong></td></tr>
+          <tr><td>Profit Margin</td><td>${profitMargin}%</td></tr>
+        </table>
+        <h3>Income by Category</h3>
+        <table>
+          <tr><th>Category</th><th>Amount (USD)</th></tr>
+          ${report.income_by_category.map((c: any) => `<tr><td>${c.name_km || c.name}</td><td>$${(c.amount_cents/100).toFixed(2)}</td></tr>`).join('')}
+        </table>
+        <h3>Expense by Category</h3>
+        <table>
+          <tr><th>Category</th><th>Amount (USD)</th></tr>
+          ${report.expense_by_category.map((c: any) => `<tr><td>${c.name_km || c.name}</td><td>$${(c.amount_cents/100).toFixed(2)}</td></tr>`).join('')}
+        </table>
+      </body>
+      </html>
+    `
+    const printWindow = window.open('', '_blank')
+    if (printWindow) {
+      printWindow.document.write(html)
+      printWindow.document.close()
+      printWindow.print()
+    }
   }
 
   const shareReport = () => {
@@ -64,11 +139,19 @@ export default function Report() {
     <div className="min-h-screen bg-[#F8F7FF] pb-32 animate-fadeIn" style={{ paddingTop: `${safeTop}px` }}>
       <div className="flex items-center p-4">
         <button type="button" onClick={() => navigate(-1)} className="text-2xl mr-3 text-gray-500 active:opacity-60">&larr;</button>
-        <h1 className="text-xl font-bold text-gray-900 flex-1">Report</h1>
+        <h1 className="text-xl font-bold text-gray-900 flex-1">របាយការណ៍</h1>
         {report && (
-          <button type="button" onClick={shareReport} className="p-2 text-indigo-600 active:opacity-60">
-            <Share2 size={20} />
-          </button>
+          <div className="flex gap-2">
+            <button type="button" onClick={exportToCSV} className="p-2 text-emerald-600 active:opacity-60" title="Excel">
+              <Table size={20} />
+            </button>
+            <button type="button" onClick={exportToPDF} className="p-2 text-rose-600 active:opacity-60" title="PDF">
+              <FileText size={20} />
+            </button>
+            <button type="button" onClick={shareReport} className="p-2 text-indigo-600 active:opacity-60" title="Share">
+              <Share2 size={20} />
+            </button>
+          </div>
         )}
       </div>
 

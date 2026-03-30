@@ -219,17 +219,7 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* View all transactions */}
-            <button type="button" onClick={() => navigate('/transactions')}
-              className="w-full bg-white rounded-2xl p-4 text-left shadow-sm flex items-center justify-between">
-              <div>
-                <p className="text-sm font-semibold text-gray-800">ប្រវត្តិចំណូលចំណាយ</p>
-                <p className="text-xs text-gray-400">មើលប្រវត្តិទាំងអស់</p>
-              </div>
-              <span className="text-gray-300 text-xl">→</span>
-            </button>
-
-            {/* Daily Tip */}
+{/* Daily Tip */}
             <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4 flex gap-3">
               <Lightbulb size={18} className="text-indigo-500 shrink-0 mt-0.5" />
               <p className="text-sm text-indigo-700 leading-relaxed">{TIPS[tipIndex]}</p>
