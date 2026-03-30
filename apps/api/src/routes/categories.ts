@@ -41,4 +41,18 @@ categories.post('/:companyId/categories', zValidator('json', z.object({
   return c.json(result.rows[0], 201)
 })
 
+categories.delete('/:companyId/categories/:id', async (c) => {
+  const userId = c.get('userId')
+  const { companyId, id } = c.req.param()
+  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+
+  // Don't allow deleting system categories
+  const check = await pool.query('SELECT is_system FROM categories WHERE id = $1 AND company_id = $2', [id, companyId])
+  if (check.rows.length === 0) return c.json({ error: 'Not found' }, 404)
+  if (check.rows[0].is_system) return c.json({ error: 'Cannot delete system category' }, 400)
+
+  await pool.query('DELETE FROM categories WHERE id = $1 AND company_id = $2', [id, companyId])
+  return c.json({ success: true })
+})
+
 export default categories
