@@ -7,7 +7,7 @@ import { haptic, tg } from '../lib/telegram'
 import BottomNav from '../components/BottomNav'
 import { Download, User } from 'lucide-react'
 
-type Category = { id: string; name: string; name_km?: string; icon: string; type: 'income' | 'expense'; is_default?: boolean }
+type Category = { id: string; name: string; name_km?: string; icon: string; type: 'income' | 'expense'; is_system?: boolean }
 
 const EMOJIS = ['🛒','🏠','🚗','💊','🍚','📱','⚡','💧','🎓','👗','🛠️','🐄','🌾','🐟','☕','📦','💰','🏦','🤝','📋']
 
@@ -222,7 +222,7 @@ export default function Settings() {
                 <div key={c.id} className="flex items-center gap-3 py-2">
                   <span className="text-2xl">{c.icon}</span>
                   <span className="flex-1 text-sm text-gray-800">{c.name_km || c.name}</span>
-                  {!c.is_default && (
+                  {!c.is_system && (
                     <button type="button" onClick={() => confirmDeleteCat === c.id ? (deleteCategory.mutate(c.id), setConfirmDeleteCat(null)) : setConfirmDeleteCat(c.id)}
                       className={`text-xs active:opacity-70 font-medium ${confirmDeleteCat === c.id ? "text-white bg-rose-600 px-2 py-1 rounded-lg" : "text-rose-400"}`}>{confirmDeleteCat === c.id ? "លុបពិតប្រាកដ?" : "លុប"}</button>
                   )}
