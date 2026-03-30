@@ -36,18 +36,18 @@ export default function Report() {
   const exportToCSV = () => {
     if (!report) return
     const rows = [
-      ['1° OneDegree Finance Report', month],
+      ['របាយការណ៍ OneDegree', month],
       [''],
-      ['Summary'],
-      ['Income', report.total_income_cents / 100],
-      ['Expense', report.total_expense_cents / 100],
-      ['Net Profit', report.net_profit_cents / 100],
-      ['Profit Margin', profitMargin + '%'],
+      ['សេចក្តីសង្ខេប'],
+      ['ចំណូល', report.total_income_cents / 100],
+      ['ចំណាយ', report.total_expense_cents / 100],
+      ['ប្រាក់ចំណេញ', report.net_profit_cents / 100],
+      ['រង្វាស់ប្រាក់ចំណេញ', profitMargin + '%'],
       [''],
-      ['Income by Category'],
+      ['ចំណូលតាមប្រភេទ'],
       ...report.income_by_category.map((c: any) => [c.name_km || c.name, c.amount_cents / 100]),
       [''],
-      ['Expense by Category'],
+      ['ចំណាយតាមប្រភេទ'],
       ...report.expense_by_category.map((c: any) => [c.name_km || c.name, c.amount_cents / 100]),
     ]
     const csv = rows.map(r => r.join(',')).join('\n')
@@ -66,7 +66,7 @@ export default function Report() {
     const html = `
       <html>
       <head>
-        <title>OneDegree Report ${month}</title>
+        <title>របាយការណ៍ ${month}</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 40px; }
           h1 { color: #4f46e5; }
@@ -79,22 +79,22 @@ export default function Report() {
       </head>
       <body>
         <h1>1° OneDegree Finance</h1>
-        <h2>Monthly Report: ${month}</h2>
+        <h2>របាយការណ៍ប្រចាំខែ: ${month}</h2>
         <table>
-          <tr><th>Item</th><th>Amount (USD)</th></tr>
-          <tr><td>Total Income</td><td class="positive">$${(report.total_income_cents/100).toFixed(2)}</td></tr>
-          <tr><td>Total Expense</td><td class="negative">$${(report.total_expense_cents/100).toFixed(2)}</td></tr>
-          <tr><td><strong>Net Profit</strong></td><td class="${report.net_profit_cents >= 0 ? 'positive' : 'negative'}"><strong>$${(report.net_profit_cents/100).toFixed(2)}</strong></td></tr>
-          <tr><td>Profit Margin</td><td>${profitMargin}%</td></tr>
+          <tr><th>ធាតុ</th><th>ទឹកប្រាក់ (USD)</th></tr>
+          <tr><td>ចំណូលសរុប</td><td class="positive">$${(report.total_income_cents/100).toFixed(2)}</td></tr>
+          <tr><td>ចំណាយសរុប</td><td class="negative">$${(report.total_expense_cents/100).toFixed(2)}</td></tr>
+          <tr><td><strong>ប្រាក់ចំណេញ</strong></td><td class="${report.net_profit_cents >= 0 ? 'positive' : 'negative'}"><strong>$${(report.net_profit_cents/100).toFixed(2)}</strong></td></tr>
+          <tr><td>រង្វាស់ប្រាក់ចំណេញ</td><td>${profitMargin}%</td></tr>
         </table>
-        <h3>Income by Category</h3>
+        <h3>ចំណូលតាមប្រភេទ</h3>
         <table>
-          <tr><th>Category</th><th>Amount (USD)</th></tr>
+          <tr><th>ប្រភេទ</th><th>ទឹកប្រាក់ (USD)</th></tr>
           ${report.income_by_category.map((c: any) => `<tr><td>${c.name_km || c.name}</td><td>$${(c.amount_cents/100).toFixed(2)}</td></tr>`).join('')}
         </table>
-        <h3>Expense by Category</h3>
+        <h3>ចំណាយតាមប្រភេទ</h3>
         <table>
-          <tr><th>Category</th><th>Amount (USD)</th></tr>
+          <tr><th>ប្រភេទ</th><th>ទឹកប្រាក់ (USD)</th></tr>
           ${report.expense_by_category.map((c: any) => `<tr><td>${c.name_km || c.name}</td><td>$${(c.amount_cents/100).toFixed(2)}</td></tr>`).join('')}
         </table>
       </body>
@@ -112,13 +112,13 @@ export default function Report() {
     if (!report) return
     const lines = [
       `1\u00B0 OneDegree Finance ${month}`,
-      `Income: $${(report.total_income_cents / 100).toFixed(2)}`,
-      `Expense: $${(report.total_expense_cents / 100).toFixed(2)}`,
-      `Net: $${(report.net_profit_cents / 100).toFixed(2)}`,
+      `ចំណូល: $${(report.total_income_cents / 100).toFixed(2)}`,
+      `ចំណាយ: $${(report.total_expense_cents / 100).toFixed(2)}`,
+      `សុទ្ធ: $${(report.net_profit_cents / 100).toFixed(2)}`,
     ]
     const text = lines.join('\n')
     if (navigator.share) {
-      navigator.share({ title: `Report ${month}`, text }).catch(() => {})
+      navigator.share({ title: `របាយការណ៍ ${month}`, text }).catch(() => {})
     } else {
       navigator.clipboard.writeText(text)
     }
@@ -148,7 +148,7 @@ export default function Report() {
             <button type="button" onClick={exportToPDF} className="p-2 text-rose-600 active:opacity-60" title="PDF">
               <FileText size={20} />
             </button>
-            <button type="button" onClick={shareReport} className="p-2 text-indigo-600 active:opacity-60" title="Share">
+            <button type="button" onClick={shareReport} className="p-2 text-indigo-600 active:opacity-60" title="ចែករំលែក">
               <Share2 size={20} />
             </button>
           </div>
@@ -173,7 +173,7 @@ export default function Report() {
               ${(report.net_profit_cents / 100).toFixed(2)}
             </p>
             <p className="text-xs text-gray-400 mt-1">{fmtKHR(report.net_profit_cents)}</p>
-            <p className={`text-sm font-bold mt-2 ${marginColor}`}>Margin: {profitMargin}%</p>
+            <p className={`text-sm font-bold mt-2 ${marginColor}`}>រង្វាស់: {profitMargin}%</p>
             {(() => {
               const margin = report.total_income_cents > 0
                 ? Math.round((report.net_profit_cents / report.total_income_cents) * 100)
@@ -181,7 +181,7 @@ export default function Report() {
               const mColor = margin >= 20 ? 'text-emerald-600 bg-emerald-100' : margin >= 10 ? 'text-amber-600 bg-amber-100' : 'text-rose-600 bg-rose-100'
               return (
                 <span className={`inline-block mt-2 px-3 py-1 rounded-full text-sm font-bold ${mColor}`}>
-                  Margin: {margin}%
+                  រង្វាស់: {margin}%
                 </span>
               )
             })()}
@@ -191,14 +191,14 @@ export default function Report() {
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
                 <TrendingUp size={16} className="text-emerald-500" />
-                <p className="text-xs text-gray-400 font-medium">Income</p>
+                <p className="text-xs text-gray-400 font-medium">ចំណូល</p>
               </div>
               <p className="text-xl font-bold text-emerald-600">${(report.total_income_cents / 100).toFixed(2)}</p>
             </div>
             <div className="bg-white rounded-2xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
                 <TrendingDown size={16} className="text-rose-500" />
-                <p className="text-xs text-gray-400 font-medium">Expense</p>
+                <p className="text-xs text-gray-400 font-medium">ចំណាយ</p>
               </div>
               <p className="text-xl font-bold text-rose-600">${(report.total_expense_cents / 100).toFixed(2)}</p>
             </div>
@@ -206,7 +206,7 @@ export default function Report() {
 
           {report.expense_by_category?.length > 0 && (
             <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="text-sm font-semibold text-gray-800 mb-4">Expense by Category</p>
+              <p className="text-sm font-semibold text-gray-800 mb-4">ចំណាយតាមប្រភេទ</p>
               <div className="space-y-3">
                 {report.expense_by_category.map((c: { category_name_km: string; category_name: string; amount_cents: number }, i: number) => (
                   <div key={i}>
@@ -226,7 +226,7 @@ export default function Report() {
 
           {report.income_by_category?.length > 0 && (
             <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="text-sm font-semibold text-gray-800 mb-4">Income by Category</p>
+              <p className="text-sm font-semibold text-gray-800 mb-4">ចំណូលតាមប្រភេទ</p>
               <div className="space-y-3">
                 {report.income_by_category.map((c: { category_name_km: string; category_name: string; amount_cents: number }, i: number) => (
                   <div key={i}>
@@ -246,11 +246,11 @@ export default function Report() {
 
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="text-xs text-gray-400 font-medium mb-1">Receivables</p>
+              <p className="text-xs text-gray-400 font-medium mb-1">គេជំពាក់ខ្ញុំ</p>
               <p className="text-lg font-bold text-amber-600">${(report.receivables_total_cents / 100).toFixed(2)}</p>
             </div>
             <div className="bg-white rounded-2xl p-4 shadow-sm">
-              <p className="text-xs text-gray-400 font-medium mb-1">Payables</p>
+              <p className="text-xs text-gray-400 font-medium mb-1">ខ្ញុំជំពាក់គេ</p>
               <p className="text-lg font-bold text-violet-600">${(report.payables_total_cents / 100).toFixed(2)}</p>
             </div>
           </div>
