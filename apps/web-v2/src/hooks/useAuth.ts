@@ -44,7 +44,7 @@ export function useAuth() {
         params.set('user', JSON.stringify(user))
         params.set('auth_date', String(Math.floor(Date.now() / 1000)))
         api.post<{ token: string; user: any; company: any }>('/auth/telegram', { initData: params.toString() })
-          .then(res => { setAuth(res.token, res.company.id, res.company.name) })
+          .then(res => { setAuth(res.token, res.company?.id ?? '', res.company?.name ?? '') })
           .catch(err => { setError(err.message) })
           .finally(() => setIsLoading(false))
       } else {
@@ -56,7 +56,7 @@ export function useAuth() {
 
     // Got initData — authenticate
     api.post<{ token: string; user: any; company: any }>('/auth/telegram', { initData })
-      .then(res => { setAuth(res.token, res.company.id, res.company.name) })
+      .then(res => { setAuth(res.token, res.company?.id ?? '', res.company?.name ?? '') })
       .catch(err => {
         setError(err.message)
         setIsLoading(false)

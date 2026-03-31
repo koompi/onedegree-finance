@@ -64,7 +64,14 @@ auth.post('/telegram', zValidator('json', z.object({ initData: z.string() })), a
     createJWT(user.id),
     createRefreshToken(user.id),
   ])
-  return c.json({ user, accessToken, refreshToken })
+  // Fetch user's first company (if any) for v2 compatibility
+  const companyResult = await pool.query(
+    'SELECT id, name FROM companies WHERE owner_id = $1 ORDER BY created_at ASC LIMIT 1',
+    [user.id]
+  )
+  const company = companyResult.rows[0] ? { id: companyResult.rows[0].id, name: companyResult.rows[0].name } : null
+
+  return c.json({ user, accessToken, refreshToken, token: accessToken, company })
 })
 
 auth.post('/bot', zValidator('json', z.object({
