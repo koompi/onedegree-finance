@@ -5,6 +5,7 @@ import SkeletonLoader from '../components/SkeletonLoader'
 import { useAuthStore } from '../store/authStore'
 import { api } from '../lib/api'
 import { fmtKHR, calcProfitMargin } from '../lib/format'
+import { useI18nStore } from '../store/i18nStore'
 
 const MONTHS_KM = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
 
@@ -17,6 +18,7 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const [year, setYear] = useState(now.getFullYear())
   const [report, setReport] = useState<ReportData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const t = useI18nStore(s => s.t)
 
   const fetchReport = async () => {
     if (!companyId) return
@@ -42,13 +44,13 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const exportCSV = () => {
     const m = `${year}-${String(month + 1).padStart(2, '0')}`
     let csv = '\uFEFF' // BOM for Khmer
-    csv += `របាយការណ៍ខែ ${MONTHS_KM[month]} ${year}\n\n`
-    csv += `ចំណូលសរុប,${income}\n`
-    csv += `ចំណាយសរុប,${expense}\n`
-    csv += `សេចក្តីផល,${profit}\n\n`
-    csv += `ប្រភេទចំណូល,ចំនួន\n`
+    csv += `${t('nav_reports')} ${t(`month_${month}` as any)} ${year}\n\n`
+    csv += `${t('reports_total_income')},${income}\n`
+    csv += `${t('reports_total_expense')},${expense}\n`
+    csv += `${t('reports_profit')},${profit}\n\n`
+    csv += `${t('reports_by_cat_income')},ចំនួន\n`
     incomeByCat.forEach(c => { csv += `${c.category_name},${c.total}\n` })
-    csv += `\nប្រភេទចំណាយ,ចំនួន\n`
+    csv += `\n${t('reports_by_cat_expense')},ចំនួន\n`
     expenseByCat.forEach(c => { csv += `${c.category_name},${c.total}\n` })
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -58,13 +60,13 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
 
   const exportPDF = () => {
     const m = `${year}-${String(month + 1).padStart(2, '0')}`
-    let text = `របាយការណ៍ហិរញ្ញវត្ថុ - ${MONTHS_KM[month]} ${year}\n\n`
-    text += `ចំណូលសរុប: ${fmtKHR(income)}\n`
-    text += `ចំណាយសរុប: ${fmtKHR(expense)}\n`
-    text += `សេចក្តីផល: ${fmtKHR(profit)} (${margin}%)\n\n`
-    text += `ចំណូលតាមប្រភេទ:\n`
+    let text = `${t('nav_reports')} - ${t(`month_${month}` as any)} ${year}\n\n`
+    text += `${t('reports_total_income')}: ${fmtKHR(income)}\n`
+    text += `${t('reports_total_expense')}: ${fmtKHR(expense)}\n`
+    text += `${t('reports_profit')}: ${fmtKHR(profit)} (${margin}%)\n\n`
+    text += `${t('reports_by_cat_income')}:\n`
     incomeByCat.forEach(c => { text += `  ${c.category_name}: ${fmtKHR(c.total)}\n` })
-    text += `\nចំណាយតាមប្រភេទ:\n`
+    text += `\n${t('reports_by_cat_expense')}:\n`
     expenseByCat.forEach(c => { text += `  ${c.category_name}: ${fmtKHR(c.total)}\n` })
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
@@ -73,14 +75,14 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="min-h-screen animate-fadeIn">
-      <ScreenHeader title="របាយការណ៍" onBack={onBack} />
+    <div className="min-h-screen animate-fadeIn relative">
+      <ScreenHeader title={t('nav_reports')} onBack={onBack} />
       <div className="px-4 space-y-3">
         <div className="flex items-center justify-between rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
           <button onClick={() => { prevMonth(); fetchReport() }} className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-90" style={{ background: 'var(--gold-soft)' }}>
             <Icon name="back" size={14} color="var(--gold)" />
           </button>
-          <span className="text-sm font-extrabold" style={{ color: 'var(--text)' }}>{MONTHS_KM[month]} {year}</span>
+          <span className="text-sm font-extrabold" style={{ color: 'var(--text)' }}>{t(`month_${month}` as any)} {year}</span>
           <button onClick={() => { nextMonth(); fetchReport() }} className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-90" style={{ background: 'var(--gold-soft)' }}>
             <Icon name="chevron" size={14} color="var(--gold)" />
           </button>
@@ -90,10 +92,10 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
           <>
             <div className="grid grid-cols-2 gap-2.5">
               {[
-                { label: 'ចំណូលសរុប', val: fmtKHR(income), color: 'var(--green)' },
-                { label: 'ចំណាយសរុប', val: fmtKHR(expense), color: 'var(--red)' },
-                { label: 'សេចក្តីផល', val: fmtKHR(profit), color: profit >= 0 ? 'var(--green)' : 'var(--red)' },
-                { label: 'អត្រាផល', val: `${margin}%`, color: 'var(--blue)' },
+                { label: t('reports_total_income'), val: fmtKHR(income), color: 'var(--green)' },
+                { label: t('reports_total_expense'), val: fmtKHR(expense), color: 'var(--red)' },
+                { label: t('reports_profit'), val: fmtKHR(profit), color: profit >= 0 ? 'var(--green)' : 'var(--red)' },
+                { label: t('reports_margin'), val: `${margin}%`, color: 'var(--blue)' },
               ].map(s => (
                 <div key={s.label} className="rounded-2xl p-3.5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
                   <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{s.label}</div>
@@ -104,7 +106,7 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
 
             {incomeByCat.length > 0 && (
               <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-                <div className="text-xs font-bold mb-3" style={{ color: 'var(--green)' }}>ចំណូលតាមប្រភេទ</div>
+                <div className="text-xs font-bold mb-3" style={{ color: 'var(--green)' }}>{t('reports_by_cat_income')}</div>
                 {incomeByCat.map(c => (
                   <div key={c.category_id} className="flex items-center gap-3 mb-2">
                     <span className="text-[11px] w-24 truncate" style={{ color: 'var(--text-sec)' }}>{c.category_name}</span>
@@ -119,7 +121,7 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
 
             {expenseByCat.length > 0 && (
               <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-                <div className="text-xs font-bold mb-3" style={{ color: 'var(--red)' }}>ចំណាយតាមប្រភេទ</div>
+                <div className="text-xs font-bold mb-3" style={{ color: 'var(--red)' }}>{t('reports_by_cat_expense')}</div>
                 {expenseByCat.map(c => (
                   <div key={c.category_id} className="flex items-center gap-3 mb-2">
                     <span className="text-[11px] w-24 truncate" style={{ color: 'var(--text-sec)' }}>{c.category_name}</span>
@@ -134,20 +136,20 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
 
             <div className="grid grid-cols-3 gap-2">
               <button onClick={exportCSV} className="py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95" style={{ background: 'var(--green)', color: 'var(--bg)' }}>
-                <Icon name="download" size={14} /> Excel
+                <Icon name="download" size={14} /> {t('reports_export_excel')}
               </button>
               <button onClick={exportPDF} className="py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95" style={{ background: 'var(--red)', color: 'white' }}>
-                <Icon name="fileText" size={14} /> PDF
+                <Icon name="fileText" size={14} /> {t('reports_export_pdf')}
               </button>
               <button onClick={() => { }} className="py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95" style={{ background: 'var(--blue)', color: 'white' }}>
-                <Icon name="share" size={14} /> ចែករំលែក
+                <Icon name="share" size={14} /> {t('reports_share')}
               </button>
             </div>
 
             <div className="rounded-2xl p-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #E8B84B 0%, #D4A03A 100%)' }}>
-              <div className="text-[11px] font-bold" style={{ color: 'rgba(11,17,32,0.6)' }}>ត្រៀមដាក់ពាក្យខ្ចីប្រាក់</div>
-              <div className="text-sm font-extrabold mt-1" style={{ color: '#0B1120' }}>ទាញយករបាយការណ៍ដែលហាមឌេកតាមធនាគារ</div>
-              <button onClick={exportCSV} className="mt-3 px-5 py-2 rounded-xl text-xs font-bold" style={{ background: 'var(--bg)', color: 'var(--gold)' }}>ទាញយក</button>
+              <div className="text-[11px] font-bold" style={{ color: 'rgba(11,17,32,0.6)' }}>{t('reports_loan_title')}</div>
+              <div className="text-sm font-extrabold mt-1" style={{ color: '#0B1120' }}>{t('reports_loan_desc')}</div>
+              <button onClick={exportCSV} className="mt-3 px-5 py-2 rounded-xl text-xs font-bold" style={{ background: 'var(--bg)', color: 'var(--gold)' }}>{t('reports_download_btn')}</button>
             </div>
           </>
         )}

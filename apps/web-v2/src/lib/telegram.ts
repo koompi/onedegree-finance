@@ -21,12 +21,14 @@ interface TelegramWebApp {
     notificationOccurred: (type: 'success' | 'error' | 'warning') => void
   }
   onEvent: (event: string, callback: (data: { isStateStable?: boolean }) => void) => void
+  offEvent: (event: string, callback: (data: { isStateStable?: boolean }) => void) => void
   initData: string
   initDataUnsafe: {
     user?: { id: number; first_name: string; last_name?: string; username?: string; language_code?: string }
   }
   safeAreaInset?: { top: number; bottom: number; left: number; right: number }
   contentSafeAreaInset?: { top: number; bottom: number; left: number; right: number }
+  openTelegramLink: (url: string) => void
 }
 
 export function getTelegram(): TelegramWebApp | null {
@@ -68,7 +70,7 @@ export function getSafeTop(): number {
 
 export function setupViewportHandling(): () => void {
   const tg = getTelegram()
-  if (!tg) return () => {}
+  if (!tg) return () => { }
 
   const handler = ({ isStateStable }: { isStateStable?: boolean }) => {
     if (isStateStable) {

@@ -12,14 +12,15 @@ import { useAccounts } from '../hooks/useAccounts'
 import { fmtKHR, fmtDateKhmer } from '../lib/format'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
-
-const FILTERS = [
-  { key: 'all', label: 'ទាំងអស់' },
-  { key: 'income', label: 'ចំណូល' },
-  { key: 'expense', label: 'ចំណាយ' },
-]
+import { useI18nStore } from '../store/i18nStore'
 
 export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
+  const t = useI18nStore(s => s.t)
+  const FILTERS = [
+    { key: 'all', label: t('tx_filter_all') },
+    { key: 'income', label: t('tx_filter_income') },
+    { key: 'expense', label: t('tx_filter_expense') },
+  ]
   const [filter, setFilter] = useState('all')
   const [showAdd, setShowAdd] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -53,7 +54,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
     if (amount <= 0) return
     haptic('success')
     await create({ type, amount_cents: amount, currency_input: 'KHR', category_id: categoryId || undefined, account_id: accountId || undefined, occurred_at: new Date(date).toISOString(), note: desc || undefined } as any)
-    toast.success('រក្សាទុកដោយជោគជ័យ')
+    toast.success(t('tx_saved_success'))
     setShowAdd(false)
     setAmount(0); setDesc(''); setCategoryId(''); setAccountId('')
   }
@@ -62,31 +63,31 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
     if (!deleteId) return
     haptic('error')
     await remove(deleteId)
-    toast.success('លុបដោយជោគជ័យ')
+    toast.success(t('tx_deleted_success'))
     setDeleteId(null)
   }
 
   if (isLoading) return (
     <div className="min-h-screen animate-fadeIn">
-      <ScreenHeader title="ប្រតិបត្តិការ" onBack={onBack} />
+      <ScreenHeader title={t('nav_transactions')} onBack={onBack} />
       <div className="px-4 pt-3"><SkeletonLoader rows={6} /></div>
     </div>
   )
 
   return (
     <div className="min-h-screen animate-fadeIn">
-      <ScreenHeader title="ប្រតិបត្តិការ" onBack={onBack}
+      <ScreenHeader title={t('nav_transactions')} onBack={onBack}
         right={<button onClick={() => setSearchOpen(!searchOpen)} className="w-8 h-8 flex items-center justify-center"><Icon name="search" size={18} color="var(--text-sec)" /></button>} />
       <div className="px-4 space-y-3">
         {searchOpen && (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)' }}>
             <Icon name="search" size={14} color="var(--text-dim)" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ស្វែងរក..." className="flex-1 bg-transparent outline-none text-sm" style={{ color: 'var(--text)' }} />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('tx_search_placeholder')} className="flex-1 bg-transparent outline-none text-sm" style={{ color: 'var(--text)' }} />
           </div>
         )}
         <div className="flex gap-2">{FILTERS.map(f => <Pill key={f.key} label={f.label} active={filter === f.key} onClick={() => setFilter(f.key)} />)}</div>
         {grouped.length === 0 ? (
-          <EmptyState icon="📊" title="មិនទាន់មានប្រតិបត្តិការ" subtitle="ចុច + ដើម្បីបន្ថែម" action={{ label: '+ ថ្មី', onClick: () => setShowAdd(true) }} />
+          <EmptyState icon="📊" title={t('tx_empty_title')} subtitle={t('tx_empty_subtitle')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
         ) : grouped.map(([dateKey, txs]) => (
           <div key={dateKey}>
             <div className="text-[11px] font-bold px-1 mb-1" style={{ color: 'var(--text-dim)' }}>{fmtDateKhmer(dateKey)}</div>
@@ -95,7 +96,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                 <div key={tx.id}>
                   <div className="flex items-center gap-3 py-3" style={i < txs.length - 1 ? { borderBottom: '1px solid var(--border)' } : undefined}>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{tx.category_name || tx.description || 'ប្រតិបត្តិការ'}</div>
+                      <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{tx.category_name || tx.description || t('tx_default_title')}</div>
                       <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{tx.account_name || ''}</div>
                     </div>
                     <div className="text-sm font-bold font-mono-num" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
@@ -103,8 +104,8 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                     </div>
                     {deleteId === tx.id ? (
                       <div className="flex gap-1">
-                        <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>លុប</button>
-                        <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>បោះបង់</button>
+                        <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
+                        <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
                       </div>
                     ) : (
                       <button onClick={() => setDeleteId(tx.id)} className="w-7 h-7 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
@@ -129,40 +130,40 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
       <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={type === 'income' ? 'ចំណូលថ្មី' : 'ចំណាយថ្មី'}>
         <div className="space-y-4">
           <div className="flex gap-2">
-            {(['income', 'expense'] as const).map(t => (
-              <button key={t} onClick={() => setType(t)} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
-                style={{ background: type === t ? 'var(--gold)' : 'var(--border)', color: type === t ? 'var(--bg)' : 'var(--text-sec)' }}>
-                {t === 'income' ? 'ចំណូល' : 'ចំណាយ'}
+            {(['income', 'expense'] as const).map(t_alias => (
+              <button key={t_alias} onClick={() => setType(t_alias)} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
+                style={{ background: type === t_alias ? 'var(--gold)' : 'var(--border)', color: type === t_alias ? 'var(--bg)' : 'var(--text-sec)' }}>
+                {t_alias === 'income' ? t('tx_filter_income') : t('tx_filter_expense')}
               </button>
             ))}
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>ចំនួនទឹកប្រាក់</label>
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_amount')}</label>
             <CurrencyInput value={amount} onChange={setAmount} autoFocus />
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>ប្រភេទ</label>
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_category')}</label>
             <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-              <option value="">ជ្រើសរើសប្រភេទ</option>
+              <option value="">{t('tx_form_cat_placeholder')}</option>
               {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>គណនី</label>
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_account')}</label>
             <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-              <option value="">ជ្រើសរើសគណនី</option>
+              <option value="">{t('tx_form_acc_placeholder')}</option>
               {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>កាលបរិច្ឆេទ</label>
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_date')}</label>
             <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>កំណត់ចំណាំ</label>
-            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder="ចំណាំ (ជម្រើស)" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_note')}</label>
+            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('tx_form_note_placeholder')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
           </div>
-          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>រក្សាទុក</button>
+          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{t('tx_form_save')}</button>
         </div>
       </BottomSheet>
     </div>

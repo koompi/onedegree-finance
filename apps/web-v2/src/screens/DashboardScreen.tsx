@@ -3,6 +3,7 @@ import Icon from '../components/Icon'
 import { fmtKHR } from '../lib/format'
 import { useDashboard } from '../hooks/useDashboard'
 import { getGreeting } from '../lib/telegram'
+import { useI18nStore } from '../store/i18nStore'
 
 const QUICK = [
   { label: 'ប្រតិបត្តិការ', icon: 'transactions' as const, key: 'transactions' },
@@ -14,6 +15,7 @@ const QUICK = [
 export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
   const { isLoading, transactions, monthlyData, receivablesCount, income, expense, profitMargin, getMonthLabel } = useDashboard()
   const [tipIdx, setTipIdx] = useState(0)
+  const t = useI18nStore(s => s.t)
   const TIPS = ['កត់ត្រារាល់ប្រតិបត្តិការជារៀងរាល់ថ្ងៃ', 'ផ្ញើរំលឹកមុនកាលកំណត់ 3 ថ្ងៃ', 'តាមដានស្តុកទំនិញជារៀងរាល់សប្ដាហ៍', 'បំបែកគណនីអាជីវកម្ម និងផ្ទាល់ខ្លួន', 'ផ្ទៀងផ្ទាត់តុល្យការជារៀងរាល់ខែ']
   useEffect(() => { const t = setInterval(() => setTipIdx(i => (i + 1) % TIPS.length), 5000); return () => clearInterval(t) }, [])
 
@@ -30,15 +32,15 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       {/* Hero Card */}
       <div className="rounded-2xl p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #E8B84B 0%, #D4A03A 100%)' }}>
         <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
-        <div className="text-[11px] font-bold tracking-wider" style={{ color: 'rgba(11,17,32,0.6)' }}>សាច់ប្រាក់សរុប</div>
+        <div className="text-[11px] font-bold tracking-wider" style={{ color: 'rgba(11,17,32,0.6)' }}>{t('total_balance')}</div>
         <div className="text-[28px] font-black font-mono-num mt-1" style={{ color: '#0B1120', fontFamily: "'JetBrains Mono', monospace" }}>{isLoading ? '...' : fmtKHR(income - expense)}</div>
         <div className="flex gap-2 mt-4">
           <div className="flex-1 rounded-xl px-3 py-2" style={{ background: 'rgba(11,17,32,0.12)' }}>
-            <div className="text-[11px]" style={{ color: 'rgba(11,17,32,0.6)' }}>ចំណូល</div>
+            <div className="text-[11px]" style={{ color: 'rgba(11,17,32,0.6)' }}>{t('income')}</div>
             <div className="text-sm font-extrabold font-mono-num" style={{ color: '#0B1120' }}>{isLoading ? '...' : fmtKHR(income)}</div>
           </div>
           <div className="flex-1 rounded-xl px-3 py-2" style={{ background: 'rgba(11,17,32,0.12)' }}>
-            <div className="text-[11px]" style={{ color: 'rgba(11,17,32,0.6)' }}>ចំណាយ</div>
+            <div className="text-[11px]" style={{ color: 'rgba(11,17,32,0.6)' }}>{t('expense')}</div>
             <div className="text-sm font-extrabold font-mono-num" style={{ color: '#0B1120' }}>{isLoading ? '...' : fmtKHR(expense)}</div>
           </div>
         </div>
@@ -47,7 +49,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       {/* Profit Margin */}
       <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
         <div className="flex justify-between items-center mb-2">
-          <span className="text-xs font-semibold" style={{ color: 'var(--text-sec)' }}>ប្រាក់ចំណេញ</span>
+          <span className="text-xs font-semibold" style={{ color: 'var(--text-sec)' }}>{t('profit')}</span>
           <span className="text-xs font-bold font-mono-num" style={{ color: profitMargin >= 0 ? 'var(--green)' : 'var(--red)' }}>{profitMargin}%</span>
         </div>
         <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
@@ -57,7 +59,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
 
       {/* 3-Month Bars */}
       <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-        <div className="text-xs font-semibold mb-3" style={{ color: 'var(--text-sec)' }}>ចំណូល vs ចំណាយ</div>
+        <div className="text-xs font-semibold mb-3" style={{ color: 'var(--text-sec)' }}>{t('income_vs_expense')}</div>
         <div className="flex items-end justify-around h-20 gap-4">
           {monthlyData.map(m => (
             <div key={m.month} className="flex items-end gap-1">
@@ -72,8 +74,8 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
           ))}
         </div>
         <div className="flex items-center gap-3 mt-2 justify-center">
-          <div className="flex items-center gap-1 text-[10px]"><div className="w-2 h-2 rounded-sm" style={{ background: 'var(--green)' }} /><span style={{ color: 'var(--text-dim)' }}>ចំណូល</span></div>
-          <div className="flex items-center gap-1 text-[10px]"><div className="w-2 h-2 rounded-sm" style={{ background: 'var(--red)' }} /><span style={{ color: 'var(--text-dim)' }}>ចំណាយ</span></div>
+          <div className="flex items-center gap-1 text-[10px]"><div className="w-2 h-2 rounded-sm" style={{ background: 'var(--green)' }} /><span style={{ color: 'var(--text-dim)' }}>{t('income')}</span></div>
+          <div className="flex items-center gap-1 text-[10px]"><div className="w-2 h-2 rounded-sm" style={{ background: 'var(--red)' }} /><span style={{ color: 'var(--text-dim)' }}>{t('expense')}</span></div>
         </div>
       </div>
 
@@ -82,7 +84,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
         <div className="rounded-2xl p-3 flex items-center gap-3" style={{ background: 'var(--red-soft)', border: '1px solid var(--red-border)' }}>
           <Icon name="alertTriangle" size={18} color="var(--red)" />
           <div className="flex-1">
-            <div className="text-xs font-bold" style={{ color: 'var(--red)' }}>មានជំពាក់ហួសកំណត់ {receivablesCount} នាក់</div>
+            <div className="text-xs font-bold" style={{ color: 'var(--red)' }}>{t('overdue_receivables', { count: receivablesCount })}</div>
           </div>
         </div>
       )}
@@ -90,11 +92,11 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       {/* Recent Transactions */}
       {!isLoading && recentTx.length > 0 && (
         <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-          <div className="text-xs font-semibold mb-3" style={{ color: 'var(--text-sec)' }}>ប្រតិបត្តិការថ្មីបំផុត</div>
+          <div className="text-xs font-semibold mb-3" style={{ color: 'var(--text-sec)' }}>{t('recent_transactions')}</div>
           {recentTx.map(tx => (
             <div key={tx.id} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--border)' }}>
               <div>
-                <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{tx.category_name || tx.description || 'ប្រតិបត្តិការ'}</div>
+                <div className="text-[13px] font-semibold" style={{ color: 'var(--text)' }}>{tx.category_name || tx.description || t('transaction')}</div>
                 <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{tx.occurred_at?.substring(0, 10)}</div>
               </div>
               <div className="text-sm font-bold font-mono-num" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
@@ -126,11 +128,11 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] px-6 flex gap-3 z-40">
         <button onClick={() => onNavigate('transactions')} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
           style={{ background: 'var(--green)', color: 'var(--bg)' }}>
-          <Icon name="plus" size={16} /> ចំណូល
+          <Icon name="plus" size={16} /> {t('revenue')}
         </button>
         <button onClick={() => onNavigate('transactions')} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
           style={{ background: 'var(--red)', color: 'var(--bg)' }}>
-          <Icon name="minus" size={16} /> ចំណាយ
+          <Icon name="minus" size={16} /> {t('expense')}
         </button>
       </div>
     </div>

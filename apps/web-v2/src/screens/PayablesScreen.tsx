@@ -7,25 +7,25 @@ import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
 import { usePayables } from '../hooks/usePayables'
 import { fmtKHR, daysUntilDue } from '../lib/format'
+import { useI18nStore } from '../store/i18nStore'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 
 export default function PayablesScreen({ onBack }: { onBack: () => void }) {
+  const { isLoading, active, totalPayable, create, remove } = usePayables()
   const [showAdd, setShowAdd] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const t = useI18nStore(s => s.t)
   const [name, setName] = useState('')
   const [amt, setAmt] = useState(0)
   const [due, setDue] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10))
   const [desc, setDesc] = useState('')
 
-  const { isLoading, active, totalPayable, create, remove } = usePayables()
-
-
   const handleSave = async () => {
     if (!name || amt <= 0) return
     haptic('success')
     await create({ contact_name: name, amount_cents: amt, due_date: due, description: desc || undefined })
-    toast.success('បន្ថែមបំណុលដោយជោគជ័យ')
+    toast.success(t('tx_saved_success'))
     setShowAdd(false); setName(''); setAmt(0); setDesc('')
   }
 
@@ -33,23 +33,28 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
     if (!deleteId) return
     haptic('error')
     await remove(deleteId)
-    toast.success('លុបដោយជោគជ័យ')
+    toast.success(t('tx_deleted_success'))
     setDeleteId(null)
   }
 
-  if (isLoading) return <div className="min-h-screen animate-fadeIn"><ScreenHeader title="យើងជំពាក់គេ" onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={3} /></div></div>
+  if (isLoading) return (
+    <div className="min-h-screen animate-fadeIn relative">
+      <ScreenHeader title={t('payables')} onBack={onBack} />
+      <div className="px-4 pt-3"><SkeletonLoader rows={5} /></div>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen animate-fadeIn">
-      <ScreenHeader title="យើងជំពាក់គេ" onBack={onBack} />
-      <div className="px-4 space-y-3">
-        <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-          <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>សរុបត្រូវបង់</div>
-          <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--orange)' }}>{fmtKHR(totalPayable)}</div>
+    <div className="min-h-screen animate-fadeIn relative">
+      <ScreenHeader title={t('payables')} onBack={onBack} />
+      <div className="px-4 space-y-4">
+        <div className="rounded-3xl p-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--red) 0%, #C0392B 100%)' }}>
+          <div className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>{t('payables_total')}</div>
+          <div className="text-3xl font-black font-mono-num text-white">{fmtKHR(totalPayable)}</div>
         </div>
         {active.length === 0 ? (
-          <EmptyState icon="💰" title="មិនទាន់មានបំណុល" action={{ label: '+ ថ្មី', onClick: () => setShowAdd(true) }} />
-        ) : active.map(r => {
+          <EmptyState icon="🏁" title={t('payables_empty_title')} subtitle={t('payables_empty_subtitle')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
+        ) : active.map((r: any) => {
           const days = daysUntilDue(r.due_date)
           return (
             <div key={r.id} className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>

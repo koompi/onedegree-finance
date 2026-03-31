@@ -9,6 +9,7 @@ import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
 import { useReceivables } from '../hooks/useReceivables'
 import { fmtKHR, daysUntilDue, overdueBadgeText } from '../lib/format'
+import { useI18nStore } from '../store/i18nStore'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 import { getTelegram } from '../lib/telegram'
@@ -18,6 +19,7 @@ const SORTS = [{ key: 'all', label: 'ទាំងអស់' }, { key: 'overdue',
 export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
   const [sort, setSort] = useState('all')
   const [showAdd, setShowAdd] = useState(false)
+  const t = useI18nStore(s => s.t)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [amt, setAmt] = useState(0)
@@ -63,25 +65,25 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  if (isLoading) return <div className="min-h-screen animate-fadeIn"><ScreenHeader title="គេជំពាក់" onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
+  if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('nav_receivables')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
 
   return (
-    <div className="min-h-screen animate-fadeIn">
-      <ScreenHeader title="គេជំពាក់" onBack={onBack} />
+    <div className="min-h-screen animate-fadeIn relative">
+      <ScreenHeader title={t('nav_receivables')} onBack={onBack} />
       <div className="px-4 space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>សរុបជំពាក់</div>
+            <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_total')}</div>
             <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmtKHR(totalOwed)}</div>
           </div>
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>ហួសកំណត់</div>
+            <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_overdue')}</div>
             <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--red)' }}>{overdueCount} នាក់</div>
           </div>
         </div>
         <div className="flex gap-2">{SORTS.map(s => <Pill key={s.key} label={s.label} active={sort === s.key} onClick={() => setSort(s.key)} />)}</div>
         {filtered.length === 0 ? (
-          <EmptyState icon="💸" title="មិនទាន់មានអ្នកជំពាក់" action={{ label: '+ ថ្មី', onClick: () => setShowAdd(true) }} />
+          <EmptyState icon="💸" title={t('receivables_empty_title')} subtitle={t('receivables_empty_subtitle')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
         ) : filtered.map(r => {
           const days = daysUntilDue(r.due_date)
           return (

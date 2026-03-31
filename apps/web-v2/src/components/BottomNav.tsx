@@ -1,14 +1,16 @@
 import Icon from './Icon'
-
-const tabs = [
-  { key: 'dashboard', khmer: 'ផ្ទាំងគ្រប់គ្រង', icon: 'dashboard' as const },
-  { key: 'transactions', khmer: 'ប្រតិបត្តិការ', icon: 'transactions' as const },
-  { key: 'receivables', khmer: 'គេជំពាក់', icon: 'receivable' as const },
-  { key: 'inventory', khmer: 'ស្តុកទំនិញ', icon: 'inventory' as const },
-  { key: 'settings', khmer: 'កំណត់', icon: 'settings' as const },
-]
+import { useI18nStore } from '../store/i18nStore'
 
 export default function BottomNav({ active, onTab }: { active: string; onTab: (key: string) => void }) {
+  const t = useI18nStore(s => s.t)
+  const tabs = [
+    { key: 'dashboard', label: t('nav_dashboard'), icon: 'dashboard' as const },
+    { key: 'transactions', label: t('nav_transactions'), icon: 'transactions' as const },
+    { key: 'receivables', label: t('nav_receivables'), icon: 'receivable' as const },
+    { key: 'inventory', label: t('nav_inventory'), icon: 'inventory' as const },
+    { key: 'settings', label: t('nav_settings'), icon: 'settings' as const },
+  ]
+
   return (
     <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] z-40 flex justify-around items-center"
       style={{ background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border)', padding: '8px 4px calc(16px + var(--safe-area-bottom))' }}>
@@ -22,7 +24,7 @@ export default function BottomNav({ active, onTab }: { active: string; onTab: (k
             </div>
             <span className="text-[9px] font-bold transition-colors"
               style={{ color: isActive ? 'var(--gold)' : 'var(--text-dim)', opacity: isActive ? 1 : 0.5 }}>
-              {t.khmer}
+              {t.label}
             </span>
           </button>
         )

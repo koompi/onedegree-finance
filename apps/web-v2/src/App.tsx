@@ -17,6 +17,7 @@ import { useAuthStore } from './store/authStore'
 import { useAuth } from './hooks/useAuth'
 import { initTelegram } from './lib/telegram'
 import { api } from './lib/api'
+import { useI18nStore } from './store/i18nStore'
 
 type Screen = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'inventory' | 'reports' | 'settings' | 'categories' | 'accounts' | 'companyProfile'
 
@@ -25,6 +26,7 @@ export default function App() {
   const [isDark, setIsDark] = useState(true)
   const { token, companyName, setAuth } = useAuthStore()
   const { isLoading: authLoading, isAuthenticated, error: authError } = useAuth()
+  const t = useI18nStore(s => s.t)
 
   const [devUser, setDevUser] = useState('')
   const [devPass, setDevPass] = useState('')
@@ -54,7 +56,7 @@ export default function App() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8" style={{ background: 'var(--bg)' }}>
         <div className="text-5xl mb-4">📊</div>
-        <div className="text-lg font-extrabold mb-2" style={{ color: 'var(--text)' }}>OneDegree Finance</div>
+        <div className="text-lg font-extrabold mb-2" style={{ color: 'var(--text)' }}>{t('auth_loading_title')}</div>
         <div className="skeleton h-10 w-40 rounded-xl" />
       </div>
     )
@@ -66,10 +68,10 @@ export default function App() {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center" style={{ background: 'var(--bg)' }}>
           <div className="text-5xl mb-4">📊</div>
-          <div className="text-lg font-extrabold mb-6" style={{ color: 'var(--text)' }}>Local Dev Login</div>
+          <div className="text-lg font-extrabold mb-6" style={{ color: 'var(--text)' }}>{t('auth_dev_login_title')}</div>
           <input
             type="text"
-            placeholder="Username (admin)"
+            placeholder={t('auth_username_placeholder')}
             value={devUser}
             onChange={e => setDevUser(e.target.value)}
             className="w-full max-w-xs mb-3 p-3 rounded-2xl outline-none"
@@ -77,7 +79,7 @@ export default function App() {
           />
           <input
             type="password"
-            placeholder="Password (123123123)"
+            placeholder={t('auth_password_placeholder')}
             value={devPass}
             onChange={e => setDevPass(e.target.value)}
             className="w-full max-w-xs mb-6 p-3 rounded-2xl outline-none"
@@ -91,11 +93,11 @@ export default function App() {
               setIsLoggingIn(true)
               api.post<{ token: string; user: any; company: any }>('/auth/telegram', { initData: `dev_admin:${devUser}:${devPass}` })
                 .then(res => { setAuth(res.token, res.company?.id ?? '', res.company?.name ?? '') })
-                .catch(err => { alert('Dev Login failed: ' + err.message) })
+                .catch(err => { alert(t('auth_login_failed') + ': ' + err.message) })
                 .finally(() => setIsLoggingIn(false))
             }}
           >
-            {isLoggingIn ? 'Logging in...' : 'Login Local'}
+            {isLoggingIn ? t('auth_logging_in_btn') : t('auth_login_btn')}
           </button>
         </div>
       )
@@ -104,8 +106,8 @@ export default function App() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center" style={{ background: 'var(--bg)' }}>
         <div className="text-5xl mb-4">📊</div>
-        <div className="text-lg font-extrabold mb-2" style={{ color: 'var(--text)' }}>OneDegree Finance</div>
-        <div className="text-sm" style={{ color: 'var(--text-sec)' }}>{authError || 'សូមបើកតាម Telegram'}</div>
+        <div className="text-lg font-extrabold mb-2" style={{ color: 'var(--text)' }}>{t('auth_loading_title')}</div>
+        <div className="text-sm" style={{ color: 'var(--text-sec)' }}>{authError || t('auth_open_in_tg')}</div>
       </div>
     )
   }
@@ -127,10 +129,10 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="flex justify-center w-full min-h-screen bg-black">
-        <div className="w-full sm:max-w-[400px] min-h-screen relative shadow-2xl overflow-x-hidden" style={{ background: 'var(--bg)' }}>
+      <div className="flex justify-center w-full bg-black" style={{ minHeight: 'var(--tg-viewport-stable-height, 100vh)' }}>
+        <div className="w-full sm:max-w-[400px] relative shadow-2xl overflow-y-auto overflow-x-hidden" style={{ background: 'var(--bg)', height: 'var(--tg-viewport-stable-height, 100vh)' }}>
           <Toast />
-          <div className="min-h-screen pb-24">
+          <div className="pb-24 min-h-full">
             {screen === 'dashboard' && <CompanySwitcher name={companyName || undefined} />}
             {renderScreen()}
           </div>

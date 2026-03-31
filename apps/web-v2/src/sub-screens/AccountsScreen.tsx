@@ -7,8 +7,9 @@ import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
 import { useAccounts } from '../hooks/useAccounts'
 import { fmtKHR } from '../lib/format'
-import { useToastStore } from '../store/toastStore'
+import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
+import { useI18nStore } from '../store/i18nStore'
 
 export default function AccountsScreen({ onBack }: { onBack: () => void }) {
   const [showAdd, setShowAdd] = useState(false)
@@ -17,15 +18,14 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
   const [type, setType] = useState('cash')
   const [number, setNumber] = useState('')
   const [initialBalance, setInitialBalance] = useState(0)
-
+  const t = useI18nStore(s => s.t)
   const { isLoading, accounts, totalBalance, create, update, remove } = useAccounts()
-  const addToast = useToastStore(s => s.addToast)
 
   const handleSave = async () => {
     if (!name) return
     haptic('success')
     await create({ name, type, account_number: number || undefined })
-    addToast('success', 'បន្ថែមគណនីដោយជោគជ័យ')
+    toast.success(t('tx_saved_success'))
     setShowAdd(false); setName(''); setType('cash'); setNumber('')
   }
 
@@ -33,25 +33,30 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
     if (!deleteId) return
     haptic('error')
     await remove(deleteId)
-    addToast('success', 'លុបដោយជោគជ័យ')
+    toast.success(t('tx_deleted_success'))
     setDeleteId(null)
   }
 
-  if (isLoading) return <div className="min-h-screen animate-fadeIn"><ScreenHeader title="គណនី" onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
+  if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('accounts_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
 
   const TYPE_ICONS: Record<string, string> = { cash: 'wallet', bank: 'building', mobile: 'phone', other: 'tag' }
-  const TYPE_LABELS: Record<string, string> = { cash: 'សាច់ប្រាក់', bank: 'ធនាគារ', mobile: 'ទូរស័ព្ទ', other: 'ផ្សេងៗ' }
+  const TYPE_LABELS: Record<string, string> = {
+    cash: t('accounts_type_cash'),
+    bank: t('accounts_type_bank'),
+    mobile: t('accounts_type_mobile'),
+    other: t('accounts_type_other')
+  }
 
   return (
-    <div className="min-h-screen animate-fadeIn">
-      <ScreenHeader title="គណនី" onBack={onBack} />
+    <div className="min-h-screen animate-fadeIn relative">
+      <ScreenHeader title={t('accounts_title')} onBack={onBack} />
       <div className="px-4 space-y-3">
         <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-          <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>សមតុល្យសរុប</div>
+          <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('accounts_total_balance')}</div>
           <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmtKHR(totalBalance)}</div>
         </div>
         {accounts.length === 0 ? (
-          <EmptyState icon="🏦" title="មិនទាន់មានគណនី" action={{ label: '+ ថ្មី', onClick: () => setShowAdd(true) }} />
+          <EmptyState icon="🏦" title={t('accounts_empty_title')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
         ) : accounts.map(acc => (
           <div key={acc.id} className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--gold-soft)' }}>
@@ -64,8 +69,8 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
             <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmtKHR(acc.balance || 0)}</div>
             {deleteId === acc.id ? (
               <div className="flex gap-1">
-                <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>លុប</button>
-                <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>បោះបង់</button>
+                <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
+                <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
               </div>
             ) : (
               <button onClick={() => setDeleteId(acc.id)} className="w-7 h-7 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
@@ -80,19 +85,19 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
           <Icon name="plus" size={22} color="var(--bg)" />
         </button>
       </div>
-      <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title="គណនីថ្មី">
+      <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={t('accounts_form_name')}>
         <div className="space-y-4">
-          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>ឈ្មោះគណនី</label><input value={name} onChange={e => setName(e.target.value)} placeholder="ឧ. ធនាគារ ABA" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
+          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('accounts_form_name')}</label><input value={name} onChange={e => setName(e.target.value)} placeholder={t('accounts_form_name_placeholder')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>ប្រភេទ</label>
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('accounts_form_type')}</label>
             <div className="flex gap-2">
               {Object.entries(TYPE_LABELS).map(([k, v]) => (
                 <button key={k} onClick={() => setType(k)} className="flex-1 py-2.5 rounded-xl text-xs font-bold" style={{ background: type === k ? 'var(--gold)' : 'var(--border)', color: type === k ? 'var(--bg)' : 'var(--text-sec)' }}>{v}</button>
               ))}
             </div>
           </div>
-          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>លេខគណនី</label><input value={number} onChange={e => setNumber(e.target.value)} placeholder="ជម្រើស" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
-          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>រក្សាទុក</button>
+          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('accounts_form_number')}</label><input value={number} onChange={e => setNumber(e.target.value)} placeholder={t('accounts_form_number_placeholder')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
+          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{t('tx_form_save')}</button>
         </div>
       </BottomSheet>
     </div>
