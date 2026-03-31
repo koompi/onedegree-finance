@@ -59,7 +59,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
   if (isLoading) return <div className="min-h-screen animate-fadeIn"><ScreenHeader title="ស្តុកទំនិញ" onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
 
   return (
-    <div className="min-h-screen animate-fadeIn">
+    <div className="min-h-screen animate-fadeIn pb-4">
       <ScreenHeader title="ស្តុកទំនិញ" onBack={onBack} />
       <div className="px-4 space-y-3">
         <div className="grid grid-cols-3 gap-2">
@@ -116,7 +116,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
           </div>
         ))}
       </div>
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
         <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90" style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
           <Icon name="plus" size={22} color="var(--bg)" />
         </button>

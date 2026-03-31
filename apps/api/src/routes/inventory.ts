@@ -20,7 +20,7 @@ inventory.get('/:companyId/inventory/items', async (c) => {
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
 
   const result = await pool.query(
-    `SELECT * FROM inventory_items WHERE company_id = $1 ORDER BY name ASC`,
+    `SELECT id, name, name_km, unit, current_qty, avg_cost_cents as wac_cost, low_stock_threshold as reorder_level, created_at, updated_at FROM inventory_items WHERE company_id = $1 ORDER BY name ASC`,
     [companyId]
   )
   return c.json(result.rows)
@@ -30,8 +30,11 @@ inventory.get('/:companyId/inventory/items', async (c) => {
 const ItemBody = z.object({
   name: z.string().min(1).max(200),
   name_km: z.string().max(200).optional(),
-  unit: z.string().default('kg'),
-  low_stock_threshold: z.number().min(0).default(0),
+  unit: z.string().default('ឯកការា'),
+  current_qty: z.number().min(0).default(0),
+  wac_cost: z.number().min(0).default(0),
+  reorder_level: z.number().min(0).default(0),
+  low_stock_threshold: z.number().min(0).default(0).optional(),
 })
 
 inventory.post('/:companyId/inventory/items', zValidator('json', ItemBody), async (c) => {
@@ -41,9 +44,9 @@ inventory.post('/:companyId/inventory/items', zValidator('json', ItemBody), asyn
   const body = c.req.valid('json')
 
   const result = await pool.query(
-    `INSERT INTO inventory_items (company_id, name, name_km, unit, low_stock_threshold)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [companyId, body.name, body.name_km || null, body.unit, body.low_stock_threshold]
+    `INSERT INTO inventory_items (company_id, name, name_km, unit, current_qty, avg_cost_cents, low_stock_threshold)
+     VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+    [companyId, body.name, body.name_km || null, body.unit, body.current_qty, body.wac_cost, body.reorder_level || body.low_stock_threshold || 0]
   )
   return c.json(result.rows[0], 201)
 })
@@ -84,8 +87,10 @@ inventory.delete('/:companyId/inventory/items/:id', async (c) => {
 
 // Add movement
 const MovementBody = z.object({
-  type: z.enum(['in', 'out']),
-  qty: z.number().positive(),
+  type: z.enum(['in', 'out', 'adjustment']).optional(),
+  movement_type: z.enum(['in', 'out', 'adjustment']).optional(),
+  qty: z.number().positive().optional(),
+  quantity: z.number().positive().optional(),
   cost_per_unit_cents: z.number().int().min(0).optional(),
   note: z.string().max(500).optional(),
 })
@@ -95,6 +100,8 @@ inventory.post('/:companyId/inventory/items/:id/movements', zValidator('json', M
   const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const body = c.req.valid('json')
+  const moveType = body.movement_type || body.type || 'in'
+  const moveQty = body.quantity || body.qty || 0
 
   const client = await pool.connect()
   try {
@@ -107,10 +114,10 @@ inventory.post('/:companyId/inventory/items/:id/movements', zValidator('json', M
     if (item.rows.length === 0) { await client.query('ROLLBACK'); return c.json({ error: 'Not found' }, 404) }
 
     const current = item.rows[0]
-    const currentQty = parseFloat(current.current_qty)
-    const currentAvgCost = parseInt(current.avg_cost_cents)
+    const currentQty = parseFloat(current.current_qty || 0)
+    const currentAvgCost = parseInt(current.avg_cost_cents || 0)
 
-    if (body.type === 'out' && body.qty > currentQty) {
+    if (moveType === 'out' && moveQty > currentQty) {
       await client.query('ROLLBACK')
       return c.json({ error: 'Insufficient stock' }, 400)
     }
@@ -118,14 +125,14 @@ inventory.post('/:companyId/inventory/items/:id/movements', zValidator('json', M
     let newQty: number
     let newAvgCost: number
 
-    if (body.type === 'in') {
+    if (moveType === 'in') {
       const costPerUnit = body.cost_per_unit_cents || 0
-      newQty = currentQty + body.qty
+      newQty = currentQty + moveQty
       newAvgCost = newQty > 0
-        ? Math.round((currentQty * currentAvgCost + body.qty * costPerUnit) / newQty)
+        ? Math.round((currentQty * currentAvgCost + moveQty * costPerUnit) / newQty)
         : 0
     } else {
-      newQty = currentQty - body.qty
+      newQty = currentQty - moveQty
       newAvgCost = currentAvgCost
     }
 
@@ -137,7 +144,7 @@ inventory.post('/:companyId/inventory/items/:id/movements', zValidator('json', M
     const movement = await client.query(
       `INSERT INTO inventory_movements (company_id, item_id, type, qty, cost_per_unit_cents, note)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [companyId, id, body.type, body.qty, body.cost_per_unit_cents || 0, body.note || null]
+      [companyId, id, moveType, moveQty, body.cost_per_unit_cents || 0, body.note || null]
     )
 
     await client.query('COMMIT')

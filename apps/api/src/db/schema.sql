@@ -116,3 +116,32 @@ INSERT INTO categories (name, name_km, type, icon, is_system) VALUES
   ('Loan Repayment', 'សងប្រាក់កម្ចី', 'expense', '🏦', TRUE),
   ('Other Expense', 'ចំណាយផ្សេងៗ', 'expense', '➖', TRUE)
 ON CONFLICT DO NOTHING;
+
+-- Inventory tables (added for v2)
+CREATE TABLE IF NOT EXISTS inventory_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  name_km TEXT,
+  unit TEXT DEFAULT 'ឯកការា',
+  current_qty NUMERIC DEFAULT 0,
+  avg_cost_cents BIGINT DEFAULT 0,
+  low_stock_threshold NUMERIC DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS inventory_movements (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  item_id UUID NOT NULL REFERENCES inventory_items(id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('in', 'out', 'adjustment')),
+  qty NUMERIC NOT NULL,
+  cost_per_unit_cents BIGINT DEFAULT 0,
+  note TEXT,
+  occurred_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_inventory_items_company ON inventory_items(company_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_movements_item ON inventory_movements(item_id);
+CREATE INDEX IF NOT EXISTS idx_inventory_movements_company ON inventory_movements(company_id);
