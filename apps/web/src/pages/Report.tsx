@@ -51,13 +51,24 @@ export default function Report() {
       ...report.expense_by_category.map((c: any) => [c.name_km || c.name, c.amount_cents / 100]),
     ]
     const csv = rows.map(r => r.join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `onedegree-report-${month}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    
+    // Try native download first
+    try {
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `onedegree-report-${month}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (e) {
+      // Fallback: copy to clipboard and notify user
+      navigator.clipboard.writeText(csv).then(() => {
+        alert('បានចម្លងទិន្នន័យទៅ Clipboard ។ សូមបិទភ្ជាប់នៅកន្លែងផ្សេង។')
+      })
+    }
   }
 
   const exportToPDF = () => {

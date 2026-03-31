@@ -136,7 +136,7 @@ export default function Inventory() {
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">Name (English)</label>
-              <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="Rice, Pepper, Fish..."
+              <input type="text" value={newName} onChange={e => setNewName(e.target.value)} placeholder="ឧ. ស្រូវ ម្រេច ត្រី..."
                 className="w-full p-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none text-sm" />
             </div>
             <div>

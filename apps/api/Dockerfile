@@ -1,6 +1,7 @@
 FROM node:20-alpine
 WORKDIR /app
-RUN npm install pg
+RUN npm install --production pg
 COPY dist/server.js ./server.js
 EXPOSE 3001
+ENV NODE_ENV=production
 CMD ["node", "server.js"]

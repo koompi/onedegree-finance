@@ -41,7 +41,17 @@ companies.post('/', zValidator('json', CompanyBody), async (c) => {
     [userId, body.name, body.type || 'general', body.currency_base || 'USD', 
      body.business_type || null, body.tax_id || null, body.phone || null, body.address || null, body.logo_url || null]
   )
-  return c.json(result.rows[0], 201)
+  const company = result.rows[0]
+  
+  // Seed default categories for this company (as user-owned, not system)
+  await pool.query(`
+    INSERT INTO categories (company_id, name, name_km, type, icon, is_system)
+    SELECT $1, name, name_km, type, icon, FALSE
+    FROM categories 
+    WHERE is_system = TRUE AND company_id IS NULL
+  `, [company.id])
+  
+  return c.json(company, 201)
 })
 
 companies.patch('/:id', zValidator('json', CompanyBody.partial()), async (c) => {

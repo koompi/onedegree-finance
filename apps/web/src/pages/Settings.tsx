@@ -228,7 +228,7 @@ export default function Settings() {
               </div>
               <input type="text" value={catNameKm} onChange={e => setCatNameKm(e.target.value)} placeholder="ឈ្មោះជាភាសាខ្មែរ" autoComplete="off"
                 className="w-full p-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-indigo-400" />
-              <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="Name in English" autoComplete="off"
+              <input type="text" value={catName} onChange={e => setCatName(e.target.value)} placeholder="ឈ្មោះជាភាសាអង់គ្លេស" autoComplete="off"
                 className="w-full p-2.5 rounded-xl border border-gray-200 text-sm outline-none focus:border-indigo-400" />
               <button type="button" onClick={() => addCategory.mutate()} disabled={(!catName && !catNameKm) || addCategory.isPending}
                 className="w-full bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium disabled:opacity-40">
@@ -243,7 +243,7 @@ export default function Settings() {
                 <div key={c.id} className="flex items-center gap-3 py-2">
                   <span className="text-2xl">{c.icon}</span>
                   <span className="flex-1 text-sm text-gray-800">{c.name_km || c.name}</span>
-                  {!c.is_system && (
+                  {c.is_system !== true && (
                     <button type="button" onClick={() => confirmDeleteCat === c.id ? (deleteCategory.mutate(c.id), setConfirmDeleteCat(null)) : setConfirmDeleteCat(c.id)}
                       className={`text-xs active:opacity-70 font-medium ${confirmDeleteCat === c.id ? "text-white bg-rose-600 px-2 py-1 rounded-lg" : "text-rose-400"}`}>{confirmDeleteCat === c.id ? "លុបពិតប្រាកដ?" : "លុប"}</button>
                   )}
