@@ -7,7 +7,7 @@ import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
 import { usePayables } from '../hooks/usePayables'
 import { fmtKHR, daysUntilDue } from '../lib/format'
-import { useToastStore } from '../store/toastStore'
+import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 
 export default function PayablesScreen({ onBack }: { onBack: () => void }) {
@@ -19,13 +19,13 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
   const [desc, setDesc] = useState('')
 
   const { isLoading, active, totalPayable, create, remove } = usePayables()
-  const addToast = useToastStore(s => s.addToast)
+
 
   const handleSave = async () => {
     if (!name || amt <= 0) return
     haptic('success')
-    await create({ contact_name: name, amount: amt, due_date: due, description: desc || undefined })
-    addToast('success', 'បន្ថែមបំណុលដោយជោគជ័យ')
+    await create({ contact_name: name, amount_cents: amt, due_date: due, description: desc || undefined })
+    toast.success('បន្ថែមបំណុលដោយជោគជ័យ')
     setShowAdd(false); setName(''); setAmt(0); setDesc('')
   }
 
@@ -33,7 +33,7 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
     if (!deleteId) return
     haptic('error')
     await remove(deleteId)
-    addToast('success', 'លុបដោយជោគជ័យ')
+    toast.success('លុបដោយជោគជ័យ')
     setDeleteId(null)
   }
 
@@ -61,7 +61,7 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
                   <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{r.contact_name}</div>
                   <div className="text-[10px]" style={{ color: days < 0 ? 'var(--red)' : 'var(--text-dim)' }}>{days < 0 ? `ហួស ${Math.abs(days)} ថ្ងៃ` : `កាលកំណត់: ${r.due_date}`}</div>
                 </div>
-                <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--orange)' }}>{fmtKHR(r.amount)}</div>
+                <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--orange)' }}>{fmtKHR(r.amount_cents)}</div>
                 {deleteId === r.id ? (
                   <div className="flex gap-1">
                     <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>លុប</button>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import ScreenHeader from '../components/ScreenHeader'
 import Icon from '../components/Icon'
 import SkeletonLoader from '../components/SkeletonLoader'
@@ -6,7 +6,7 @@ import { useAuthStore } from '../store/authStore'
 import { api } from '../lib/api'
 import { fmtKHR, calcProfitMargin } from '../lib/format'
 
-const MONTHS_KM = ['មករា','កុម្ភៈ','មីនា','មេសា','ឧសភា','មិថុនា','កក្កដា','សីហា','កញ្ញា','តុលា','វិច្ឆិកា','ធ្នូ']
+const MONTHS_KM = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
 
 interface ReportData { income: number; expense: number; by_category: Array<{ category_id: string; category_name: string; type: string; total: number }> }
 
@@ -139,7 +139,7 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
               <button onClick={exportPDF} className="py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95" style={{ background: 'var(--red)', color: 'white' }}>
                 <Icon name="fileText" size={14} /> PDF
               </button>
-              <button onClick={() => {}} className="py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95" style={{ background: 'var(--blue)', color: 'white' }}>
+              <button onClick={() => { }} className="py-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 active:scale-95" style={{ background: 'var(--blue)', color: 'white' }}>
                 <Icon name="share" size={14} /> ចែករំលែក
               </button>
             </div>

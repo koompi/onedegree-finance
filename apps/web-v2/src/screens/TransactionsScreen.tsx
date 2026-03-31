@@ -10,7 +10,7 @@ import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { useAccounts } from '../hooks/useAccounts'
 import { fmtKHR, fmtDateKhmer } from '../lib/format'
-import { useToastStore } from '../store/toastStore'
+import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 
 const FILTERS = [
@@ -33,11 +33,11 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const now = new Date()
-  const month = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const { isLoading, transactions, create, remove } = useTransactions(month, filter)
   const { categories, incomeCategories, expenseCategories } = useCategories()
   const { accounts } = useAccounts()
-  const addToast = useToastStore(s => s.addToast)
+
 
   const filteredCategories = type === 'income' ? incomeCategories : expenseCategories
 
@@ -52,8 +52,8 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const handleSave = async () => {
     if (amount <= 0) return
     haptic('success')
-    await create({ type, amount, category_id: categoryId || undefined, account_id: accountId || undefined, occurred_at: date, description: desc || undefined })
-    addToast('success', 'រក្សាទុកដោយជោគជ័យ')
+    await create({ type, amount_cents: amount, currency_input: 'KHR', category_id: categoryId || undefined, account_id: accountId || undefined, occurred_at: new Date(date).toISOString(), note: desc || undefined } as any)
+    toast.success('រក្សាទុកដោយជោគជ័យ')
     setShowAdd(false)
     setAmount(0); setDesc(''); setCategoryId(''); setAccountId('')
   }
@@ -62,7 +62,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
     if (!deleteId) return
     haptic('error')
     await remove(deleteId)
-    addToast('success', 'លុបដោយជោគជ័យ')
+    toast.success('លុបដោយជោគជ័យ')
     setDeleteId(null)
   }
 
@@ -99,7 +99,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                       <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{tx.account_name || ''}</div>
                     </div>
                     <div className="text-sm font-bold font-mono-num" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                      {tx.type === 'income' ? '+' : '-'}{fmtKHR(tx.amount)}
+                      {tx.type === 'income' ? '+' : '-'}{fmtKHR(tx.amount_cents)}
                     </div>
                     {deleteId === tx.id ? (
                       <div className="flex gap-1">
@@ -119,7 +119,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
         ))}
       </div>
 
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] z-40 flex justify-center">
         <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90"
           style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
           <Icon name="plus" size={22} color="var(--bg)" />

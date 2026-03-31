@@ -98,7 +98,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
                 <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{tx.occurred_at?.substring(0, 10)}</div>
               </div>
               <div className="text-sm font-bold font-mono-num" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                {tx.type === 'income' ? '+' : '-'}{fmtKHR(tx.amount)}
+                {tx.type === 'income' ? '+' : '-'}{fmtKHR(tx.amount_cents)}
               </div>
             </div>
           ))}
@@ -123,7 +123,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       </div>
 
       {/* FAB */}
-      <div className="fixed bottom-20 left-0 right-0 px-6 flex gap-3 z-40">
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] px-6 flex gap-3 z-40">
         <button onClick={() => onNavigate('transactions')} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
           style={{ background: 'var(--green)', color: 'var(--bg)' }}>
           <Icon name="plus" size={16} /> ចំណូល

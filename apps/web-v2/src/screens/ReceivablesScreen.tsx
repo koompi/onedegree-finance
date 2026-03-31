@@ -9,7 +9,7 @@ import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
 import { useReceivables } from '../hooks/useReceivables'
 import { fmtKHR, daysUntilDue, overdueBadgeText } from '../lib/format'
-import { useToastStore } from '../store/toastStore'
+import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 import { getTelegram } from '../lib/telegram'
 
@@ -25,40 +25,40 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
   const [desc, setDesc] = useState('')
 
   const { isLoading, active, totalOwed, overdueCount, create, remove, collect } = useReceivables()
-  const addToast = useToastStore(s => s.addToast)
+
 
   const filtered = sort === 'overdue' ? active.filter(r => daysUntilDue(r.due_date) < 0)
     : sort === 'active' ? active
-    : active
+      : active
 
   const handleSave = async () => {
     if (!name || amt <= 0) return
     haptic('success')
-    await create({ contact_name: name, amount: amt, due_date: due, description: desc || undefined })
-    addToast('success', 'បន្ថែមអ្នកជំពាក់ដោយជោគជ័យ')
+    await create({ contact_name: name, amount_cents: amt, due_date: due, description: desc || undefined })
+    toast.success('បន្ថែមអ្នកជំពាក់ដោយជោគជ័យ')
     setShowAdd(false); setName(''); setAmt(0); setDesc('')
   }
 
   const handleCollect = async (id: string) => {
     haptic('success')
     await collect(id)
-    addToast('success', 'ប្រគល់ដោយជោគជ័យ')
+    toast.success('ប្រគល់ដោយជោគជ័យ')
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     haptic('error')
     await remove(deleteId)
-    addToast('success', 'លុបដោយជោគជ័យ')
+    toast.success('លុបដោយជោគជ័យ')
     setDeleteId(null)
   }
 
   const handleRemind = (r: any) => {
     const tg = getTelegram()
     if (tg?.openTelegramLink && r.phone) {
-      tg.openTelegramLink(`https://t.me/${r.phone.replace('@','')}`)
+      tg.openTelegramLink(`https://t.me/${r.phone.replace('@', '')}`)
     } else {
-      const text = `សួស្ដី ${r.contact_name}%0Aឯកជនអាជីវកម្ម ${r.contact_name} នៅតែជំពាក់ចំនួន ${fmtKHR(r.amount)} ដែលត្រូវបង់មុនថ្ងៃ ${r.due_date}%0Aសូមទាក់ក្នុងពេលឆាប់ដើម្បីជៀសវាងការគិតថ្លៃបន្ថែម`
+      const text = `សួស្ដី ${r.contact_name}%0Aឯកជនអាជីវកម្ម ${r.contact_name} នៅតែជំពាក់ចំនួន ${fmtKHR(r.amount_cents)} ដែលត្រូវបង់មុនថ្ងៃ ${r.due_date}%0Aសូមទាក់ក្នុងពេលឆាប់ដើម្បីជៀសវាងការគិតថ្លៃបន្ថែម`
       tg?.openTelegramLink(`https://t.me/share/url?text=${text}`)
     }
   }
@@ -98,7 +98,7 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
                   </div>
                   <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>កាលកំណត់: {r.due_date}</div>
                 </div>
-                <div className="text-sm font-bold font-mono-num shrink-0" style={{ color: 'var(--gold)' }}>{fmtKHR(r.amount)}</div>
+                <div className="text-sm font-bold font-mono-num shrink-0" style={{ color: 'var(--gold)' }}>{fmtKHR(r.amount_cents)}</div>
               </div>
               <div className="flex gap-2 mt-3">
                 {days < 0 && (

@@ -3,7 +3,7 @@ import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 
 export interface Transaction {
-  id: string; type: string; amount: number; category_id?: string; category_name?: string
+  id: string; type: string; amount_cents: number; category_id?: string; category_name?: string
   account_id?: string; account_name?: string; occurred_at: string; description?: string
 }
 

@@ -127,12 +127,16 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <Toast />
-      <div className="min-h-screen pb-24" style={{ background: 'var(--bg)' }}>
-        {screen === 'dashboard' && <CompanySwitcher name={companyName || undefined} />}
-        {renderScreen()}
+      <div className="flex justify-center w-full min-h-screen bg-black">
+        <div className="w-full sm:max-w-[400px] min-h-screen relative shadow-2xl overflow-x-hidden" style={{ background: 'var(--bg)' }}>
+          <Toast />
+          <div className="min-h-screen pb-24">
+            {screen === 'dashboard' && <CompanySwitcher name={companyName || undefined} />}
+            {renderScreen()}
+          </div>
+          <BottomNav active={['categories', 'accounts', 'companyProfile', 'payables'].includes(screen) ? '' : screen} onTab={(key) => navigate(key as Screen)} />
+        </div>
       </div>
-      <BottomNav active={['categories', 'accounts', 'companyProfile', 'payables'].includes(screen) ? '' : screen} onTab={(key) => navigate(key as Screen)} />
     </ErrorBoundary>
   )
 }

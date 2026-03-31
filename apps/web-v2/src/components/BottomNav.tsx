@@ -10,7 +10,7 @@ const tabs = [
 
 export default function BottomNav({ active, onTab }: { active: string; onTab: (key: string) => void }) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-around items-center"
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] z-40 flex justify-around items-center"
       style={{ background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border)', padding: '8px 4px calc(16px + var(--safe-area-bottom))' }}>
       {tabs.map((t) => {
         const isActive = active === t.key

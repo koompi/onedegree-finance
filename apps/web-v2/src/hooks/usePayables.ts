@@ -3,7 +3,7 @@ import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 
 export interface Payable {
-  id: string; contact_name: string; amount: number; due_date: string; description?: string; status?: string
+  id: string; contact_name: string; amount_cents: number; due_date: string; description?: string; status?: string
 }
 
 export function usePayables() {
@@ -22,7 +22,7 @@ export function usePayables() {
   useEffect(() => { fetch() }, [fetch])
 
   const active = items.filter(r => r.status !== 'paid')
-  const totalPayable = active.reduce((s, r) => s + r.amount, 0)
+  const totalPayable = active.reduce((s, r) => s + r.amount_cents, 0)
   const overdueCount = active.filter(r => new Date(r.due_date) < new Date()).length
 
   const create = async (body: any) => { await api.post(`/${companyId}/payables`, body); await fetch() }

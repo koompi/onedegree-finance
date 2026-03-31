@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 
-interface Tx { id: string; type: string; amount: number; category_id?: string; category_name?: string; account_id?: string; account_name?: string; occurred_at: string; description?: string; status?: string }
+interface Tx { id: string; type: string; amount_cents: number; category_id?: string; category_name?: string; account_id?: string; account_name?: string; occurred_at: string; description?: string; status?: string }
 interface Report { income: number; expense: number; by_category: Array<{ category_id: string; category_name: string; type: string; total: number }> }
 interface MonthData { month: string; income: number; expense: number }
 
@@ -14,8 +14,8 @@ export function useDashboard() {
   const [monthlyData, setMonthlyData] = useState<MonthData[]>([])
   const [receivablesCount, setReceivablesCount] = useState(0)
 
-  const currentMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` }
-  const getMonthLabel = (m: string) => { const [y,mo] = m.split('-'); const months = ['មករា','កុម្ភៈ','មីនា','មេសា','ឧសភា','មិថុនា','កក្កដា','សីហា','កញ្ញា','តុលា','វិច្ឆិកា','ធ្នូ']; return months[parseInt(mo)-1] }
+  const currentMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` }
+  const getMonthLabel = (m: string) => { const [y, mo] = m.split('-'); const months = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']; return months[parseInt(mo) - 1] }
 
   const fetchAll = useCallback(async () => {
     if (!companyId) return
@@ -35,7 +35,7 @@ export function useDashboard() {
       const prev = []
       for (let i = 1; i <= 2; i++) {
         const pd = new Date(d.getFullYear(), d.getMonth() - i, 1)
-        const pm = `${pd.getFullYear()}-${String(pd.getMonth()+1).padStart(2,'0')}`
+        const pm = `${pd.getFullYear()}-${String(pd.getMonth() + 1).padStart(2, '0')}`
         try {
           const mr = await api.get<Report>(`/${companyId}/reports/monthly?month=${pm}`)
           prev.push({ month: pm, income: mr.income || 0, expense: mr.expense || 0 })
