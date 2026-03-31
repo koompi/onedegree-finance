@@ -8,8 +8,9 @@ import SkeletonLoader from '../components/SkeletonLoader'
 import BottomSheet from '../components/BottomSheet'
 import { useInventory } from '../hooks/useInventory'
 import { fmtKHR } from '../lib/format'
-import { useToastStore } from '../store/toastStore'
+import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
+import CurrencyInput from '../components/CurrencyInput'
 
 const FILTERS = [{ key: 'all', label: 'ទាំងអស់' }, { key: 'low', label: 'ស្តុកតិច' }, { key: 'out', label: 'អស់ស្តុក' }]
 
@@ -27,7 +28,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
   const [moveQty, setMoveQty] = useState(0)
 
   const { isLoading, items, totalValue, lowStockCount, create, remove, addMovement } = useInventory()
-  const addToast = useToastStore(s => s.addToast)
+
 
   const filtered = filter === 'low' ? items.filter(i => i.current_qty <= i.reorder_level)
     : filter === 'out' ? items.filter(i => i.current_qty === 0) : items
@@ -36,7 +37,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
     if (!itemName) return
     haptic('success')
     await create({ name: itemName, current_qty: qty, wac_cost: cost, reorder_level: reorder })
-    addToast('success', 'បន្ថែមទំនិញដោយជោគជ័យ')
+    toast.success('បន្ថែមទំនិញដោយជោគជ័យ')
     setShowAdd(false); setItemName(''); setQty(0); setCost(0); setReorder(0)
   }
 
@@ -44,7 +45,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
     if (moveQty <= 0) return
     haptic('success')
     await addMovement(stockItemId, { movement_type: moveType, quantity: moveQty })
-    addToast('success', 'ចលនាស្តុកដោយជោគជ័យ')
+    toast.success('ចលនាស្តុកដោយជោគជ័យ')
     setShowStock(false); setMoveQty(0)
   }
 
@@ -52,7 +53,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
     if (!deleteId) return
     haptic('error')
     await remove(deleteId)
-    addToast('success', 'លុបដោយជោគជ័យ')
+    toast.success('លុបដោយជោគជ័យ')
     setDeleteId(null)
   }
 
@@ -133,7 +134,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
       <BottomSheet isOpen={showStock} onClose={() => setShowStock(false)} title="ចលនាស្តុក">
         <div className="space-y-4">
           <div className="flex gap-2">
-            {[['in','ចូលស្តុក'],['out','ចេញស្តុក'],['adjustment','កែតម្រូវ']].map(([k,l]) => (
+            {[['in', 'ចូលស្តុក'], ['out', 'ចេញស្តុក'], ['adjustment', 'កែតម្រូវ']].map(([k, l]) => (
               <button key={k} onClick={() => setMoveType(k)} className="flex-1 py-2.5 rounded-xl text-xs font-bold" style={{ background: moveType === k ? 'var(--gold)' : 'var(--border)', color: moveType === k ? 'var(--bg)' : 'var(--text-sec)' }}>{l}</button>
             ))}
           </div>
