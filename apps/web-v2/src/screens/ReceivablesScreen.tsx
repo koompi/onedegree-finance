@@ -14,12 +14,13 @@ import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 import { getTelegram } from '../lib/telegram'
 
-const SORTS = [{ key: 'all', label: 'ទាំងអស់' }, { key: 'overdue', label: 'ហួសកំណត់' }, { key: 'active', label: 'សកម្ម' }]
+const SORTS = (t: any) => [{ key: 'all', label: t('sort_all') }, { key: 'overdue', label: t('sort_overdue') }, { key: 'active', label: t('sort_active') }]
 
 export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
+  const t = useI18nStore(s => s.t)
+  const lang = useI18nStore(s => s.lang)
   const [sort, setSort] = useState('all')
   const [showAdd, setShowAdd] = useState(false)
-  const t = useI18nStore(s => s.t)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [amt, setAmt] = useState(0)
@@ -28,7 +29,6 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
 
   const { isLoading, active, totalOwed, overdueCount, create, remove, collect } = useReceivables()
 
-
   const filtered = sort === 'overdue' ? active.filter(r => daysUntilDue(r.due_date) < 0)
     : sort === 'active' ? active
       : active
@@ -36,23 +36,35 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
   const handleSave = async () => {
     if (!name || amt <= 0) return
     haptic('success')
-    await create({ contact_name: name, amount_cents: amt, due_date: due, description: desc || undefined })
-    toast.success('បន្ថែមអ្នកជំពាក់ដោយជោគជ័យ')
-    setShowAdd(false); setName(''); setAmt(0); setDesc('')
+    try {
+      await create({ contact_name: name, amount_cents: amt, due_date: due, description: desc || undefined })
+      toast.success(t('tx_saved_success'))
+      setShowAdd(false); setName(''); setAmt(0); setDesc('')
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   const handleCollect = async (id: string) => {
     haptic('success')
-    await collect(id)
-    toast.success('ប្រគល់ដោយជោគជ័យ')
+    try {
+      await collect(id)
+      toast.success(t('tx_saved_success'))
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     haptic('error')
-    await remove(deleteId)
-    toast.success('លុបដោយជោគជ័យ')
-    setDeleteId(null)
+    try {
+      await remove(deleteId)
+      toast.success(t('tx_deleted_success'))
+      setDeleteId(null)
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   const handleRemind = (r: any) => {
@@ -78,10 +90,10 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
           </div>
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_overdue')}</div>
-            <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--red)' }}>{overdueCount} នាក់</div>
+            <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--red)' }}>{overdueCount} {lang === 'km' ? 'នាក់' : 'persons'}</div>
           </div>
         </div>
-        <div className="flex gap-2">{SORTS.map(s => <Pill key={s.key} label={s.label} active={sort === s.key} onClick={() => setSort(s.key)} />)}</div>
+        <div className="flex gap-2">{SORTS(t).map(s => <Pill key={s.key} label={s.label} active={sort === s.key} onClick={() => setSort(s.key)} />)}</div>
         {filtered.length === 0 ? (
           <EmptyState icon="💸" title={t('receivables_empty_title')} subtitle={t('receivables_empty_subtitle')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
         ) : filtered.map(r => {
@@ -98,23 +110,23 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
                     {days < 0 && <Badge variant="error">{overdueBadgeText(days)}</Badge>}
                     {days >= 0 && days <= 3 && <Badge variant="warning">{overdueBadgeText(days)}</Badge>}
                   </div>
-                  <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>កាលកំណត់: {r.due_date}</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{t('tx_form_date')}: {r.due_date}</div>
                 </div>
                 <div className="text-sm font-bold font-mono-num shrink-0" style={{ color: 'var(--gold)' }}>{fmtKHR(r.amount_cents)}</div>
               </div>
               <div className="flex gap-2 mt-3">
                 {days < 0 && (
                   <button onClick={() => handleRemind(r)} className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95" style={{ background: 'var(--blue-soft)', color: 'var(--blue)' }}>
-                    <Icon name="telegram" size={12} /> រំលឹក
+                    <Icon name="telegram" size={12} /> {t('action_remind')}
                   </button>
                 )}
                 <button onClick={() => handleCollect(r.id)} className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95" style={{ background: 'var(--green-soft)', color: 'var(--green)' }}>
-                  <Icon name="check" size={12} /> ប្រគល់
+                  <Icon name="check" size={12} /> {t('action_collect')}
                 </button>
                 {deleteId === r.id ? (
                   <div className="flex gap-1">
-                    <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>លុប</button>
-                    <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>បោះបង់</button>
+                    <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
+                    <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
                   </div>
                 ) : (
                   <button onClick={() => setDeleteId(r.id)} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
@@ -131,16 +143,16 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
           <Icon name="plus" size={22} color="var(--bg)" />
         </button>
       </div>
-      <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title="អ្នកជំពាក់ថ្មី">
+      <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={t('receivables_add_title')}>
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>ឈ្មោះអ្នកជំពាក់</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="ឈ្មោះ" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('profile_form_name')}</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder={t('profile_form_name')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
           </div>
-          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>ចំនួនទឹកប្រាក់</label><CurrencyInput value={amt} onChange={setAmt} autoFocus /></div>
-          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>កាលកំណត់</label><input type="date" value={due} onChange={e => setDue(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
-          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>កំណត់ចំណាំ</label><input value={desc} onChange={e => setDesc(e.target.value)} placeholder="ចំណាំ" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
-          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>រក្សាទុក</button>
+          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_amount')}</label><CurrencyInput value={amt} onChange={setAmt} autoFocus /></div>
+          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_date')}</label><input type="date" value={due} onChange={e => setDue(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
+          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_note')}</label><input value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('tx_form_note_placeholder')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
+          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{t('tx_form_save')}</button>
         </div>
       </BottomSheet>
     </div>

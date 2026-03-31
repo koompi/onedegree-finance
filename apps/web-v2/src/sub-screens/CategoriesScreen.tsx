@@ -28,17 +28,25 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
   const handleSave = async () => {
     if (!name) return
     haptic('success')
-    await create({ name, type: tab, icon: emoji })
-    toast.success(t('tx_saved_success'))
-    setShowAdd(false); setName(''); setEmoji('📦')
+    try {
+      await create({ name, type: tab, icon: emoji })
+      toast.success(t('tx_saved_success'))
+      setShowAdd(false); setName(''); setEmoji('📦')
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     haptic('error')
-    await remove(deleteId)
-    toast.success(t('tx_deleted_success'))
-    setDeleteId(null)
+    try {
+      await remove(deleteId)
+      toast.success(t('tx_deleted_success'))
+      setDeleteId(null)
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('categories_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={5} /></div></div>

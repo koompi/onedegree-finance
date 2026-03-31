@@ -16,6 +16,7 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
   const [showAdd, setShowAdd] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const t = useI18nStore(s => s.t)
+  const lang = useI18nStore(s => s.lang)
   const [name, setName] = useState('')
   const [amt, setAmt] = useState(0)
   const [due, setDue] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10))
@@ -24,17 +25,25 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
   const handleSave = async () => {
     if (!name || amt <= 0) return
     haptic('success')
-    await create({ contact_name: name, amount_cents: amt, due_date: due, description: desc || undefined })
-    toast.success(t('tx_saved_success'))
-    setShowAdd(false); setName(''); setAmt(0); setDesc('')
+    try {
+      await create({ contact_name: name, amount_cents: amt, due_date: due, description: desc || undefined })
+      toast.success(t('tx_saved_success'))
+      setShowAdd(false); setName(''); setAmt(0); setDesc('')
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     haptic('error')
-    await remove(deleteId)
-    toast.success(t('tx_deleted_success'))
-    setDeleteId(null)
+    try {
+      await remove(deleteId)
+      toast.success(t('tx_deleted_success'))
+      setDeleteId(null)
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   if (isLoading) return (
@@ -64,13 +73,17 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{r.contact_name}</div>
-                  <div className="text-[10px]" style={{ color: days < 0 ? 'var(--red)' : 'var(--text-dim)' }}>{days < 0 ? `ហួស ${Math.abs(days)} ថ្ងៃ` : `កាលកំណត់: ${r.due_date}`}</div>
+                  <div className="text-[10px]" style={{ color: days < 0 ? 'var(--red)' : 'var(--text-dim)' }}>
+                    {days < 0
+                      ? t('days_overdue', { days: Math.abs(days) })
+                      : `${t('tx_form_date')}: ${r.due_date}`}
+                  </div>
                 </div>
                 <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--orange)' }}>{fmtKHR(r.amount_cents)}</div>
                 {deleteId === r.id ? (
                   <div className="flex gap-1">
-                    <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>លុប</button>
-                    <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>បោះបង់</button>
+                    <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
+                    <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
                   </div>
                 ) : (
                   <button onClick={() => setDeleteId(r.id)} className="w-7 h-7 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
@@ -87,12 +100,15 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
           <Icon name="plus" size={22} color="var(--bg)" />
         </button>
       </div>
-      <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title="បំណុលថ្មី">
+      <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={t('payables_add_title')}>
         <div className="space-y-4">
-          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>ឈ្មោះម្ចាស់បំណុល</label><input value={name} onChange={e => setName(e.target.value)} placeholder="ឈ្មោះ" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
-          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>ចំនួនទឹកប្រាក់</label><CurrencyInput value={amt} onChange={setAmt} autoFocus /></div>
-          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>កាលកំណត់</label><input type="date" value={due} onChange={e => setDue(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
-          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>រក្សាទុក</button>
+          <div>
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('form_contact_name')}</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder={t('form_contact_placeholder')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+          </div>
+          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_amount')}</label><CurrencyInput value={amt} onChange={setAmt} autoFocus /></div>
+          <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('form_due_date')}</label><input type="date" value={due} onChange={e => setDue(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
+          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{t('tx_form_save')}</button>
         </div>
       </BottomSheet>
     </div>

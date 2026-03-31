@@ -38,25 +38,37 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
   const handleAdd = async () => {
     if (!itemName) return
     haptic('success')
-    await create({ name: itemName, current_qty: qty, wac_cost: cost, reorder_level: reorder })
-    toast.success('បន្ថែមទំនិញដោយជោគជ័យ')
-    setShowAdd(false); setItemName(''); setQty(0); setCost(0); setReorder(0)
+    try {
+      await create({ name: itemName, current_qty: qty, wac_cost: cost, reorder_level: reorder })
+      toast.success(t('tx_saved_success'))
+      setShowAdd(false); setItemName(''); setQty(0); setCost(0); setReorder(0)
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   const handleMove = async () => {
     if (moveQty <= 0) return
     haptic('success')
-    await addMovement(stockItemId, { movement_type: moveType, quantity: moveQty })
-    toast.success('ចលនាស្តុកដោយជោគជ័យ')
-    setShowStock(false); setMoveQty(0)
+    try {
+      await addMovement(stockItemId, { movement_type: moveType, quantity: moveQty })
+      toast.success(t('tx_saved_success'))
+      setShowStock(false); setMoveQty(0)
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     haptic('error')
-    await remove(deleteId)
-    toast.success('លុបដោយជោគជ័យ')
-    setDeleteId(null)
+    try {
+      await remove(deleteId)
+      toast.success(t('tx_deleted_success'))
+      setDeleteId(null)
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('nav_inventory')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>

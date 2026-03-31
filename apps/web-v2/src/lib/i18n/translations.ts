@@ -72,6 +72,13 @@ export const en = {
     payables_total: 'Total Payable',
     payables_empty_title: 'No payables',
     payables_empty_subtitle: 'Congrats! You have no debts to pay.',
+    receivables_add_title: 'New Receivable',
+    payables_add_title: 'New Payable',
+    form_contact_name: 'Contact Name',
+    form_contact_placeholder: 'Name',
+    form_due_date: 'Due Date',
+    days_overdue: '{days} days overdue',
+    due_in_days: 'Due in {days} days',
 
     // Inventory
     inventory_total_value: 'Total Value',
@@ -150,6 +157,16 @@ export const en = {
     profile_form_email: 'Email',
     profile_form_address: 'Address',
 
+    // Sorting
+    sort_all: 'All',
+    sort_overdue: 'Overdue',
+    sort_active: 'Active',
+
+    // Actions
+    action_remind: 'Remind',
+    action_collect: 'Collect',
+    action_settle: 'Settle',
+
     // Auth/Generic
     auth_loading_title: 'OneDegree Finance',
     auth_dev_login_title: 'Local Dev Login',
@@ -187,7 +204,7 @@ export const km = {
     settings_security: 'សុវត្ថិភាព',
     settings_tg_account: 'គណនី Telegram',
     settings_about: 'អំពី OneDegree Finance',
-    settings_logout: 'ចាកចេញពីគណនី',
+    settings_logout: 'ចុចចាកចេញ',
 
     // Dashboard
     total_balance: 'សមតុល្យសរុប',
@@ -235,6 +252,13 @@ export const km = {
     payables_total: 'សរុបយើងជំពាក់គេ',
     payables_empty_title: 'មិនមានបំណុល',
     payables_empty_subtitle: 'អបអរសាទរ! អ្នកមិនមានបំណុលដែលត្រូវសងទេ',
+    receivables_add_title: 'អ្នកជំពាក់ថ្មី',
+    payables_add_title: 'បំណុលថ្មី',
+    form_contact_name: 'ឈ្មោះអ្នកទំនាក់ទំនង',
+    form_contact_placeholder: 'ឈ្មោះ',
+    form_due_date: 'កាលកំណត់',
+    days_overdue: 'ហួស {days} ថ្ងៃ',
+    due_in_days: 'នៅសល់ {days} ថ្ងៃ',
 
     // Inventory
     inventory_total_value: 'តម្លៃសរុប',
@@ -311,5 +335,25 @@ export const km = {
     profile_form_business: 'ឈ្មោះអាជីវកម្ម',
     profile_form_phone: 'លេខទូរស័ព្ទ',
     profile_form_email: 'អ៊ីមែល',
-    profile_form_address: 'អាសយដ្ឋាន'
+    profile_form_address: 'អាសយដ្ឋាន',
+
+    // Sorting
+    sort_all: 'ទាំងអស់',
+    sort_overdue: 'ហួសកំណត់',
+    sort_active: 'សកម្ម',
+
+    // Actions
+    action_remind: 'រំលឹក',
+    action_collect: 'ប្រគល់',
+    action_settle: 'ទូទាត់',
+
+    // Auth/Generic
+    auth_loading_title: 'OneDegree Finance',
+    auth_dev_login_title: 'ការចូលសម្រាប់អ្នកអភិវឌ្ឍន៍',
+    auth_username_placeholder: 'ឈ្មោះអ្នកប្រើប្រាស់ (admin)',
+    auth_password_placeholder: 'ពាក្យសម្ងាត់ (123123123)',
+    auth_login_btn: 'ចូលប្រើប្រាស់',
+    auth_logging_in_btn: 'កំពុងចូល...',
+    auth_open_in_tg: 'សូមបើកតាម Telegram',
+    auth_login_failed: 'ការចូលបរាជ័យ'
 }

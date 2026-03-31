@@ -51,12 +51,28 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   }, [transactions, search])
 
   const handleSave = async () => {
-    if (amount <= 0) return
+    if (amount <= 0) {
+      toast.error(t('tx_form_amount') + ' > 0')
+      return
+    }
     haptic('success')
-    await create({ type, amount_cents: amount, currency_input: 'KHR', category_id: categoryId || undefined, account_id: accountId || undefined, occurred_at: new Date(date).toISOString(), note: desc || undefined } as any)
-    toast.success(t('tx_saved_success'))
-    setShowAdd(false)
-    setAmount(0); setDesc(''); setCategoryId(''); setAccountId('')
+    try {
+      await create({
+        type,
+        amount_cents: amount,
+        currency_input: 'KHR',
+        category_id: categoryId || undefined,
+        account_id: accountId || undefined,
+        occurred_at: new Date(date).toISOString(),
+        note: desc || undefined
+      } as any)
+      toast.success(t('tx_saved_success'))
+      setShowAdd(false)
+      setAmount(0); setDesc(''); setCategoryId(''); setAccountId('')
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e.message || 'Failed to save transaction')
+    }
   }
 
   const handleDelete = async () => {

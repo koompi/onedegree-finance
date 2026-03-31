@@ -24,17 +24,25 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
   const handleSave = async () => {
     if (!name) return
     haptic('success')
-    await create({ name, type, account_number: number || undefined })
-    toast.success(t('tx_saved_success'))
-    setShowAdd(false); setName(''); setType('cash'); setNumber('')
+    try {
+      await create({ name, type, account_number: number || undefined })
+      toast.success(t('tx_saved_success'))
+      setShowAdd(false); setName(''); setType('cash'); setNumber('')
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     haptic('error')
-    await remove(deleteId)
-    toast.success(t('tx_deleted_success'))
-    setDeleteId(null)
+    try {
+      await remove(deleteId)
+      toast.success(t('tx_deleted_success'))
+      setDeleteId(null)
+    } catch (e: any) {
+      toast.error(e.message || 'Error')
+    }
   }
 
   if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('accounts_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>

@@ -24,9 +24,9 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   if (token) headers['Authorization'] = `Bearer ${token}`
 
   let p = path
-  // The local backend mounts business routes under /companies
-  if (BASE_URL.includes('localhost') && !p.startsWith('/auth') && !p.startsWith('/health') && !p.startsWith('/companies')) {
-    p = p === '/' ? '/companies' : `/companies${p}`
+  // The backend mounts business routes under /companies
+  if (!p.startsWith('/auth') && !p.startsWith('/health') && !p.startsWith('/companies') && p !== '/') {
+    p = `/companies${p}`
   }
 
   const res = await fetch(`${BASE_URL}${p}`, {
