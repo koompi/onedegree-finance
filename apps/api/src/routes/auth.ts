@@ -17,13 +17,22 @@ auth.post('/telegram', zValidator('json', z.object({ initData: z.string() })), a
   let username: string | null = null
 
   // Dev/browser preview mode
-  if (initData === 'dev_mode' && process.env.NODE_ENV !== 'production') {
+  if (initData.startsWith('dev_admin:') && process.env.NODE_ENV !== 'production') {
+    const parts = initData.split(':')
+    if (parts[1] === 'admin' && parts[2] === '123123123') {
+      telegramId = 999999
+      name = 'Admin Developer'
+      username = 'admin'
+    } else {
+      return c.json({ error: 'Invalid dev credentials' }, 401)
+    }
+  } else if (initData === 'dev_mode' && process.env.NODE_ENV !== 'production') {
     telegramId = 0
     name = 'Preview User'
     username = 'preview'
   } else {
     const botToken = process.env.TELEGRAM_BOT_TOKEN || ''
-    
+
     // If no bot token set, try to parse user from initData directly (less secure, for dev/staging)
     if (!botToken) {
       console.warn('TELEGRAM_BOT_TOKEN not set - using fallback auth')
@@ -65,10 +74,23 @@ auth.post('/telegram', zValidator('json', z.object({ initData: z.string() })), a
     createRefreshToken(user.id),
   ])
   // Fetch user's first company (if any) for v2 compatibility
-  const companyResult = await pool.query(
+  let companyResult = await pool.query(
     'SELECT id, name FROM companies WHERE owner_id = $1 ORDER BY created_at ASC LIMIT 1',
     [user.id]
   )
+
+  // Auto-create for dev_admin
+  if (companyResult.rowCount === 0 && telegramId === 999999) {
+    companyResult = await pool.query(
+      "INSERT INTO companies (owner_id, name, type) VALUES ($1, 'Admin Business', 'general') RETURNING id, name",
+      [user.id]
+    )
+    await pool.query(
+      "INSERT INTO accounts (company_id, name, type) VALUES ($1, 'Cash in Hand', 'cash')",
+      [companyResult.rows[0].id]
+    )
+  }
+
   const company = companyResult.rows[0] ? { id: companyResult.rows[0].id, name: companyResult.rows[0].name } : null
 
   return c.json({ user, accessToken, refreshToken, token: accessToken, company })

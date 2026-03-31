@@ -1,4 +1,6 @@
-const BASE_URL = (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_URL) || 'https://onedegree-api.tunnel.koompi.cloud'
+const isDev = typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV
+const envApiUrl = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_API_URL : undefined
+const BASE_URL = envApiUrl || (isDev ? 'http://localhost:3001' : 'https://onedegree-api.tunnel.koompi.cloud')
 
 class ApiError extends Error {
   code: string
@@ -21,7 +23,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  let p = path
+  // The local backend mounts business routes under /companies
+  if (BASE_URL.includes('localhost') && !p.startsWith('/auth') && !p.startsWith('/health') && !p.startsWith('/companies')) {
+    p = p === '/' ? '/companies' : `/companies${p}`
+  }
+
+  const res = await fetch(`${BASE_URL}${p}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,

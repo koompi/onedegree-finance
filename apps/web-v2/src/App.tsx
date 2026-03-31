@@ -16,14 +16,19 @@ import CompanyProfileScreen from './sub-screens/CompanyProfileScreen'
 import { useAuthStore } from './store/authStore'
 import { useAuth } from './hooks/useAuth'
 import { initTelegram } from './lib/telegram'
+import { api } from './lib/api'
 
 type Screen = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'inventory' | 'reports' | 'settings' | 'categories' | 'accounts' | 'companyProfile'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('dashboard')
   const [isDark, setIsDark] = useState(true)
-  const { token, companyName } = useAuthStore()
+  const { token, companyName, setAuth } = useAuthStore()
   const { isLoading: authLoading, isAuthenticated, error: authError } = useAuth()
+
+  const [devUser, setDevUser] = useState('')
+  const [devPass, setDevPass] = useState('')
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('od_theme')
@@ -57,6 +62,45 @@ export default function App() {
 
   // Auth failed
   if (!isAuthenticated) {
+    if (import.meta.env.DEV) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center" style={{ background: 'var(--bg)' }}>
+          <div className="text-5xl mb-4">📊</div>
+          <div className="text-lg font-extrabold mb-6" style={{ color: 'var(--text)' }}>Local Dev Login</div>
+          <input
+            type="text"
+            placeholder="Username (admin)"
+            value={devUser}
+            onChange={e => setDevUser(e.target.value)}
+            className="w-full max-w-xs mb-3 p-3 rounded-2xl outline-none"
+            style={{ background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)' }}
+          />
+          <input
+            type="password"
+            placeholder="Password (123123123)"
+            value={devPass}
+            onChange={e => setDevPass(e.target.value)}
+            className="w-full max-w-xs mb-6 p-3 rounded-2xl outline-none"
+            style={{ background: 'var(--card)', color: 'var(--text)', border: '1px solid var(--border)' }}
+          />
+          <button
+            className="w-full max-w-xs p-3 rounded-2xl font-bold"
+            style={{ background: 'var(--accent)', color: '#fff' }}
+            disabled={isLoggingIn || !devUser || !devPass}
+            onClick={() => {
+              setIsLoggingIn(true)
+              api.post<{ token: string; user: any; company: any }>('/auth/telegram', { initData: `dev_admin:${devUser}:${devPass}` })
+                .then(res => { setAuth(res.token, res.company?.id ?? '', res.company?.name ?? '') })
+                .catch(err => { alert('Dev Login failed: ' + err.message) })
+                .finally(() => setIsLoggingIn(false))
+            }}
+          >
+            {isLoggingIn ? 'Logging in...' : 'Login Local'}
+          </button>
+        </div>
+      )
+    }
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center" style={{ background: 'var(--bg)' }}>
         <div className="text-5xl mb-4">📊</div>
@@ -88,7 +132,7 @@ export default function App() {
         {screen === 'dashboard' && <CompanySwitcher name={companyName || undefined} />}
         {renderScreen()}
       </div>
-      <BottomNav active={['categories','accounts','companyProfile','payables'].includes(screen) ? '' : screen} onTab={(key) => navigate(key as Screen)} />
+      <BottomNav active={['categories', 'accounts', 'companyProfile', 'payables'].includes(screen) ? '' : screen} onTab={(key) => navigate(key as Screen)} />
     </ErrorBoundary>
   )
 }
