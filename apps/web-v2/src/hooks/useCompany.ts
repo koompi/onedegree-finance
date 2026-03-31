@@ -1,0 +1,31 @@
+import { useState, useEffect, useCallback } from 'react'
+import { api } from '../lib/api'
+import { useAuthStore } from '../store/authStore'
+
+export interface Company {
+  id: string; name: string; type?: string; business_type?: string; tax_id?: string; phone?: string; address?: string; logo_url?: string
+}
+
+export function useCompany() {
+  const companyId = useAuthStore(s => s.companyId)
+  const [isLoading, setIsLoading] = useState(true)
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [currentCompany, setCurrentCompany] = useState<Company | null>(null)
+
+  const fetch = useCallback(async () => {
+    if (!companyId) return
+    setIsLoading(true)
+    try {
+      const data = await api.get<Company[]>('/') || []
+      setCompanies(data)
+      setCurrentCompany(data.find((c: Company) => c.id === companyId) || null)
+    } catch (e) { console.error(e) }
+    setIsLoading(false)
+  }, [companyId])
+
+  useEffect(() => { fetch() }, [fetch])
+
+  const update = async (id: string, body: any) => { await api.patch(`/${id}`, body); await fetch() }
+
+  return { isLoading, companies, currentCompany, update, refetch: fetch }
+}
