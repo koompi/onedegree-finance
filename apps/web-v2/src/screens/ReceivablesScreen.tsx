@@ -80,10 +80,11 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
   if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('nav_receivables')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
 
   return (
-    <div className="min-h-screen animate-fadeIn relative">
+    <div className="h-screen flex flex-col animate-fadeIn overflow-hidden">
       <ScreenHeader title={t('nav_receivables')} onBack={onBack} />
-      <div className="px-4 space-y-3">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-40">
+        <div className="px-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_total')}</div>
             <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmtKHR(totalOwed)}</div>
@@ -148,7 +149,7 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
         })}
       </div>
 
-      <div className="fixed bottom-28 right-6 z-40">
+      <div className="fixed bottom-[110px] right-6 z-40">
         <button 
           onClick={() => { haptic('medium'); setShowAdd(true) }} 
           className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"

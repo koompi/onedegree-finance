@@ -74,10 +74,11 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
   if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('nav_inventory')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
 
   return (
-    <div className="min-h-screen animate-fadeIn pb-4 relative">
+    <div className="h-screen flex flex-col animate-fadeIn overflow-hidden">
       <ScreenHeader title={t('nav_inventory')} onBack={onBack} />
-      <div className="px-4 space-y-3">
-        <div className="grid grid-cols-3 gap-2">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-40">
+        <div className="px-4 space-y-3">
+          <div className="grid grid-cols-3 gap-2">
           <div className="rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_total_value')}</div>
             <div className="text-sm font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--text)' }}>{fmtKHR(totalValue)}</div>
@@ -147,7 +148,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
           </div>
         ))}
       </div>
-
+      <div className="fixed bottom-[110px] right-6 z-40">
       <div className="fixed bottom-28 right-6 z-40">
         <button 
           onClick={() => { haptic('medium'); setShowAdd(true) }} 

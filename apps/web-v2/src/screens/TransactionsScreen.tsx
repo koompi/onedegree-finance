@@ -91,12 +91,13 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   )
 
   return (
-    <div className="min-h-screen animate-fadeIn pb-32">
+    <div className="h-screen flex flex-col animate-fadeIn overflow-hidden">
       <ScreenHeader title={t('nav_transactions')} onBack={onBack}
         right={<button onClick={() => { haptic('light'); setSearchOpen(!searchOpen) }} className="w-10 h-10 flex items-center justify-center rounded-2xl active:bg-white/5 transition-all"><Icon name="search" size={20} color="var(--text-sec)" /></button>} />
       
-      <div className="px-4 space-y-4 mt-2">
-        {searchOpen && (
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-40">
+        <div className="px-4 space-y-4 mt-2">
+          {searchOpen && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-gold/20" 
                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <Icon name="search" size={16} color="var(--gold)" />
@@ -190,7 +191,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
         )}
       </div>
 
-      <div className="fixed bottom-28 right-6 z-40">
+      <div className="fixed bottom-[110px] right-6 z-40">
         <button 
           onClick={() => { haptic('medium'); setShowAdd(true) }} 
           className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"
