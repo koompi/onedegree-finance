@@ -81,7 +81,7 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
           </div>
         ))}
       </div>
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
+      <div className="fixed bottom-[110px] left-1/2 -translate-x-1/2 z-40">
         <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90" style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
           <Icon name="plus" size={22} color="var(--bg)" />
         </button>
