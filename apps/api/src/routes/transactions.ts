@@ -54,6 +54,7 @@ const TxBody = z.object({
   currency_input: z.enum(['USD', 'KHR']).default('USD'),
   note: z.string().max(500).optional(),
   occurred_at: z.string().datetime(),
+  receipt_url: z.string().url().optional(),
 })
 
 transactions.post('/:companyId/transactions', zValidator('json', TxBody), async (c) => {
@@ -65,10 +66,11 @@ transactions.post('/:companyId/transactions', zValidator('json', TxBody), async 
   try {
     await client.query('BEGIN')
     const result = await client.query(
-      `INSERT INTO transactions (company_id, account_id, category_id, type, amount_cents, amount_khr, exchange_rate, currency_input, note, occurred_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+      `INSERT INTO transactions (company_id, account_id, category_id, type, amount_cents, amount_khr, exchange_rate, currency_input, note, occurred_at, receipt_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
       [companyId, body.account_id, body.category_id || null, body.type, body.amount_cents,
-       body.amount_khr || null, body.exchange_rate || null, body.currency_input, body.note || null, body.occurred_at]
+       body.amount_khr || null, body.exchange_rate || null, body.currency_input, body.note || null, body.occurred_at,
+       body.receipt_url || null]
     )
     const delta = body.type === 'income' ? body.amount_cents : -body.amount_cents
     if (body.account_id) await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, body.account_id])

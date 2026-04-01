@@ -7,6 +7,7 @@ import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 import BottomSheet from '../components/BottomSheet'
 import { useInventory } from '../hooks/useInventory'
+import { useAmount } from '../hooks/useAmount'
 import { fmtKHR } from '../lib/format'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
@@ -30,6 +31,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
   const t = useI18nStore(s => s.t)
 
   const { isLoading, items, totalValue, lowStockCount, create, remove, addMovement } = useInventory()
+  const { fmt } = useAmount()
 
 
   const filtered = filter === 'low' ? items.filter(i => i.current_qty <= i.reorder_level)
@@ -71,7 +73,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('nav_inventory')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
+  if (isLoading) return <div className="min-h-[100dvh] animate-fadeIn relative"><ScreenHeader title={t('nav_inventory')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
 
   return (
     <div className="h-screen flex flex-col animate-fadeIn overflow-hidden">
@@ -81,7 +83,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
           <div className="grid grid-cols-3 gap-2">
           <div className="rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_total_value')}</div>
-            <div className="text-sm font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--text)' }}>{fmtKHR(totalValue)}</div>
+            <div className="text-sm font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--text)' }}>{fmt(totalValue)}</div>
           </div>
           <div className="rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_items_count')}</div>
@@ -123,11 +125,11 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
                   {item.current_qty <= item.reorder_level && item.current_qty > 0 && <Badge variant="warning">{t('inventory_badge_low')}</Badge>}
                   {item.current_qty === 0 && <Badge variant="error">{t('inventory_badge_out')}</Badge>}
                 </div>
-                <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>WAC: {fmtKHR(item.wac_cost)} / {item.unit || t('inventory_unit')}</div>
+                <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>WAC: {fmt(item.wac_cost)} / {item.unit || t('inventory_unit')}</div>
               </div>
               <div className="text-right shrink-0">
                 <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--text)' }}>{item.current_qty}</div>
-                <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>{fmtKHR(item.current_qty * item.wac_cost)}</div>
+                <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>{fmt(item.current_qty * item.wac_cost)}</div>
               </div>
             </div>
             <div className="flex gap-2 mt-3">
@@ -148,7 +150,7 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
           </div>
         ))}        </div>      </div>
 
-      <div className="fixed bottom-[110px] right-6 z-40">
+      <div className="fixed fab-bottom right-6 z-40">
         <button 
           onClick={() => { haptic('medium'); setShowAdd(true) }} 
           className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"

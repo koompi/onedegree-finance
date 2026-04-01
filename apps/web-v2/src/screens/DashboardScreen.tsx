@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
-import { fmtKHR } from '../lib/format'
 import { useDashboard } from '../hooks/useDashboard'
+import { useAmount } from '../hooks/useAmount'
 import { getGreeting, haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
 
@@ -14,6 +14,7 @@ const QUICK = [
 
 export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
   const { isLoading, transactions, monthlyData, receivablesCount, income, expense, profitMargin, getMonthLabel } = useDashboard()
+  const { fmt } = useAmount()
   const [tipIdx, setTipIdx] = useState(0)
   const t = useI18nStore(s => s.t)
   const TIPS = ['កត់ត្រារាល់ប្រតិបត្តិការជារៀងរាល់ថ្ងៃ', 'ផ្ញើរំលឹកមុនកាលកំណត់ 3 ថ្ងៃ', 'តាមដានស្តុកទំនិញជារៀងរាល់សប្ដាហ៍', 'បំបែកគណនីអាជីវកម្ម និងផ្ទាល់ខ្លួន', 'ផ្ទៀងផ្ទាត់តុល្យការជារៀងរាល់ខែ']
@@ -33,18 +34,39 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       <div className="rounded-[24px] p-6 relative overflow-hidden shadow-gold" style={{ background: 'var(--gold)' }}>
         <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
         <div className="text-[11px] font-bold tracking-widest uppercase opacity-70" style={{ color: 'rgba(0,0,0,0.8)' }}>{t('total_balance')}</div>
-        <div className="text-4xl font-black font-mono-num mt-1" style={{ color: '#000000', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-1px' }}>{isLoading ? '...' : fmtKHR(income - expense)}</div>
+        <div className="text-4xl font-black font-mono-num mt-1" style={{ color: '#000000', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-1px' }}>{isLoading ? '...' : fmt(income - expense)}</div>
         <div className="flex gap-3 mt-6">
           <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'rgba(0,0,0,0.06)' }}>
             <div className="text-[10px] font-bold uppercase opacity-60" style={{ color: '#000000' }}>{t('income')}</div>
-            <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{isLoading ? '...' : fmtKHR(income)}</div>
+            <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{isLoading ? '...' : fmt(income)}</div>
           </div>
           <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'rgba(0,0,0,0.06)' }}>
             <div className="text-[10px] font-bold uppercase opacity-60" style={{ color: '#000000' }}>{t('expense')}</div>
-            <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{isLoading ? '...' : fmtKHR(expense)}</div>
+            <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{isLoading ? '...' : fmt(expense)}</div>
           </div>
         </div>
       </div>
+
+      {/* Onboarding card — shown only when no data yet */}
+      {!isLoading && transactions.length === 0 && income === 0 && expense === 0 && (
+        <div className="rounded-[20px] p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--gold-soft) 0%, var(--card) 100%)', border: '1px solid var(--gold-med)' }}>
+          <div className="absolute -bottom-6 -right-6 text-[80px] opacity-10 select-none">🚀</div>
+          <div className="text-[11px] font-black uppercase tracking-widest" style={{ color: 'var(--gold)' }}>ចាប់ផ្ដើម</div>
+          <div className="text-base font-black mt-1" style={{ color: 'var(--text)' }}>សូមស្វាគមន៍មកកាន់ OneDegree!</div>
+          <p className="text-xs leading-relaxed mt-1.5 opacity-75" style={{ color: 'var(--text-sec)' }}>
+            ចូរចុចប៊ូតុង <span className="font-bold" style={{ color: 'var(--green)' }}>ចំណូល</span> ឬ <span className="font-bold" style={{ color: 'var(--red)' }}>ចំណាយ</span> ខាងក្រោម ដើម្បីកត់ត្រាប្រតិបត្តិការដំបូងរបស់អ្នក។
+          </p>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => onNavigate('transactions')}
+              className="px-4 py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform"
+              style={{ background: 'var(--gold)', color: '#000' }}
+            >
+              + ប្រតិបត្តិការ
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Profit Margin */}
       <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
@@ -100,7 +122,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
                 <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{tx.occurred_at?.substring(0, 10)}</div>
               </div>
               <div className="text-sm font-bold font-mono-num" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                {tx.type === 'income' ? '+' : '-'}{fmtKHR(tx.amount_cents)}
+                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount_cents)}
               </div>
             </div>
           ))}
@@ -125,7 +147,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       </div>
 
       {/* FAB */}
-      <div className="fixed bottom-[110px] left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] px-6 flex gap-3 z-40">
+      <div className="fixed fab-bottom left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] px-6 flex gap-3 z-40">
         <button onClick={() => onNavigate('transactions')} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
           style={{ background: 'var(--green)', color: 'var(--bg)' }}>
           <Icon name="plus" size={16} /> {t('revenue')}

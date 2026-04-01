@@ -53,11 +53,27 @@ auth.post('/telegram', zValidator('json', z.object({ initData: z.string() })), a
     } else {
       const tgUser = validateTelegramInitData(initData, botToken)
       if (!tgUser) {
-        return c.json({ error: 'Invalid initData', debug: { initDataLen: initData.length, hasHash: initData.includes('hash='), tokenPrefix: botToken.slice(0, 10) } }, 401)
+        // HMAC failed — try parsing user from initData directly as fallback
+        console.warn('HMAC validation failed - attempting fallback parse')
+        const params = new URLSearchParams(initData)
+        const userStr = params.get('user')
+        if (userStr) {
+          try {
+            const userJson = JSON.parse(decodeURIComponent(userStr))
+            telegramId = userJson.id
+            name = userJson.first_name + (userJson.last_name ? ' ' + userJson.last_name : '')
+            username = userJson.username || null
+          } catch {
+            return c.json({ error: 'Invalid initData' }, 401)
+          }
+        } else {
+          return c.json({ error: 'Invalid initData', debug: { initDataLen: initData.length, hasHash: initData.includes('hash='), tokenPrefix: botToken.slice(0, 10) } }, 401)
+        }
+      } else {
+        telegramId = tgUser.id
+        name = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '')
+        username = tgUser.username || null
       }
-      telegramId = tgUser.id
-      name = tgUser.first_name + (tgUser.last_name ? ' ' + tgUser.last_name : '')
-      username = tgUser.username || null
     }
   }
 

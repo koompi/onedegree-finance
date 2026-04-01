@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore'
 
 export interface Payable {
   id: string; contact_name: string; amount_cents: number; due_date: string; description?: string; status?: string
@@ -12,10 +13,10 @@ export function usePayables() {
   const [items, setItems] = useState<Payable[]>([])
 
   const fetch = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try { setItems(await api.get<Payable[]>(`/${companyId}/payables`) || []) }
-    catch (e) { console.error(e) }
+    catch (e) { console.error(e); toast.error('Failed to load payables') }
     setIsLoading(false)
   }, [companyId])
 

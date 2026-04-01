@@ -53,7 +53,7 @@ export default function App() {
   // Auth gate
   if (!token) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-8 text-center" style={{ background: 'var(--bg)' }}>
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center p-8 text-center" style={{ background: 'var(--bg)' }}>
         <div className="text-5xl mb-4">📊</div>
         <div className="text-lg font-extrabold mb-2" style={{ color: 'var(--text)' }}>OneDegree Finance</div>
         <div className="text-sm mb-6" style={{ color: 'var(--text-sec)' }}>ប្រព័ន្ធគ្រប់គ្រឹងហិរញ្ញវត្ថុ SME</div>
@@ -80,7 +80,7 @@ export default function App() {
   return (
     <ErrorBoundary>
       <Toast />
-      <div className="min-h-screen pb-24" style={{ background: 'var(--bg)' }}>
+      <div className="min-h-[100dvh] pb-24" style={{ background: 'var(--bg)' }}>
         {screen === 'dashboard' && <CompanySwitcher name={companyName || undefined} />}
         {renderScreen()}
       </div>

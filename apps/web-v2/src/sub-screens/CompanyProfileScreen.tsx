@@ -45,10 +45,10 @@ export default function CompanyProfileScreen({ onBack }: { onBack: () => void })
     setSaving(false)
   }
 
-  if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('profile_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={5} /></div></div>
+  if (isLoading) return <div className="min-h-[100dvh] animate-fadeIn relative"><ScreenHeader title={t('profile_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={5} /></div></div>
 
   return (
-    <div className="min-h-screen animate-fadeIn relative">
+    <div className="min-h-[100dvh] animate-fadeIn relative">
       <ScreenHeader title={t('profile_title')} onBack={onBack}
         right={isEditing ? undefined : <button onClick={() => setIsEditing(true)} className="text-xs font-bold" style={{ color: 'var(--gold)' }}>{lang === 'km' ? 'កែ' : 'Edit'}</button>} />
       <div className="px-4 space-y-4">

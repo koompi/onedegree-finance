@@ -18,22 +18,70 @@ function getToken(): string | null {
   catch { return null }
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const token = getToken()
+function getRefreshToken(): string | null {
+  if (typeof window === 'undefined') return null
+  try { return JSON.parse(localStorage.getItem('od_auth') || '{}')?.refreshToken || null }
+  catch { return null }
+}
+
+let _refreshing: Promise<string | null> | null = null
+
+async function tryRefreshToken(): Promise<string | null> {
+  // Deduplicate concurrent refresh attempts
+  if (_refreshing) return _refreshing
+  _refreshing = (async () => {
+    try {
+      const rt = getRefreshToken()
+      if (!rt) return null
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: rt }),
+      })
+      if (!res.ok) return null
+      const { accessToken } = await res.json()
+      // Persist new token to localStorage
+      const stored = JSON.parse(localStorage.getItem('od_auth') || '{}')
+      localStorage.setItem('od_auth', JSON.stringify({ ...stored, token: accessToken }))
+      // Update in-memory store without circular import
+      const { useAuthStore } = await import('../store/authStore')
+      useAuthStore.getState().setToken(accessToken)
+      return accessToken as string
+    } catch {
+      return null
+    } finally {
+      _refreshing = null
+    }
+  })()
+  return _refreshing
+}
+
+async function doFetch(method: string, path: string, token: string | null, body?: unknown): Promise<Response> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' }
   if (token) headers['Authorization'] = `Bearer ${token}`
+  return fetch(`${BASE_URL}${path}`, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  })
+}
 
+async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   let p = path
   // The backend mounts business routes under /companies
   if (!p.startsWith('/auth') && !p.startsWith('/health') && !p.startsWith('/companies') && p !== '/') {
     p = `/companies${p}`
   }
 
-  const res = await fetch(`${BASE_URL}${p}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  let res = await doFetch(method, p, getToken(), body)
+
+  // On 401, attempt a single token refresh and retry
+  if (res.status === 401 && !p.startsWith('/auth')) {
+    const newToken = await tryRefreshToken()
+    if (newToken) {
+      res = await doFetch(method, p, newToken, body)
+    }
+  }
 
   if (!res.ok) {
     const json = await res.json().catch(() => ({}))

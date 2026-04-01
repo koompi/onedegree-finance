@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore'
 
 export interface Transaction {
   id: string; type: string; amount_cents: number; category_id?: string; category_name?: string
   account_id?: string; account_name?: string; occurred_at: string; description?: string
+  receipt_url?: string | null
 }
 
 export function useTransactions(month?: string, type?: string) {
@@ -13,7 +15,7 @@ export function useTransactions(month?: string, type?: string) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
 
   const fetch = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try {
       const params = new URLSearchParams()
@@ -22,7 +24,7 @@ export function useTransactions(month?: string, type?: string) {
       params.set('limit', '100')
       const data = await api.get<Transaction[]>(`/${companyId}/transactions?${params}`)
       setTransactions(data || [])
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e); toast.error('Failed to load transactions') }
     setIsLoading(false)
   }, [companyId, month, type])
 

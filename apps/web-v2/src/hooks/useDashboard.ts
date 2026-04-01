@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore'
 
 interface Tx { id: string; type: string; amount_cents: number; category_id?: string; category_name?: string; account_id?: string; account_name?: string; occurred_at: string; description?: string; status?: string }
 interface Report { income: number; expense: number; by_category: Array<{ category_id: string; category_name: string; type: string; total: number }> }
@@ -28,7 +29,7 @@ export function useDashboard() {
   }
 
   const fetchAll = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try {
       // Single unified API call for dashboard
@@ -43,7 +44,8 @@ export function useDashboard() {
       setMonthlyData(res.monthly_stats)
       setReceivablesCount(res.overdue_count)
     } catch (e) { 
-      console.error('Dashboard Error:', e) 
+      console.error('Dashboard Error:', e)
+      toast.error('Failed to load dashboard')
     }
     setIsLoading(false)
   }, [companyId])

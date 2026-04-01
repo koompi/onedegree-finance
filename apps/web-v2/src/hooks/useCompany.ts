@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore'
 
 export interface Company {
   id: string; name: string; type?: string; business_type?: string; tax_id?: string; phone?: string; address?: string; logo_url?: string
@@ -13,13 +14,13 @@ export function useCompany() {
   const [currentCompany, setCurrentCompany] = useState<Company | null>(null)
 
   const fetch = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try {
-      const data = await api.get<Company[]>('/') || []
+      const data = await api.get<Company[]>('/companies') || []
       setCompanies(data)
       setCurrentCompany(data.find((c: Company) => c.id === companyId) || null)
-    } catch (e) { console.error(e) }
+    } catch (e) { console.error(e); toast.error('Failed to load company') }
     setIsLoading(false)
   }, [companyId])
 

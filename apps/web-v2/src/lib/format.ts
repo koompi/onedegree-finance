@@ -20,6 +20,32 @@ export function fmtUSD(khrAmount: number, rate: number = 4100): string {
   return '$' + (khrAmount / rate).toFixed(2)
 }
 
+/** Unified amount formatter — amounts are always stored as KHR */
+export function fmtAmount(amount: number, currency: 'KHR' | 'USD' = 'KHR', rate: number = 4100): string {
+  return currency === 'USD' ? fmtUSD(amount, rate) : fmtKHR(amount)
+}
+
+/** Short unified amount */
+export function fmtAmountShort(amount: number, currency: 'KHR' | 'USD' = 'KHR', rate: number = 4100): string {
+  if (currency === 'USD') {
+    const u = amount / rate
+    if (u >= 1_000_000) return '$' + (u / 1_000_000).toFixed(1) + 'M'
+    if (u >= 1_000) return '$' + (u / 1_000).toFixed(1) + 'K'
+    return '$' + u.toFixed(2)
+  }
+  return fmtKHRShort(amount)
+}
+
+/** Convert KHR amount to USD number */
+export function khrToUsd(khrAmount: number, rate: number = 4100): number {
+  return khrAmount / rate
+}
+
+/** Convert USD input to KHR integer for storage */
+export function usdToKhr(usdAmount: number, rate: number = 4100): number {
+  return Math.round(usdAmount * rate)
+}
+
 /** Date to Khmer: "30 មីនា 2026" */
 export function fmtDateKhmer(dateStr: string): string {
   const d = new Date(dateStr)

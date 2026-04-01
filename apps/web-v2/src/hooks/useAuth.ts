@@ -43,8 +43,8 @@ export function useAuth() {
         const params = new URLSearchParams()
         params.set('user', JSON.stringify(user))
         params.set('auth_date', String(Math.floor(Date.now() / 1000)))
-        api.post<{ token: string; user: any; company: any }>('/auth/telegram', { initData: params.toString() })
-          .then(res => { setAuth(res.token, res.company?.id ?? '', res.company?.name ?? '') })
+        api.post<{ token: string; refreshToken?: string; user: any; company: any }>('/auth/telegram', { initData: params.toString() })
+          .then(res => { setAuth(res.token, res.company?.id ?? '', res.company?.name ?? '', res.refreshToken) })
           .catch(err => { setError(err.message) })
           .finally(() => setIsLoading(false))
       } else {
@@ -55,8 +55,8 @@ export function useAuth() {
     }
 
     // Got initData — authenticate
-    api.post<{ token: string; user: any; company: any }>('/auth/telegram', { initData })
-      .then(res => { setAuth(res.token, res.company?.id ?? '', res.company?.name ?? '') })
+    api.post<{ token: string; refreshToken?: string; user: any; company: any }>('/auth/telegram', { initData })
+      .then(res => { setAuth(res.token, res.company?.id ?? '', res.company?.name ?? '', res.refreshToken) })
       .catch(err => {
         setError(err.message)
         setIsLoading(false)

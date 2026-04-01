@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore'
 
 export interface Account { id: string; name: string; type?: string; account_number?: string; balance: number }
 
@@ -10,10 +11,10 @@ export function useAccounts() {
   const [accounts, setAccounts] = useState<Account[]>([])
 
   const fetch = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try { setAccounts(await api.get<Account[]>(`/${companyId}/accounts`) || []) }
-    catch (e) { console.error(e) }
+    catch (e) { console.error(e); toast.error('Failed to load accounts') }
     setIsLoading(false)
   }, [companyId])
 

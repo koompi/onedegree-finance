@@ -21,7 +21,7 @@ const CompanyBody = z.object({
   name: z.string().min(1).max(100).optional(),
   type: z.enum(['agro', 'general', 'retail', 'service', 'other']).optional(),
   currency_base: z.enum(['USD', 'KHR']).optional(),
-  business_type: z.enum(['retail', 'service', 'manufacturing', 'agro', 'trading', 'other']).optional(),
+  business_type: z.string().max(100).optional(),
   tax_id: z.string().max(50).optional(),
   phone: z.string().max(20).optional(),
   address: z.string().max(500).optional(),

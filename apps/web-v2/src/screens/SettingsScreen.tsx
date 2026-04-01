@@ -12,10 +12,10 @@ export default function SettingsScreen({ onNavigate, toggleTheme, isDark }: {
 }) {
   const [notif, setNotif] = useState(true)
   const { companyName, logout } = useAuthStore()
-  const { lang, setLang, t } = useI18nStore()
+  const { lang, setLang, currency, setCurrency, t } = useI18nStore()
 
   return (
-    <div className="min-h-screen flex animate-fadeIn relative">
+    <div className="min-h-[100dvh] flex animate-fadeIn relative">
       <div className="flex-1 pb-10">
         <ScreenHeader title={t('settings_title')} onBack={() => onNavigate('dashboard')} />
         <div className="px-4 space-y-1">
@@ -39,6 +39,25 @@ export default function SettingsScreen({ onNavigate, toggleTheme, isDark }: {
             <SRow iconName="bell" label={t('settings_notifications')} sublabel={t('settings_tx_reminders')} right={<Toggle on={notif} onToggle={() => setNotif(!notif)} />} />
             <SRow iconName={isDark ? 'moon' : 'sun'} label={isDark ? t('settings_dark_mode') : t('settings_light_mode')} onClick={toggleTheme} />
             <SRow iconName="globe" label={t('settings_language')} sublabel={lang === 'km' ? 'ភាសាខ្មែរ' : 'English'} onClick={() => setLang(lang === 'km' ? 'en' : 'km')} />
+            <SRow
+              iconName="wallet"
+              label={lang === 'km' ? 'រូបិយប័ណ្ណ' : 'Currency'}
+              sublabel={currency === 'KHR' ? '៛ KHR' : '$ USD'}
+              right={
+                <div className="flex items-center gap-1 rounded-full p-0.5" style={{ background: 'var(--border)' }}>
+                  {(['KHR', 'USD'] as const).map(c => (
+                    <button key={c} onClick={() => setCurrency(c)}
+                      className="px-3 py-1 rounded-full text-[11px] font-black transition-all"
+                      style={{
+                        background: currency === c ? 'var(--gold)' : 'transparent',
+                        color: currency === c ? '#000' : 'var(--text-dim)',
+                      }}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              }
+            />
           </SGroup>
           <SGroup title={t('settings_security')}>
             <SRow iconName="telegram" label={t('settings_tg_account')} />

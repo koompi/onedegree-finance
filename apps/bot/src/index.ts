@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server'
 import { handleTextMessage } from './handlers/message'
 import { handleVoiceMessage } from './handlers/voice'
 import { handleCommand } from './handlers/commands'
+import { startDailyCron } from './cron'
 
 const app = new Hono()
 const WEBHOOK_SECRET = process.env.BOT_WEBHOOK_SECRET ?? ''
@@ -65,4 +66,5 @@ const PORT = parseInt(process.env.PORT ?? '3002')
 
 serve({ fetch: app.fetch, port: PORT }, () => {
   console.log(`OneDegree Bot running on port ${PORT}`)
+  startDailyCron()
 })

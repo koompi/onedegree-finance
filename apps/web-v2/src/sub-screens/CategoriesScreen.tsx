@@ -49,10 +49,10 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('categories_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={5} /></div></div>
+  if (isLoading) return <div className="min-h-[100dvh] animate-fadeIn relative"><ScreenHeader title={t('categories_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={5} /></div></div>
 
   return (
-    <div className="min-h-screen animate-fadeIn relative">
+    <div className="min-h-[100dvh] animate-fadeIn relative">
       <ScreenHeader title={t('categories_title')} onBack={onBack} />
       <div className="px-4 space-y-3">
         <div className="flex gap-2">
@@ -81,7 +81,7 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
           </div>
         ))}
       </div>
-      <div className="fixed bottom-[110px] left-1/2 -translate-x-1/2 z-40">
+      <div className="fixed fab-bottom left-1/2 -translate-x-1/2 z-40">
         <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90" style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
           <Icon name="plus" size={22} color="var(--bg)" />
         </button>

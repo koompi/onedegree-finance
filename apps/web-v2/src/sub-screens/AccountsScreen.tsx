@@ -6,6 +6,7 @@ import SkeletonLoader from '../components/SkeletonLoader'
 import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
 import { useAccounts } from '../hooks/useAccounts'
+import { useAmount } from '../hooks/useAmount'
 import { fmtKHR } from '../lib/format'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
@@ -20,6 +21,7 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
   const [initialBalance, setInitialBalance] = useState(0)
   const t = useI18nStore(s => s.t)
   const { isLoading, accounts, totalBalance, create, update, remove } = useAccounts()
+  const { fmt } = useAmount()
 
   const handleSave = async () => {
     if (!name) return
@@ -45,7 +47,7 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('accounts_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
+  if (isLoading) return <div className="min-h-[100dvh] animate-fadeIn relative"><ScreenHeader title={t('accounts_title')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
 
   const TYPE_ICONS: Record<string, string> = { cash: 'wallet', bank: 'building', mobile: 'phone', other: 'tag' }
   const TYPE_LABELS: Record<string, string> = {
@@ -56,12 +58,12 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
   }
 
   return (
-    <div className="min-h-screen animate-fadeIn relative">
+    <div className="min-h-[100dvh] animate-fadeIn relative">
       <ScreenHeader title={t('accounts_title')} onBack={onBack} />
       <div className="px-4 space-y-3">
         <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
           <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('accounts_total_balance')}</div>
-          <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmtKHR(totalBalance)}</div>
+          <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmt(totalBalance)}</div>
         </div>
         {accounts.length === 0 ? (
           <EmptyState icon="🏦" title={t('accounts_empty_title')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
@@ -74,7 +76,7 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
               <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{acc.name}</div>
               <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{TYPE_LABELS[acc.type || 'other'] || acc.type}{acc.account_number ? ` • ${acc.account_number}` : ''}</div>
             </div>
-            <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmtKHR(acc.balance || 0)}</div>
+            <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmt(acc.balance || 0)}</div>
             {deleteId === acc.id ? (
               <div className="flex gap-1">
                 <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
@@ -88,7 +90,7 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
           </div>
         ))}
       </div>
-      <div className="fixed bottom-[110px] left-1/2 -translate-x-1/2 z-40">
+      <div className="fixed fab-bottom left-1/2 -translate-x-1/2 z-40">
         <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90" style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
           <Icon name="plus" size={22} color="var(--bg)" />
         </button>

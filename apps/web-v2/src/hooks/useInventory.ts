@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore'
 
 export interface InventoryItem {
   id: string; name: string; sku?: string; unit?: string; current_qty: number; wac_cost: number; reorder_level: number
@@ -12,10 +13,10 @@ export function useInventory() {
   const [items, setItems] = useState<InventoryItem[]>([])
 
   const fetch = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try { setItems(await api.get<InventoryItem[]>(`/${companyId}/inventory/items`) || []) }
-    catch (e) { console.error(e) }
+    catch (e) { console.error(e); toast.error('Failed to load inventory') }
     setIsLoading(false)
   }, [companyId])
 

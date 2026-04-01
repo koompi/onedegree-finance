@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore'
 
 export interface Category { id: string; name: string; name_km?: string; type: string; icon?: string; is_system?: boolean }
 
@@ -10,10 +11,10 @@ export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([])
 
   const fetch = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try { setCategories(await api.get<Category[]>(`/${companyId}/categories`) || []) }
-    catch (e) { console.error(e) }
+    catch (e) { console.error(e); toast.error('Failed to load categories') }
     setIsLoading(false)
   }, [companyId])
 

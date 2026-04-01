@@ -8,7 +8,8 @@ import SkeletonLoader from '../components/SkeletonLoader'
 import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
 import { useReceivables } from '../hooks/useReceivables'
-import { fmtKHR, daysUntilDue, overdueBadgeText } from '../lib/format'
+import { useAmount } from '../hooks/useAmount'
+import { fmtKHR, fmtDateKhmer, daysUntilDue, overdueBadgeText } from '../lib/format'
 import { useI18nStore } from '../store/i18nStore'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
@@ -28,6 +29,7 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
   const [desc, setDesc] = useState('')
 
   const { isLoading, active, totalOwed, overdueCount, create, remove, collect } = useReceivables()
+  const { fmt } = useAmount()
 
   const filtered = sort === 'overdue' ? active.filter(r => daysUntilDue(r.due_date) < 0)
     : sort === 'active' ? active
@@ -77,7 +79,7 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  if (isLoading) return <div className="min-h-screen animate-fadeIn relative"><ScreenHeader title={t('nav_receivables')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
+  if (isLoading) return <div className="min-h-[100dvh] animate-fadeIn relative"><ScreenHeader title={t('nav_receivables')} onBack={onBack} /><div className="px-4 pt-3"><SkeletonLoader rows={4} /></div></div>
 
   return (
     <div className="h-screen flex flex-col animate-fadeIn overflow-hidden">
@@ -87,7 +89,7 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
           <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_total')}</div>
-            <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmtKHR(totalOwed)}</div>
+            <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmt(totalOwed)}</div>
           </div>
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_overdue')}</div>
@@ -120,9 +122,9 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
                     {days < 0 && <Badge variant="error">{overdueBadgeText(days)}</Badge>}
                     {days >= 0 && days <= 3 && <Badge variant="warning">{overdueBadgeText(days)}</Badge>}
                   </div>
-                  <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{t('tx_form_date')}: {r.due_date}</div>
+                  <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{t('tx_form_date')}: {fmtDateKhmer(r.due_date)}</div>
                 </div>
-                <div className="text-sm font-bold font-mono-num shrink-0" style={{ color: 'var(--gold)' }}>{fmtKHR(r.amount_cents)}</div>
+                <div className="text-sm font-bold font-mono-num shrink-0" style={{ color: 'var(--gold)' }}>{fmt(r.amount_cents)}</div>
               </div>
               <div className="flex gap-2 mt-3">
                 {days < 0 && (
@@ -150,7 +152,7 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      <div className="fixed bottom-[110px] right-6 z-40">
+      <div className="fixed fab-bottom right-6 z-40">
         <button 
           onClick={() => { haptic('medium'); setShowAdd(true) }} 
           className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"

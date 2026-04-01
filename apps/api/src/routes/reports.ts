@@ -121,4 +121,48 @@ reports.get('/:companyId/reports/dashboard-bundle', async (c) => {
   })
 })
 
+/**
+ * Cash flow — daily income vs expense timeline
+ * GET /companies/:companyId/reports/cashflow?month=YYYY-MM
+ */
+reports.get('/:companyId/reports/cashflow', async (c) => {
+  const userId = c.get('userId')
+  const { companyId } = c.req.param()
+  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+
+  const month = c.req.query('month') || new Date().toISOString().slice(0, 7)
+
+  const result = await pool.query(
+    `SELECT
+       to_char(occurred_at, 'YYYY-MM-DD') as day,
+       type,
+       SUM(amount_cents)::BIGINT as total
+     FROM transactions
+     WHERE company_id = $1
+       AND occurred_at >= ($2 || '-01')::DATE
+       AND occurred_at < (($2 || '-01')::DATE + INTERVAL '1 month')
+     GROUP BY 1, 2
+     ORDER BY 1 ASC`,
+    [companyId, month]
+  )
+
+  // Build unified day list
+  const dayMap: Record<string, { income: number; expense: number }> = {}
+  for (const row of result.rows) {
+    if (!dayMap[row.day]) dayMap[row.day] = { income: 0, expense: 0 }
+    dayMap[row.day][row.type as 'income' | 'expense'] = parseInt(row.total)
+  }
+
+  // Running balance
+  let running = 0
+  const days = Object.entries(dayMap)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, d]) => {
+      running += d.income - d.expense
+      return { day, income: d.income, expense: d.expense, balance: running }
+    })
+
+  return c.json({ month, days })
+})
+
 export default reports

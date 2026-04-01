@@ -12,7 +12,7 @@ export default function BottomSheet({ isOpen, onClose, title, children, height =
     <div className="fixed inset-0 z-50 animate-fadeIn">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
       <div className="absolute bottom-0 left-0 right-0 animate-slideUp rounded-t-3xl overflow-y-auto"
-        style={{ background: 'var(--card)', maxHeight: typeof height === 'number' ? height : height === 'full' ? '100vh' : '85vh', paddingTop: 'var(--safe-area-top)' }}>
+        style={{ background: 'var(--card)', maxHeight: typeof height === 'number' ? height : height === 'full' ? '100dvh' : '85dvh', paddingTop: 'var(--safe-area-top)' }}>
         <div className="sticky top-0 z-10 pt-2 pb-3 text-center" style={{ background: 'var(--card)' }}>
           <div className="w-9 h-1 rounded-full mx-auto mb-3" style={{ background: 'var(--border)' }} />
           <div className="text-base font-extrabold" style={{ color: 'var(--text)' }}>{title}</div>

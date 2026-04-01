@@ -6,13 +6,15 @@ import Icon from '../components/Icon'
 import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
 import { usePayables } from '../hooks/usePayables'
-import { fmtKHR, daysUntilDue } from '../lib/format'
+import { useAmount } from '../hooks/useAmount'
+import { fmtKHR, fmtDateKhmer, daysUntilDue } from '../lib/format'
 import { useI18nStore } from '../store/i18nStore'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 
 export default function PayablesScreen({ onBack }: { onBack: () => void }) {
   const { isLoading, active, totalPayable, create, remove } = usePayables()
+  const { fmt } = useAmount()
   const [showAdd, setShowAdd] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const t = useI18nStore(s => s.t)
@@ -47,19 +49,19 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
   }
 
   if (isLoading) return (
-    <div className="min-h-screen animate-fadeIn relative">
+    <div className="min-h-[100dvh] animate-fadeIn relative">
       <ScreenHeader title={t('payables')} onBack={onBack} />
       <div className="px-4 pt-3"><SkeletonLoader rows={5} /></div>
     </div>
   )
 
   return (
-    <div className="min-h-screen animate-fadeIn relative">
+    <div className="min-h-[100dvh] animate-fadeIn relative">
       <ScreenHeader title={t('payables')} onBack={onBack} />
       <div className="px-4 space-y-4">
         <div className="rounded-3xl p-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--red) 0%, #C0392B 100%)' }}>
           <div className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>{t('payables_total')}</div>
-          <div className="text-3xl font-black font-mono-num text-white">{fmtKHR(totalPayable)}</div>
+          <div className="text-3xl font-black font-mono-num text-white">{fmt(totalPayable)}</div>
         </div>
         {active.length === 0 ? (
           <EmptyState icon="🏁" title={t('payables_empty_title')} subtitle={t('payables_empty_subtitle')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
@@ -76,10 +78,10 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
                   <div className="text-[10px]" style={{ color: days < 0 ? 'var(--red)' : 'var(--text-dim)' }}>
                     {days < 0
                       ? t('days_overdue', { days: Math.abs(days) })
-                      : `${t('tx_form_date')}: ${r.due_date}`}
+                      : `${t('tx_form_date')}: ${fmtDateKhmer(r.due_date)}`}
                   </div>
                 </div>
-                <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--orange)' }}>{fmtKHR(r.amount_cents)}</div>
+                <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--orange)' }}>{fmt(r.amount_cents)}</div>
                 {deleteId === r.id ? (
                   <div className="flex gap-1">
                     <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
@@ -95,7 +97,7 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
           )
         })}
       </div>
-      <div className="fixed bottom-[110px] left-1/2 -translate-x-1/2 z-40">
+      <div className="fixed fab-bottom left-1/2 -translate-x-1/2 z-40">
         <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90" style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
           <Icon name="plus" size={22} color="var(--bg)" />
         </button>

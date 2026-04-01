@@ -10,6 +10,8 @@ import receivables from './routes/receivables'
 import payables from './routes/payables'
 import reports from './routes/reports'
 import inventory from './routes/inventory'
+import uploads from './routes/uploads'
+import internal from './routes/internal'
 
 const app = new Hono()
 
@@ -28,6 +30,8 @@ app.route('/companies', receivables)
 app.route('/companies', payables)
 app.route('/companies', reports)
 app.route('/companies', inventory)
+app.route('/companies', uploads)
+app.route('/internal', internal)
 
 import { serve } from '@hono/node-server'
 import { initDb } from './db/client'

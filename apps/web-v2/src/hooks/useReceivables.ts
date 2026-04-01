@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
+import { toast } from '../store/toastStore'
 
 export interface Receivable {
   id: string; contact_name: string; amount_cents: number; due_date: string; description?: string; status?: string; phone?: string
@@ -12,10 +13,10 @@ export function useReceivables() {
   const [items, setItems] = useState<Receivable[]>([])
 
   const fetch = useCallback(async () => {
-    if (!companyId) return
+    if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try { setItems(await api.get<Receivable[]>(`/${companyId}/receivables`) || []) }
-    catch (e) { console.error(e) }
+    catch (e) { console.error(e); toast.error('Failed to load receivables') }
     setIsLoading(false)
   }, [companyId])
 

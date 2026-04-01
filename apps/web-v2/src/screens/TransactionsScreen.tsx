@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import ScreenHeader from '../components/ScreenHeader'
 import Pill from '../components/Pill'
 import Icon from '../components/Icon'
@@ -6,10 +6,13 @@ import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 import BottomSheet from '../components/BottomSheet'
 import CurrencyInput from '../components/CurrencyInput'
+import ListItem from '../components/ListItem'
 import { useTransactions } from '../hooks/useTransactions'
 import { useCategories } from '../hooks/useCategories'
 import { useAccounts } from '../hooks/useAccounts'
-import { fmtKHR, fmtDateKhmer } from '../lib/format'
+import { useAmount } from '../hooks/useAmount'
+import { useReceiptUpload } from '../hooks/useReceiptUpload'
+import { fmtDateKhmer } from '../lib/format'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
@@ -32,12 +35,18 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [desc, setDesc] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [quickMode, setQuickMode] = useState(true)
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const now = new Date()
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const { isLoading, transactions, create, remove } = useTransactions(month, filter)
   const { categories, incomeCategories, expenseCategories } = useCategories()
   const { accounts } = useAccounts()
+  const { fmt } = useAmount()
+  const { uploadReceipt, uploading, progress } = useReceiptUpload()
 
 
   const filteredCategories = type === 'income' ? incomeCategories : expenseCategories
@@ -49,6 +58,23 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
     txs.forEach(t => { const d = t.occurred_at?.substring(0, 10) || ''; (groups[d] = groups[d] || []).push(t) })
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))
   }, [transactions, search])
+
+  const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    // Show local preview immediately
+    setReceiptPreview(URL.createObjectURL(file))
+    try {
+      const url = await uploadReceipt(file)
+      setReceiptUrl(url)
+      toast.success('Receipt uploaded')
+    } catch (err: any) {
+      toast.error(err.message || 'Upload failed')
+      setReceiptPreview(null)
+    }
+    // Reset file input so same file can be re-picked
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
 
   const handleSave = async () => {
     if (amount <= 0) {
@@ -64,11 +90,13 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
         category_id: categoryId || undefined,
         account_id: accountId || undefined,
         occurred_at: new Date(date).toISOString(),
-        note: desc || undefined
+        note: desc || undefined,
+        receipt_url: receiptUrl || undefined,
       } as any)
       toast.success(t('tx_saved_success'))
       setShowAdd(false)
       setAmount(0); setDesc(''); setCategoryId(''); setAccountId('')
+      setReceiptUrl(null); setReceiptPreview(null)
     } catch (e: any) {
       console.error(e)
       toast.error(e.message || 'Failed to save transaction')
@@ -84,7 +112,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   }
 
   if (isLoading) return (
-    <div className="min-h-screen animate-fadeIn">
+    <div className="min-h-[100dvh] animate-fadeIn">
       <ScreenHeader title={t('nav_transactions')} onBack={onBack} />
       <div className="px-4 pt-3"><SkeletonLoader rows={6} /></div>
     </div>
@@ -161,10 +189,20 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                         subtitle={tx.account_name || ''}
                         icon={tx.type === 'income' ? '↗️' : '↘️'}
                         iconBg={tx.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)'}
-                        right={(tx.type === 'income' ? '+' : '-') + fmtKHR(tx.amount_cents)}
+                        right={(tx.type === 'income' ? '+' : '-') + fmt(tx.amount_cents)}
                         rightColor={tx.type === 'income' ? 'var(--green)' : 'var(--red)'}
                         onPress={() => {}}
                       />
+                      {tx.receipt_url && (
+                        <a
+                          href={tx.receipt_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute left-14 bottom-1.5 text-[10px] font-bold"
+                          style={{ color: 'var(--gold)' }}
+                          onClick={e => e.stopPropagation()}
+                        >📎</a>
+                      )}
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
                         {deleteId === tx.id ? (
                           <div className="flex gap-1 animate-fadeIn">
@@ -190,7 +228,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
         )}
       </div>
 
-      <div className="fixed bottom-[110px] right-6 z-40">
+      <div className="fixed fab-bottom right-6 z-40">
         <button 
           onClick={() => { haptic('medium'); setShowAdd(true) }} 
           className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"
@@ -202,6 +240,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
 
       <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={type === 'income' ? 'ចំណូលថ្មី' : 'ចំណាយថ្មី'}>
         <div className="space-y-4">
+          {/* Income / Expense type toggle */}
           <div className="flex gap-2">
             {(['income', 'expense'] as const).map(t_alias => (
               <button key={t_alias} onClick={() => setType(t_alias)} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
@@ -210,35 +249,102 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
               </button>
             ))}
           </div>
+
+          {/* Quick / Detail mode toggle */}
+          <div className="flex items-center gap-2 p-1 rounded-xl" style={{ background: 'var(--border)' }}>
+            <button
+              onClick={() => { haptic('light'); setQuickMode(true) }}
+              className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all"
+              style={{ background: quickMode ? 'var(--card)' : 'transparent', color: quickMode ? 'var(--gold)' : 'var(--text-dim)' }}
+            >⚡ រហ័ស</button>
+            <button
+              onClick={() => { haptic('light'); setQuickMode(false) }}
+              className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all"
+              style={{ background: !quickMode ? 'var(--card)' : 'transparent', color: !quickMode ? 'var(--gold)' : 'var(--text-dim)' }}
+            >📋 លម្អិត</button>
+          </div>
+
           <div>
             <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_amount')}</label>
             <CurrencyInput value={amount} onChange={setAmount} autoFocus />
           </div>
-          <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_category')}</label>
-            <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-              <option value="">{t('tx_form_cat_placeholder')}</option>
-              {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_account')}</label>
-            <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-              <option value="">{t('tx_form_acc_placeholder')}</option>
-              {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_date')}</label>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-          </div>
-          <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_note')}</label>
-            <input value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('tx_form_note_placeholder')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
-          </div>
-          <button onClick={handleSave} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{t('tx_form_save')}</button>
+
+          {!quickMode && (
+            <>
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_category')}</label>
+                <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                  <option value="">{t('tx_form_cat_placeholder')}</option>
+                  {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_account')}</label>
+                <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                  <option value="">{t('tx_form_acc_placeholder')}</option>
+                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_date')}</label>
+                <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_note')}</label>
+                <input value={desc} onChange={e => setDesc(e.target.value)} placeholder={t('tx_form_note_placeholder')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+              </div>
+
+              {/* Receipt photo */}
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>📎 វិក្កយបត្រ / Receipt</label>
+                {receiptPreview ? (
+                  <div className="relative rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                    <img src={receiptPreview} alt="Receipt" className="w-full max-h-40 object-cover" />
+                    {uploading && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: 'rgba(0,0,0,0.6)' }}>
+                        <div className="text-white text-xs font-bold">{progress}%</div>
+                        <div className="w-24 h-1 rounded-full mt-1" style={{ background: 'rgba(255,255,255,0.3)' }}>
+                          <div className="h-full rounded-full" style={{ width: `${progress}%`, background: 'var(--gold)' }} />
+                        </div>
+                      </div>
+                    )}
+                    {!uploading && (
+                      <button
+                        onClick={() => { setReceiptUrl(null); setReceiptPreview(null) }}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center"
+                        style={{ background: 'rgba(0,0,0,0.6)' }}
+                      >
+                        <Icon name="close" size={12} color="white" />
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 active:scale-[0.98]"
+                    style={{ background: 'var(--input-bg)', border: '1px dashed var(--border)', color: 'var(--text-sec)' }}
+                  >
+                    <span>📷 ថតរូប / ជ្រើសរូប</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
+          <button onClick={handleSave} disabled={uploading} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98] disabled:opacity-60" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{uploading ? `${progress}%…` : t('tx_form_save')}</button>
         </div>
       </BottomSheet>
+
+      {/* Hidden file input for receipt photos */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFilePick}
+      />
     </div>
   )
 }
