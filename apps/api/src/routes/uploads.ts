@@ -4,7 +4,7 @@ import pool from '../db/client'
 
 const KCONSOLE_BASE = 'https://api-kconsole.koompi.cloud'
 const KCONSOLE_KEY = process.env.KCONSOLE_API_KEY || 'sk_69cd42a605557083d79e6265_DG5u1eGrYTyoVa4BLJibgsV7EUZDpGva'
-const CDN_BASE = 'https://kconsole-storage.koompi.cloud'
+const CDN_BASE = 'https://storage.koompi.cloud'
 
 type Variables = { userId: string }
 const uploads = new Hono<{ Variables: Variables }>()

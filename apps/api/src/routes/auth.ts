@@ -145,8 +145,11 @@ auth.post('/refresh', zValidator('json', z.object({ refreshToken: z.string() }))
   try {
     const { payload } = await jwtVerify(refreshToken, JWT_SECRET)
     if (payload.type !== 'refresh') return c.json({ error: 'Invalid token' }, 401)
-    const accessToken = await createJWT(payload.userId as string)
-    return c.json({ accessToken })
+    const [accessToken, newRefreshToken] = await Promise.all([
+      createJWT(payload.userId as string),
+      createRefreshToken(payload.userId as string),
+    ])
+    return c.json({ accessToken, refreshToken: newRefreshToken })
   } catch {
     return c.json({ error: 'Invalid or expired refresh token' }, 401)
   }

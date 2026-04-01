@@ -4,6 +4,7 @@
  */
 import { Hono } from 'hono'
 import pool from '../db/client'
+import { processOverdueRecurring } from './recurring'
 
 const internal = new Hono()
 
@@ -72,6 +73,21 @@ internal.post('/daily-summary/mark', async (c) => {
     [company_id, date]
   )
   return c.json({ ok: true })
+})
+
+/**
+ * POST /internal/recurring/process
+ * Process all overdue recurring transactions across all companies
+ */
+internal.post('/recurring/process', async (c) => {
+  if (!checkSecret(c)) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const processed = await processOverdueRecurring()
+    return c.json({ ok: true, processed })
+  } catch (err) {
+    console.error('[internal] recurring process error:', err)
+    return c.json({ error: 'Internal error' }, 500)
+  }
 })
 
 export default internal

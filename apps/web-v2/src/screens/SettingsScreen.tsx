@@ -34,6 +34,7 @@ export default function SettingsScreen({ onNavigate, toggleTheme, isDark }: {
             <SRow iconName="building" label={t('settings_company_info')} onClick={() => onNavigate('companyProfile')} />
             <SRow iconName="tag" label={t('settings_categories')} onClick={() => onNavigate('categories')} />
             <SRow iconName="wallet" label={t('settings_accounts')} onClick={() => onNavigate('accounts')} />
+            <SRow iconName="refresh" label="ប្រតិបត្តិការដដែលៗ" sublabel="Recurring Transactions" onClick={() => onNavigate('recurring')} />
           </SGroup>
           <SGroup title={t('settings_app')}>
             <SRow iconName="bell" label={t('settings_notifications')} sublabel={t('settings_tx_reminders')} right={<Toggle on={notif} onToggle={() => setNotif(!notif)} />} />

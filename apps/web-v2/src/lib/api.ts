@@ -39,13 +39,15 @@ async function tryRefreshToken(): Promise<string | null> {
         body: JSON.stringify({ refreshToken: rt }),
       })
       if (!res.ok) return null
-      const { accessToken } = await res.json()
-      // Persist new token to localStorage
+      const { accessToken, refreshToken: newRefreshToken } = await res.json()
+      // Persist new tokens to localStorage (rolling refresh)
       const stored = JSON.parse(localStorage.getItem('od_auth') || '{}')
-      localStorage.setItem('od_auth', JSON.stringify({ ...stored, token: accessToken }))
+      localStorage.setItem('od_auth', JSON.stringify({ ...stored, token: accessToken, refreshToken: newRefreshToken || stored.refreshToken }))
       // Update in-memory store without circular import
       const { useAuthStore } = await import('../store/authStore')
-      useAuthStore.getState().setToken(accessToken)
+      const store = useAuthStore.getState()
+      store.setToken(accessToken)
+      if (newRefreshToken) useAuthStore.setState({ refreshToken: newRefreshToken })
       return accessToken as string
     } catch {
       return null
@@ -80,6 +82,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     const newToken = await tryRefreshToken()
     if (newToken) {
       res = await doFetch(method, p, newToken, body)
+    } else {
+      // Refresh token also expired — force logout so user re-authenticates
+      const { useAuthStore } = await import('../store/authStore')
+      useAuthStore.getState().logout()
     }
   }
 

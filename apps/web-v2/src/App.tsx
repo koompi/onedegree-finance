@@ -13,13 +13,14 @@ import SettingsScreen from './screens/SettingsScreen'
 import CategoriesScreen from './sub-screens/CategoriesScreen'
 import AccountsScreen from './sub-screens/AccountsScreen'
 import CompanyProfileScreen from './sub-screens/CompanyProfileScreen'
+import RecurringScreen from './sub-screens/RecurringScreen'
 import { useAuthStore } from './store/authStore'
 import { useAuth } from './hooks/useAuth'
 import { initTelegram, haptic } from './lib/telegram'
 import { api } from './lib/api'
 import { useI18nStore } from './store/i18nStore'
 
-type Screen = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'inventory' | 'reports' | 'settings' | 'categories' | 'accounts' | 'companyProfile'
+type Screen = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'inventory' | 'reports' | 'settings' | 'categories' | 'accounts' | 'companyProfile' | 'recurring'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('dashboard')
@@ -147,6 +148,7 @@ export default function App() {
       case 'categories': return <CategoriesScreen onBack={goBack} />
       case 'accounts': return <AccountsScreen onBack={goBack} />
       case 'companyProfile': return <CompanyProfileScreen onBack={goBack} />
+      case 'recurring': return <RecurringScreen onBack={goBack} />
     }
   }
 

@@ -161,6 +161,15 @@ export const en = {
     sort_all: 'All',
     sort_overdue: 'Overdue',
     sort_active: 'Active',
+    sort_paid: 'Paid',
+
+    // Status labels
+    status_paid: 'Paid ✓',
+    status_pending: 'Pending',
+    status_overdue: 'Overdue',
+
+    // Receivables stats
+    receivables_collected: 'Total Collected',
 
     // Actions
     action_remind: 'Remind',
@@ -341,6 +350,15 @@ export const km = {
     sort_all: 'ទាំងអស់',
     sort_overdue: 'ហួសកំណត់',
     sort_active: 'សកម្ម',
+    sort_paid: 'ទូទាត់រួច',
+
+    // Status labels
+    status_paid: 'ទូទាត់រួច ✓',
+    status_pending: 'កំពុងរង់ចាំ',
+    status_overdue: 'ហួសកំណត់',
+
+    // Receivables stats
+    receivables_collected: 'ប្រមូលបានសរុប',
 
     // Actions
     action_remind: 'រំលឹក',

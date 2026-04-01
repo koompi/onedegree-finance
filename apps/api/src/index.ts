@@ -12,6 +12,7 @@ import reports from './routes/reports'
 import inventory from './routes/inventory'
 import uploads from './routes/uploads'
 import internal from './routes/internal'
+import recurring from './routes/recurring'
 
 const app = new Hono()
 
@@ -31,6 +32,7 @@ app.route('/companies', payables)
 app.route('/companies', reports)
 app.route('/companies', inventory)
 app.route('/companies', uploads)
+app.route('/companies', recurring)
 app.route('/internal', internal)
 
 import { serve } from '@hono/node-server'

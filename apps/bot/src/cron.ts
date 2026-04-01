@@ -38,6 +38,22 @@ async function sendTelegramMessage(chatId: number, text: string): Promise<void> 
 
 async function runDailySummary(): Promise<void> {
   console.log('[cron] Running daily summary...')
+
+  // 1. First, process any overdue recurring transactions
+  try {
+    const res = await fetch(`${API_URL}/internal/recurring/process`, {
+      method: 'POST',
+      headers: { 'x-internal-secret': INTERNAL_SECRET },
+    })
+    if (res.ok) {
+      const { processed } = await res.json() as { processed: number }
+      if (processed > 0) console.log(`[cron] Processed ${processed} recurring transactions`)
+    }
+  } catch (err) {
+    console.error('[cron] Recurring processing error:', err)
+  }
+
+  // 2. Send daily summaries
   try {
     const res = await fetch(`${API_URL}/internal/daily-summary`, {
       headers: { 'x-internal-secret': INTERNAL_SECRET },

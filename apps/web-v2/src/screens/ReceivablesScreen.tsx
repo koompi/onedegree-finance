@@ -15,7 +15,12 @@ import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 import { getTelegram } from '../lib/telegram'
 
-const SORTS = (t: any) => [{ key: 'all', label: t('sort_all') }, { key: 'overdue', label: t('sort_overdue') }, { key: 'active', label: t('sort_active') }]
+const SORTS = (t: any) => [
+  { key: 'all', label: t('sort_all') },
+  { key: 'overdue', label: t('sort_overdue') },
+  { key: 'active', label: t('sort_active') },
+  { key: 'paid', label: t('sort_paid') },
+]
 
 export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
   const t = useI18nStore(s => s.t)
@@ -28,12 +33,13 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
   const [due, setDue] = useState(new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10))
   const [desc, setDesc] = useState('')
 
-  const { isLoading, active, totalOwed, overdueCount, create, remove, collect } = useReceivables()
+  const { isLoading, active, paid, totalOwed, totalCollected, overdueCount, create, remove, collect } = useReceivables()
   const { fmt } = useAmount()
 
-  const filtered = sort === 'overdue' ? active.filter(r => daysUntilDue(r.due_date) < 0)
+  const filtered = sort === 'paid' ? paid
+    : sort === 'overdue' ? active.filter(r => daysUntilDue(r.due_date) < 0)
     : sort === 'active' ? active
-      : active
+    : active
 
   const handleSave = async () => {
     if (!name || amt <= 0) return
@@ -92,8 +98,9 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
             <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmt(totalOwed)}</div>
           </div>
           <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_overdue')}</div>
-            <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--red)' }}>{overdueCount} {lang === 'km' ? 'នាក់' : 'persons'}</div>
+            <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_collected')}</div>
+            <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--green)' }}>{fmt(totalCollected)}</div>
+            {overdueCount > 0 && <div className="text-[10px] font-semibold mt-1" style={{ color: 'var(--red)' }}>{overdueCount} {lang === 'km' ? 'នាក់ហួសកំណត់' : 'overdue'}</div>}
           </div>
         </div>
         <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
@@ -107,45 +114,49 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
           ))}
         </div>
         {filtered.length === 0 ? (
-          <EmptyState icon="💸" title={t('receivables_empty_title')} subtitle={t('receivables_empty_subtitle')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
+          <EmptyState icon="💸" title={t('receivables_empty_title')} subtitle={sort === 'paid' ? (lang === 'km' ? 'មិនទាន់មានការទូទាត់ណាមួយ' : 'No collected payments yet.') : t('receivables_empty_subtitle')} action={sort !== 'paid' ? { label: t('tx_add_new'), onClick: () => setShowAdd(true) } : undefined} />
         ) : filtered.map(r => {
-          const days = daysUntilDue(r.due_date)
+          const isPaid = r.status === 'paid'
+          const days = isPaid ? 0 : daysUntilDue(r.due_date)
           return (
-            <div key={r.id} className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <div key={r.id} className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)', opacity: isPaid ? 0.85 : 1 }}>
               <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0" style={{ background: 'var(--gold-soft)' }}>
-                  <Icon name="receivable" size={16} color="var(--gold)" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0" style={{ background: isPaid ? 'var(--green-soft)' : 'var(--gold-soft)' }}>
+                  <Icon name={isPaid ? 'check' : 'receivable'} size={16} color={isPaid ? 'var(--green)' : 'var(--gold)'} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{r.contact_name}</span>
-                    {days < 0 && <Badge variant="error">{overdueBadgeText(days)}</Badge>}
-                    {days >= 0 && days <= 3 && <Badge variant="warning">{overdueBadgeText(days)}</Badge>}
+                    {isPaid && <Badge variant="success">{t('status_paid')}</Badge>}
+                    {!isPaid && days < 0 && <Badge variant="error">{overdueBadgeText(days)}</Badge>}
+                    {!isPaid && days >= 0 && days <= 3 && <Badge variant="warning">{overdueBadgeText(days)}</Badge>}
                   </div>
                   <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{t('tx_form_date')}: {fmtDateKhmer(r.due_date)}</div>
                 </div>
-                <div className="text-sm font-bold font-mono-num shrink-0" style={{ color: 'var(--gold)' }}>{fmt(r.amount_cents)}</div>
+                <div className="text-sm font-bold font-mono-num shrink-0" style={{ color: isPaid ? 'var(--green)' : 'var(--gold)' }}>{fmt(r.amount_cents)}</div>
               </div>
-              <div className="flex gap-2 mt-3">
-                {days < 0 && (
-                  <button onClick={() => handleRemind(r)} className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95" style={{ background: 'var(--blue-soft)', color: 'var(--blue)' }}>
-                    <Icon name="telegram" size={12} /> {t('action_remind')}
+              {!isPaid && (
+                <div className="flex gap-2 mt-3">
+                  {days < 0 && (
+                    <button onClick={() => handleRemind(r)} className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95" style={{ background: 'var(--blue-soft)', color: 'var(--blue)' }}>
+                      <Icon name="telegram" size={12} /> {t('action_remind')}
+                    </button>
+                  )}
+                  <button onClick={() => handleCollect(r.id)} className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95" style={{ background: 'var(--green-soft)', color: 'var(--green)' }}>
+                    <Icon name="check" size={12} /> {t('action_collect')}
                   </button>
-                )}
-                <button onClick={() => handleCollect(r.id)} className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95" style={{ background: 'var(--green-soft)', color: 'var(--green)' }}>
-                  <Icon name="check" size={12} /> {t('action_collect')}
-                </button>
-                {deleteId === r.id ? (
-                  <div className="flex gap-1">
-                    <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
-                    <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
-                  </div>
-                ) : (
-                  <button onClick={() => setDeleteId(r.id)} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
-                    <Icon name="trash" size={12} color="var(--red)" />
-                  </button>
-                )}
-              </div>
+                  {deleteId === r.id ? (
+                    <div className="flex gap-1">
+                      <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
+                      <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeleteId(r.id)} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
+                      <Icon name="trash" size={12} color="var(--red)" />
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}
