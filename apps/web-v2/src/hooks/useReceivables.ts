@@ -4,7 +4,8 @@ import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
 export interface Receivable {
-  id: string; contact_name: string; amount_cents: number; due_date: string; description?: string; status?: string; phone?: string
+  id: string; contact_name: string; amount_cents: number; due_date: string
+  note?: string; description?: string; status?: string; phone?: string; receipt_url?: string | null
 }
 
 export function useReceivables() {

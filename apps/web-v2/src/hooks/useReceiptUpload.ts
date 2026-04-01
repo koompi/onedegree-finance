@@ -18,6 +18,16 @@ export function useReceiptUpload() {
    */
   const uploadReceipt = async (file: File, transactionId?: string): Promise<string> => {
     if (!companyId) throw new Error('No company selected')
+
+    // 5 MB guard
+    const MAX_BYTES = 5 * 1024 * 1024
+    if (file.size > MAX_BYTES) {
+      throw new Error(
+        `ឯកសាររបស់អ្នកធំជាង 5MB ។ សូមផ្ញើរូបភាពទៅ Telegram ជាមុន រួចរក្សាទុកជា "Compressed" ហើយព្យាយាមឡើងវិញ។\n\n` +
+        `Your file exceeds 5MB. Please send the image to Telegram first, save it as "Compressed", then try again.`
+      )
+    }
+
     setUploading(true)
     setProgress(20)
 

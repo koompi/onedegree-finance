@@ -20,6 +20,7 @@ const Body = z.object({
   due_date: z.string().optional(),
   note: z.string().optional(),
   status: z.enum(['pending', 'partial', 'paid']).default('pending'),
+  receipt_url: z.string().url().optional().nullable(),
 })
 
 receivables.get('/:companyId/receivables', async (c) => {
@@ -38,8 +39,8 @@ receivables.post('/:companyId/receivables', zValidator('json', Body), async (c) 
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const b = c.req.valid('json')
   const r = await pool.query(
-    'INSERT INTO receivables (company_id, contact_name, amount_cents, currency, due_date, note, status) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *',
-    [companyId, b.contact_name, b.amount_cents, b.currency, b.due_date || null, b.note || null, b.status]
+    'INSERT INTO receivables (company_id, contact_name, amount_cents, currency, due_date, note, status, receipt_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+    [companyId, b.contact_name, b.amount_cents, b.currency, b.due_date || null, b.note || null, b.status, b.receipt_url || null]
   )
   return c.json(r.rows[0], 201)
 })
@@ -54,6 +55,7 @@ receivables.patch('/:companyId/receivables/:id', zValidator('json', Body.partial
   if (b.status) { sets.push(`status=$${i++}`); vals.push(b.status) }
   if (b.due_date) { sets.push(`due_date=$${i++}`); vals.push(b.due_date) }
   if (b.note !== undefined) { sets.push(`note=$${i++}`); vals.push(b.note) }
+  if (b.receipt_url !== undefined) { sets.push(`receipt_url=$${i++}`); vals.push(b.receipt_url) }
   sets.push(`updated_at=NOW()`)
   vals.push(id, companyId)
   const r = await pool.query(
