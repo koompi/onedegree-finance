@@ -1,53 +1,49 @@
 import { useState } from 'react'
 import { useAuthStore } from '../store/authStore'
-import { api } from '../lib/api'
 
-export interface ReceiptUploadResult {
-  url: string
-}
+const isDev = typeof import.meta !== 'undefined' && (import.meta as any).env?.DEV
+const envApiUrl = typeof import.meta !== 'undefined' ? (import.meta as any).env?.VITE_API_URL : undefined
+const BASE_URL = envApiUrl || (isDev ? 'http://localhost:3001' : 'https://onedegree-api.tunnel.koompi.cloud')
 
 export function useReceiptUpload() {
   const companyId = useAuthStore(s => s.companyId)
+  const token = useAuthStore(s => s.token)
   const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState(0) // 0-100
+  const [progress, setProgress] = useState(0)
 
   /**
    * Upload a file and return the public CDN URL.
-   * Optionally pass a transactionId to auto-attach the receipt on confirm.
+   * The file is proxied through our API server to avoid R2 CORS restrictions.
+   * Optionally pass a transactionId to auto-attach the receipt.
    */
   const uploadReceipt = async (file: File, transactionId?: string): Promise<string> => {
     if (!companyId) throw new Error('No company selected')
     setUploading(true)
-    setProgress(10)
+    setProgress(20)
 
     try {
-      // Step 1: Get pre-signed upload URL from our backend → KConsole
-      const tokenRes = await api.post<{ uploadUrl: string; objectId: string; key: string; publicUrl: string }>(
-        `/${companyId}/receipts/upload-token`,
-        { filename: file.name, contentType: file.type, size: file.size }
-      )
-      setProgress(30)
+      const form = new FormData()
+      form.append('file', file)
+      if (transactionId) form.append('transactionId', transactionId)
 
-      // Step 2: PUT file directly to pre-signed R2 URL (no auth needed, key stays server-side)
-      const r2Res = await fetch(tokenRes.uploadUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': file.type,
-          'Cache-Control': 'public, max-age=31536000',
-        },
-        body: file,
-      })
-      if (!r2Res.ok) throw new Error(`R2 upload failed: ${r2Res.status}`)
-      setProgress(80)
+      setProgress(40)
 
-      // Step 3: Confirm with our backend (marks as complete, optionally attaches to transaction)
-      const completeRes = await api.post<{ url: string }>(
-        `/${companyId}/receipts/complete`,
-        { objectId: tokenRes.objectId, key: tokenRes.key, transactionId }
+      // Single request to our API — it handles the full R2 upload server-side
+      const res = await fetch(
+        `${BASE_URL}/companies/${companyId}/receipts/upload`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form }
       )
+
+      setProgress(90)
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error((err as any).error || `Upload failed: ${res.status}`)
+      }
+
+      const { url } = await res.json()
       setProgress(100)
-
-      return completeRes.url
+      return url
     } finally {
       setUploading(false)
       setProgress(0)

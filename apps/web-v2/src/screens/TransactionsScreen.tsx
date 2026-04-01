@@ -35,6 +35,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [desc, setDesc] = useState('')
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [selectedTx, setSelectedTx] = useState<import('../hooks/useTransactions').Transaction | null>(null)
   const [quickMode, setQuickMode] = useState(true)
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
@@ -185,39 +186,22 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                   {txs.map((tx) => (
                     <div key={tx.id} className="relative group">
                       <ListItem
-                        title={tx.category_name || tx.description || t('tx_default_title')}
-                        subtitle={tx.account_name || ''}
+                        title={tx.description || tx.category_name || t('tx_default_title')}
+                        subtitle={(tx.account_name || '') + (tx.receipt_url ? ' 📎' : '')}
                         icon={tx.type === 'income' ? '↗️' : '↘️'}
                         iconBg={tx.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)'}
                         right={(tx.type === 'income' ? '+' : '-') + fmt(tx.amount_cents)}
                         rightColor={tx.type === 'income' ? 'var(--green)' : 'var(--red)'}
-                        onPress={() => {}}
+                        onPress={() => { haptic('light'); setSelectedTx(tx) }}
                       />
-                      {tx.receipt_url && (
-                        <a
-                          href={tx.receipt_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="absolute left-14 bottom-1.5 text-[10px] font-bold"
-                          style={{ color: 'var(--gold)' }}
-                          onClick={e => e.stopPropagation()}
-                        >📎</a>
-                      )}
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
-                        {deleteId === tx.id ? (
-                          <div className="flex gap-1 animate-fadeIn">
-                            <button onClick={handleDelete} className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-white uppercase tracking-tighter" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
-                            <button onClick={() => setDeleteId(null)} className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-tighter" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); haptic('medium'); setDeleteId(tx.id) }} 
-                            className="w-8 h-8 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 transition-opacity bg-red-soft" 
-                            style={{ background: 'var(--red-soft)' }}
-                          >
-                            <Icon name="trash" size={14} color="var(--red)" />
-                          </button>
-                        )}
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); haptic('medium'); setSelectedTx(tx) }}
+                          className="w-8 h-8 flex items-center justify-center rounded-xl"
+                          style={{ background: 'var(--border)' }}
+                        >
+                          <Icon name="chevron" size={14} color="var(--text-dim)" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -334,6 +318,76 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
 
           <button onClick={handleSave} disabled={uploading} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98] disabled:opacity-60" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{uploading ? `${progress}%…` : t('tx_form_save')}</button>
         </div>
+      </BottomSheet>
+
+      {/* Transaction Detail Sheet */}
+      <BottomSheet isOpen={!!selectedTx} onClose={() => setSelectedTx(null)} title={t('tx_detail_title')}>
+        {selectedTx && (
+          <div className="space-y-4">
+            {/* Amount hero */}
+            <div className="rounded-2xl p-5 flex flex-col items-center" style={{ background: selectedTx.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)' }}>
+              <div className="text-[11px] font-bold mb-1 opacity-60" style={{ color: selectedTx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
+                {selectedTx.type === 'income' ? t('tx_filter_income') : t('tx_filter_expense')}
+              </div>
+              <div className="text-3xl font-extrabold font-mono-num" style={{ color: selectedTx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
+                {(selectedTx.type === 'income' ? '+' : '-')}{fmt(selectedTx.amount_cents)}
+              </div>
+            </div>
+
+            {/* Detail rows */}
+            <div className="rounded-2xl divide-y" style={{ background: 'var(--card)', border: '1px solid var(--border)', divideColor: 'var(--border)' }}>
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="text-base">📁</span>
+                <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_category')}</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedTx.category_name || t('tx_detail_no_category')}</span>
+              </div>
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="text-base">🏦</span>
+                <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_account')}</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedTx.account_name || t('tx_detail_no_account')}</span>
+              </div>
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="text-base">📅</span>
+                <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_date')}</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>{fmtDateKhmer(selectedTx.occurred_at?.substring(0, 10))}</span>
+              </div>
+              <div className="flex items-start gap-3 px-4 py-3">
+                <span className="text-base">📝</span>
+                <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_note')}</span>
+                <span className="text-sm font-bold text-right max-w-[55%]" style={{ color: selectedTx.description ? 'var(--text)' : 'var(--text-dim)' }}>
+                  {selectedTx.description || t('tx_detail_no_note')}
+                </span>
+              </div>
+            </div>
+
+            {/* Receipt image */}
+            {selectedTx.receipt_url && (
+              <div>
+                <div className="text-xs font-semibold mb-1.5" style={{ color: 'var(--text-sec)' }}>📎 {t('tx_receipt_label')}</div>
+                <a href={selectedTx.receipt_url} target="_blank" rel="noopener noreferrer" className="block">
+                  <div className="relative rounded-2xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
+                    <img src={selectedTx.receipt_url} alt="Receipt" className="w-full max-h-64 object-cover" />
+                    <div className="absolute bottom-0 inset-x-0 py-2 text-center text-[10px] font-bold" style={{ background: 'rgba(0,0,0,0.5)', color: 'white' }}>
+                      {t('tx_receipt_tap')} ↗
+                    </div>
+                  </div>
+                </a>
+              </div>
+            )}
+
+            {/* Delete */}
+            {deleteId === selectedTx.id ? (
+              <div className="flex gap-2">
+                <button onClick={async () => { await handleDelete(); setSelectedTx(null) }} className="flex-1 py-3 rounded-xl text-sm font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
+                <button onClick={() => setDeleteId(null)} className="flex-1 py-3 rounded-xl text-sm font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
+              </div>
+            ) : (
+              <button onClick={() => { haptic('medium'); setDeleteId(selectedTx.id) }} className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2" style={{ background: 'var(--red-soft)', color: 'var(--red)' }}>
+                <Icon name="trash" size={14} color="var(--red)" /> {t('tx_delete_confirm')}
+              </button>
+            )}
+          </div>
+        )}
       </BottomSheet>
 
       {/* Hidden file input for receipt photos */}

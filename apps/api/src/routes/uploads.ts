@@ -16,80 +16,79 @@ async function ownsCompany(userId: string, companyId: string): Promise<boolean> 
 }
 
 /**
- * Step 1 — Request a pre-signed upload URL from KConsole
- * POST /companies/:companyId/receipts/upload-token
- * Body: { filename: string, size: number, contentType: string }
- * Returns: { uploadUrl, objectId, key }
+ * Upload receipt — fully proxied through our server so the browser never touches R2 directly.
+ * Direct browser→R2 PUT fails with CORS because the R2 bucket has no CORS policy configured.
+ *
+ * POST /companies/:companyId/receipts/upload   (multipart/form-data)
+ *   - file          : File (required)
+ *   - transactionId : string (optional) — auto-attaches receipt_url to that transaction
+ * Returns: { url: string }
  */
-uploads.post('/:companyId/receipts/upload-token', async (c) => {
+uploads.post('/:companyId/receipts/upload', async (c) => {
   const userId = c.get('userId')
   const { companyId } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
 
-  let body: { filename?: string; size?: number; contentType?: string }
-  try { body = await c.req.json() } catch { body = {} }
+  let formData: FormData
+  try { formData = await c.req.formData() } catch {
+    return c.json({ error: 'Expected multipart/form-data with a "file" field' }, 400)
+  }
 
-  const filename = body.filename || `receipt-${Date.now()}.jpg`
-  const contentType = body.contentType || 'image/jpeg'
-  const size = body.size || 0
+  const file = formData.get('file') as File | null
+  if (!file) return c.json({ error: 'Missing file field' }, 400)
+  const transactionId = formData.get('transactionId') as string | null
 
-  const res = await fetch(`${KCONSOLE_BASE}/api/storage/upload-token`, {
+  const filename = file.name || `receipt-${Date.now()}.jpg`
+  const contentType = file.type || 'image/jpeg'
+  const size = file.size
+
+  // Step 1: Get pre-signed URL (server-side — no CORS)
+  const tokenRes = await fetch(`${KCONSOLE_BASE}/api/storage/upload-token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': KCONSOLE_KEY },
     body: JSON.stringify({ filename, contentType, size, visibility: 'public' }),
   })
-
-  if (!res.ok) {
-    const err = await res.text()
-    console.error('KConsole upload-token error:', err)
+  if (!tokenRes.ok) {
+    console.error('KConsole upload-token error:', await tokenRes.text())
     return c.json({ error: 'Storage service unavailable' }, 502)
   }
+  const tokenData = await tokenRes.json() as {
+    success: boolean
+    data: { uploadUrl: string; objectId: string; key: string }
+  }
+  if (!tokenData.success) return c.json({ error: 'Storage token request failed' }, 502)
 
-  const data = await res.json() as { success: boolean; data: { uploadUrl: string; objectId: string; key: string } }
-  if (!data.success) return c.json({ error: 'Storage token request failed' }, 502)
+  const { uploadUrl, objectId, key } = tokenData.data
 
-  return c.json({
-    uploadUrl: data.data.uploadUrl,
-    objectId: data.data.objectId,
-    key: data.data.key,
-    publicUrl: `${CDN_BASE}/${data.data.key}`,
+  // Step 2: PUT file to R2 from server (server-side — no CORS)
+  const fileBuffer = await file.arrayBuffer()
+  const putRes = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType, 'Content-Length': String(size) },
+    body: fileBuffer,
   })
-})
-
-/**
- * Step 2 — Confirm upload + optionally attach to a transaction
- * POST /companies/:companyId/receipts/complete
- * Body: { objectId: string, key: string, transactionId?: string }
- * Returns: { url }
- */
-uploads.post('/:companyId/receipts/complete', async (c) => {
-  const userId = c.get('userId')
-  const { companyId } = c.req.param()
-  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
-
-  const body = await c.req.json<{ objectId: string; key: string; transactionId?: string }>()
-  if (!body.objectId) return c.json({ error: 'objectId required' }, 400)
-
-  // Confirm with KConsole
-  const res = await fetch(`${KCONSOLE_BASE}/api/storage/complete`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': KCONSOLE_KEY },
-    body: JSON.stringify({ objectId: body.objectId }),
-  })
-
-  if (!res.ok) {
-    const err = await res.text()
-    console.error('KConsole complete error:', err)
-    return c.json({ error: 'Storage confirm failed' }, 502)
+  if (!putRes.ok) {
+    console.error('R2 PUT error:', putRes.status, await putRes.text().catch(() => ''))
+    return c.json({ error: 'Upload to storage failed' }, 502)
   }
 
-  const url = `${CDN_BASE}/${body.key}`
+  // Step 3: Confirm with KConsole (non-fatal if it fails)
+  const completeRes = await fetch(`${KCONSOLE_BASE}/api/storage/complete`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': KCONSOLE_KEY },
+    body: JSON.stringify({ objectId }),
+  })
+  if (!completeRes.ok) {
+    console.error('KConsole complete error:', await completeRes.text())
+  }
 
-  // Attach to transaction if provided
-  if (body.transactionId) {
+  const url = `${CDN_BASE}/${key}`
+
+  // Auto-attach to transaction if provided
+  if (transactionId) {
     await pool.query(
       'UPDATE transactions SET receipt_url = $1 WHERE id = $2 AND company_id = $3',
-      [url, body.transactionId, companyId]
+      [url, transactionId, companyId]
     )
   }
 

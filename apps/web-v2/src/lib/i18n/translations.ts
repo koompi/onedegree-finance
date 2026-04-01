@@ -63,6 +63,12 @@ export const en = {
     tx_form_note: 'Note',
     tx_form_note_placeholder: 'Note (optional)',
     tx_form_save: 'Save',
+    tx_detail_title: 'Transaction Detail',
+    tx_detail_no_note: 'No note',
+    tx_detail_no_category: 'Uncategorized',
+    tx_detail_no_account: 'No account',
+    tx_receipt_label: 'Receipt',
+    tx_receipt_tap: 'Tap to view full image',
 
     // Receivables/Payables
     receivables_total: 'Total Receivable',
@@ -252,6 +258,12 @@ export const km = {
     tx_form_note: 'កំណត់ចំណាំ',
     tx_form_note_placeholder: 'ចំណាំ (ជម្រើស)',
     tx_form_save: 'រក្សាទុក',
+    tx_detail_title: 'លម្អិតប្រតិបត្តិការ',
+    tx_detail_no_note: 'គ្មានកំណត់ចំណាំ',
+    tx_detail_no_category: 'គ្មានប្រភេទ',
+    tx_detail_no_account: 'គ្មានគណនី',
+    tx_receipt_label: 'វិក្កយបត្រ',
+    tx_receipt_tap: 'ចុចដើម្បីមើលរូបភាពពេញ',
 
     // Receivables/Payables
     receivables_total: 'សរុបគេជំពាក់',
