@@ -1,5 +1,6 @@
 import Icon from './Icon'
 import { useI18nStore } from '../store/i18nStore'
+import { haptic } from '../lib/telegram'
 
 export default function BottomNav({ active, onTab }: { active: string; onTab: (key: string) => void }) {
   const t = useI18nStore(s => s.t)
@@ -12,18 +13,21 @@ export default function BottomNav({ active, onTab }: { active: string; onTab: (k
   ]
 
   return (
-    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] z-40 flex justify-around items-center"
-      style={{ background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--border)', padding: '8px 4px calc(16px + var(--safe-area-bottom))' }}>
+    <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full sm:max-w-[420px] z-40 flex justify-around items-center px-2 py-3 backdrop-blur-xl"
+      style={{ background: 'var(--nav-bg)', borderTop: '1px solid var(--border)', paddingBottom: 'calc(12px + var(--safe-area-bottom))' }}>
       {tabs.map((t) => {
         const isActive = active === t.key
         return (
-          <button key={t.key} onClick={() => onTab(t.key)} className="flex flex-col items-center gap-1 px-2 py-1 active:scale-95 transition-all">
-            <div className="flex items-center justify-center rounded-xl transition-colors"
-              style={{ width: 34, height: 34, background: isActive ? 'var(--gold-soft)' : 'transparent' }}>
-              <Icon name={t.icon} size={18} color={isActive ? 'var(--gold)' : 'var(--text-sec)'} />
+          <button key={t.key} onClick={() => { haptic('light'); onTab(t.key) }} className="flex flex-col items-center gap-1.5 flex-1 relative py-1">
+            {isActive && (
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full" style={{ background: 'var(--gold)' }} />
+            )}
+            <div className={`flex items-center justify-center rounded-2xl transition-all duration-300 ${isActive ? 'scale-110 shadow-gold' : 'opacity-60'}`}
+              style={{ width: 44, height: 44, background: isActive ? 'var(--gold)' : 'transparent' }}>
+              <Icon name={t.icon} size={22} color={isActive ? '#000000' : 'var(--text-sec)'} />
             </div>
-            <span className="text-[9px] font-bold transition-colors"
-              style={{ color: isActive ? 'var(--gold)' : 'var(--text-dim)', opacity: isActive ? 1 : 0.5 }}>
+            <span className="text-[10px] font-black transition-colors uppercase tracking-tight"
+              style={{ color: isActive ? 'var(--gold)' : 'var(--text-dim)' }}>
               {t.label}
             </span>
           </button>

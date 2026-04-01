@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
 import { fmtKHR } from '../lib/format'
 import { useDashboard } from '../hooks/useDashboard'
-import { getGreeting } from '../lib/telegram'
+import { getGreeting, haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
 
 const QUICK = [
@@ -23,25 +23,25 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
   const maxBar = Math.max(...monthlyData.map(m => Math.max(m.income, m.expense)), 1)
 
   return (
-    <div className="px-4 pt-4 space-y-3 animate-fadeIn">
-      <div>
-        <div className="text-[11px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-dim)' }}>OneDegree Finance</div>
-        <div className="text-lg font-extrabold mt-0.5" style={{ color: 'var(--text)' }}>{getGreeting()}</div>
+    <div className="px-4 space-y-4 animate-fadeIn">
+      <div className="mt-2">
+        <div className="text-[10px] font-bold uppercase tracking-[2px]" style={{ color: 'var(--text-dim)' }}>OneDegree Finance</div>
+        <div className="text-xl font-black mt-0.5" style={{ color: 'var(--text)' }}>{getGreeting()}</div>
       </div>
 
       {/* Hero Card */}
-      <div className="rounded-2xl p-5 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #E8B84B 0%, #D4A03A 100%)' }}>
-        <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
-        <div className="text-[11px] font-bold tracking-wider" style={{ color: 'rgba(11,17,32,0.6)' }}>{t('total_balance')}</div>
-        <div className="text-[28px] font-black font-mono-num mt-1" style={{ color: '#0B1120', fontFamily: "'JetBrains Mono', monospace" }}>{isLoading ? '...' : fmtKHR(income - expense)}</div>
-        <div className="flex gap-2 mt-4">
-          <div className="flex-1 rounded-xl px-3 py-2" style={{ background: 'rgba(11,17,32,0.12)' }}>
-            <div className="text-[11px]" style={{ color: 'rgba(11,17,32,0.6)' }}>{t('income')}</div>
-            <div className="text-sm font-extrabold font-mono-num" style={{ color: '#0B1120' }}>{isLoading ? '...' : fmtKHR(income)}</div>
+      <div className="rounded-[24px] p-6 relative overflow-hidden shadow-gold" style={{ background: 'var(--gold)' }}>
+        <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
+        <div className="text-[11px] font-bold tracking-widest uppercase opacity-70" style={{ color: 'rgba(0,0,0,0.8)' }}>{t('total_balance')}</div>
+        <div className="text-4xl font-black font-mono-num mt-1" style={{ color: '#000000', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-1px' }}>{isLoading ? '...' : fmtKHR(income - expense)}</div>
+        <div className="flex gap-3 mt-6">
+          <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'rgba(0,0,0,0.06)' }}>
+            <div className="text-[10px] font-bold uppercase opacity-60" style={{ color: '#000000' }}>{t('income')}</div>
+            <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{isLoading ? '...' : fmtKHR(income)}</div>
           </div>
-          <div className="flex-1 rounded-xl px-3 py-2" style={{ background: 'rgba(11,17,32,0.12)' }}>
-            <div className="text-[11px]" style={{ color: 'rgba(11,17,32,0.6)' }}>{t('expense')}</div>
-            <div className="text-sm font-extrabold font-mono-num" style={{ color: '#0B1120' }}>{isLoading ? '...' : fmtKHR(expense)}</div>
+          <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'rgba(0,0,0,0.06)' }}>
+            <div className="text-[10px] font-bold uppercase opacity-60" style={{ color: '#000000' }}>{t('expense')}</div>
+            <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{isLoading ? '...' : fmtKHR(expense)}</div>
           </div>
         </div>
       </div>

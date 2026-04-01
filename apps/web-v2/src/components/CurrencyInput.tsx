@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { haptic } from '../lib/telegram'
 
 export default function CurrencyInput({ value, onChange, placeholder, autoFocus }: {
   value: number; onChange: (v: number) => void; placeholder?: string; autoFocus?: boolean
@@ -13,17 +14,20 @@ export default function CurrencyInput({ value, onChange, placeholder, autoFocus 
     onChange(num)
   }
   return (
-    <div className="relative">
+    <div className="relative group">
       <input
         type="tel" inputMode="numeric" autoFocus={autoFocus}
-        value={display} onChange={(e) => handleChange(e.target.value)}
+        value={display} onChange={(e) => { haptic('light'); handleChange(e.target.value) }}
         placeholder={placeholder || '0 ៛'}
-        className="w-full py-3.5 px-4 pr-10 rounded-xl text-right text-lg font-extrabold font-mono-num outline-none transition-colors"
-        style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
-        onFocus={(e) => e.target.style.borderColor = 'var(--gold)'}
+        className="w-full py-5 px-6 pr-14 rounded-3xl text-right text-3xl font-black font-mono-num outline-none transition-all focus:ring-4 focus:ring-gold/10"
+        style={{ background: 'var(--input-bg)', border: '2px solid var(--border)', color: 'var(--text)' }}
+        onFocus={(e) => { e.target.style.borderColor = 'var(--gold)'; haptic('medium') }}
         onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
       />
-      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-bold" style={{ color: 'var(--text-dim)' }}>៛</span>
+      <div className="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col items-end pointer-events-none">
+        <span className="text-xl font-black text-gold opacity-80">៛</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest opacity-30 mt-0.5">KHR</span>
+      </div>
     </div>
   )
 }

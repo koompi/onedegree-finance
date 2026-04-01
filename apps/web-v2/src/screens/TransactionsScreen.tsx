@@ -91,55 +91,112 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   )
 
   return (
-    <div className="min-h-screen animate-fadeIn">
+    <div className="min-h-screen animate-fadeIn pb-32">
       <ScreenHeader title={t('nav_transactions')} onBack={onBack}
-        right={<button onClick={() => setSearchOpen(!searchOpen)} className="w-8 h-8 flex items-center justify-center"><Icon name="search" size={18} color="var(--text-sec)" /></button>} />
-      <div className="px-4 space-y-3">
+        right={<button onClick={() => { haptic('light'); setSearchOpen(!searchOpen) }} className="w-10 h-10 flex items-center justify-center rounded-2xl active:bg-white/5 transition-all"><Icon name="search" size={20} color="var(--text-sec)" /></button>} />
+      
+      <div className="px-4 space-y-4 mt-2">
         {searchOpen && (
-          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)' }}>
-            <Icon name="search" size={14} color="var(--text-dim)" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('tx_search_placeholder')} className="flex-1 bg-transparent outline-none text-sm" style={{ color: 'var(--text)' }} />
+          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-gold/20" 
+               style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <Icon name="search" size={16} color="var(--gold)" />
+            <input
+              type="text"
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={t('tx_search_placeholder')}
+              className="flex-1 bg-transparent border-none outline-none text-[15px] font-bold"
+              style={{ color: 'var(--text)' }}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="p-1 opacity-50 hover:opacity-100">
+                <Icon name="close" size={14} color="var(--text-dim)" />
+              </button>
+            )}
           </div>
         )}
-        <div className="flex gap-2">{FILTERS.map(f => <Pill key={f.key} label={f.label} active={filter === f.key} onClick={() => setFilter(f.key)} />)}</div>
+
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {FILTERS.map(f => (
+            <button
+              key={f.key}
+              onClick={() => { haptic('light'); setFilter(f.key) }}
+              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all shrink-0 ${
+                filter === f.key ? 'shadow-gold' : 'opacity-60'
+              }`}
+              style={{ 
+                background: filter === f.key ? 'var(--gold)' : 'var(--card)', 
+                color: filter === f.key ? '#000000' : 'var(--text-sec)',
+                border: filter === f.key ? 'none' : '1px solid var(--border)'
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+
         {grouped.length === 0 ? (
-          <EmptyState icon="📊" title={t('tx_empty_title')} subtitle={t('tx_empty_subtitle')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
-        ) : grouped.map(([dateKey, txs]) => (
-          <div key={dateKey}>
-            <div className="text-[11px] font-bold px-1 mb-1" style={{ color: 'var(--text-dim)' }}>{fmtDateKhmer(dateKey)}</div>
-            <div className="rounded-2xl px-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-              {txs.map((tx, i) => (
-                <div key={tx.id}>
-                  <div className="flex items-center gap-3 py-3" style={i < txs.length - 1 ? { borderBottom: '1px solid var(--border)' } : undefined}>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{tx.category_name || tx.description || t('tx_default_title')}</div>
-                      <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{tx.account_name || ''}</div>
-                    </div>
-                    <div className="text-sm font-bold font-mono-num" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                      {tx.type === 'income' ? '+' : '-'}{fmtKHR(tx.amount_cents)}
-                    </div>
-                    {deleteId === tx.id ? (
-                      <div className="flex gap-1">
-                        <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
-                        <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setDeleteId(tx.id)} className="w-7 h-7 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
-                        <Icon name="trash" size={12} color="var(--red)" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="py-20 opacity-50">
+            <EmptyState 
+              icon="📊" 
+              title={t('tx_empty_title')} 
+              subtitle={t('tx_empty_subtitle')} 
+              action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} 
+            />
           </div>
-        ))}
+        ) : (
+          <div className="space-y-6">
+            {grouped.map(([dateKey, txs]) => (
+              <div key={dateKey} className="animate-slideUp">
+                <div className="flex items-center gap-2 mb-3 px-1">
+                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--gold)' }} />
+                  <span className="text-[11px] font-black uppercase tracking-widest opacity-60" style={{ color: 'var(--text-sec)' }}>{fmtDateKhmer(dateKey)}</span>
+                </div>
+                <div className="space-y-2">
+                  {txs.map((tx) => (
+                    <div key={tx.id} className="relative group">
+                      <ListItem
+                        title={tx.category_name || tx.description || t('tx_default_title')}
+                        subtitle={tx.account_name || ''}
+                        icon={tx.type === 'income' ? '↗️' : '↘️'}
+                        iconBg={tx.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)'}
+                        right={(tx.type === 'income' ? '+' : '-') + fmtKHR(tx.amount_cents)}
+                        rightColor={tx.type === 'income' ? 'var(--green)' : 'var(--red)'}
+                        onPress={() => {}}
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center">
+                        {deleteId === tx.id ? (
+                          <div className="flex gap-1 animate-fadeIn">
+                            <button onClick={handleDelete} className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-white uppercase tracking-tighter" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
+                            <button onClick={() => setDeleteId(null)} className="px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-tighter" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); haptic('medium'); setDeleteId(tx.id) }} 
+                            className="w-8 h-8 flex items-center justify-center rounded-xl opacity-0 group-hover:opacity-100 transition-opacity bg-red-soft" 
+                            style={{ background: 'var(--red-soft)' }}
+                          >
+                            <Icon name="trash" size={14} color="var(--red)" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] z-40 flex justify-center">
-        <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90"
-          style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
-          <Icon name="plus" size={22} color="var(--bg)" />
+      <div className="fixed bottom-28 right-6 z-40">
+        <button 
+          onClick={() => { haptic('medium'); setShowAdd(true) }} 
+          className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"
+          style={{ background: 'var(--gold)' }}
+        >
+          <Icon name="plus" size={28} color="#000000" />
         </button>
       </div>
 
