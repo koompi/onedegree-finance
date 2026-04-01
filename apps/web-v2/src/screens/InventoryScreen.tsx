@@ -146,10 +146,9 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
               )}
             </div>
           </div>
-        ))}
-      </div>
+        ))}        </div>      </div>
+
       <div className="fixed bottom-[110px] right-6 z-40">
-      <div className="fixed bottom-28 right-6 z-40">
         <button 
           onClick={() => { haptic('medium'); setShowAdd(true) }} 
           className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"

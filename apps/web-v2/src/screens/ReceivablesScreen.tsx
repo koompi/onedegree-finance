@@ -147,6 +147,7 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
             </div>
           )
         })}
+        </div>
       </div>
 
       <div className="fixed bottom-[110px] right-6 z-40">

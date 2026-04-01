@@ -95,9 +95,8 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
       <ScreenHeader title={t('nav_transactions')} onBack={onBack}
         right={<button onClick={() => { haptic('light'); setSearchOpen(!searchOpen) }} className="w-10 h-10 flex items-center justify-center rounded-2xl active:bg-white/5 transition-all"><Icon name="search" size={20} color="var(--text-sec)" /></button>} />
       
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-40">
-        <div className="px-4 space-y-4 mt-2">
-          {searchOpen && (
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-40 px-4 space-y-4 pt-2">
+        {searchOpen && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-gold/20" 
                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <Icon name="search" size={16} color="var(--gold)" />
