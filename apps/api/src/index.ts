@@ -30,8 +30,10 @@ app.route('/companies', reports)
 app.route('/companies', inventory)
 
 import { serve } from '@hono/node-server'
+import { initDb } from './db/client'
 
 const port = parseInt(process.env.PORT || '3001')
-serve({ fetch: app.fetch, port }, () => {
+serve({ fetch: app.fetch, port }, async () => {
+  await initDb()
   console.log(`1° OneDegree API running on port ${port}`)
 })

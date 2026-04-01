@@ -6,6 +6,13 @@ interface Tx { id: string; type: string; amount_cents: number; category_id?: str
 interface Report { income: number; expense: number; by_category: Array<{ category_id: string; category_name: string; type: string; total: number }> }
 interface MonthData { month: string; income: number; expense: number }
 
+interface DashboardBundle {
+  summary: { income: number; expense: number };
+  recent_transactions: Tx[];
+  monthly_stats: MonthData[];
+  overdue_count: number;
+}
+
 export function useDashboard() {
   const companyId = useAuthStore(s => s.companyId)
   const [isLoading, setIsLoading] = useState(true)
@@ -14,35 +21,30 @@ export function useDashboard() {
   const [monthlyData, setMonthlyData] = useState<MonthData[]>([])
   const [receivablesCount, setReceivablesCount] = useState(0)
 
-  const currentMonth = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` }
-  const getMonthLabel = (m: string) => { const [y, mo] = m.split('-'); const months = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']; return months[parseInt(mo) - 1] }
+  const getMonthLabel = (m: string) => { 
+    const [, mo] = m.split('-')
+    const months = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
+    return months[parseInt(mo) - 1] 
+  }
 
   const fetchAll = useCallback(async () => {
     if (!companyId) return
     setIsLoading(true)
     try {
-      const [txRes, rptRes, recRes] = await Promise.all([
-        api.get<Tx[]>(`/${companyId}/transactions?month=${currentMonth()}&limit=100`),
-        api.get<Report>(`/${companyId}/reports/monthly?month=${currentMonth()}`).catch(() => null),
-        api.get<any[]>(`/${companyId}/receivables`).catch(() => []),
-      ])
-      setTransactions(txRes || [])
-      setReport(rptRes)
-      setReceivablesCount((recRes || []).filter((r: any) => r.status !== 'collected' && new Date(r.due_date) < new Date()).length)
-
-      // Last 2 months for bars
-      const d = new Date()
-      const prev = []
-      for (let i = 1; i <= 2; i++) {
-        const pd = new Date(d.getFullYear(), d.getMonth() - i, 1)
-        const pm = `${pd.getFullYear()}-${String(pd.getMonth() + 1).padStart(2, '0')}`
-        try {
-          const mr = await api.get<Report>(`/${companyId}/reports/monthly?month=${pm}`)
-          prev.push({ month: pm, income: mr.income || 0, expense: mr.expense || 0 })
-        } catch { prev.push({ month: pm, income: 0, expense: 0 }) }
-      }
-      setMonthlyData([...prev.reverse(), { month: currentMonth(), income: rptRes?.income || 0, expense: rptRes?.expense || 0 }])
-    } catch (e) { console.error(e) }
+      // Single unified API call for dashboard
+      const res = await api.get<DashboardBundle>(`/${companyId}/reports/dashboard-bundle`)
+      
+      setTransactions(res.recent_transactions || [])
+      setReport({
+        income: res.summary.income,
+        expense: res.summary.expense,
+        by_category: [] // Simplified for now
+      })
+      setMonthlyData(res.monthly_stats)
+      setReceivablesCount(res.overdue_count)
+    } catch (e) { 
+      console.error('Dashboard Error:', e) 
+    }
     setIsLoading(false)
   }, [companyId])
 

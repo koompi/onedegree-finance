@@ -96,8 +96,15 @@ CREATE INDEX IF NOT EXISTS idx_receivables_status ON receivables(company_id, sta
 CREATE INDEX IF NOT EXISTS idx_payables_company ON payables(company_id);
 CREATE INDEX IF NOT EXISTS idx_payables_status ON payables(company_id, status);
 
-CREATE INDEX IF NOT EXISTS idx_accounts_company ON accounts(company_id);
-CREATE INDEX IF NOT EXISTS idx_categories_company ON categories(company_id);
+-- Additional critical performance indexes
+CREATE INDEX IF NOT EXISTS idx_transactions_company_date ON transactions(company_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_transactions_company_category ON transactions(company_id, category_id);
+CREATE INDEX IF NOT EXISTS idx_receivables_due_date ON receivables(company_id, due_date DESC);
+CREATE INDEX IF NOT EXISTS idx_payables_due_date ON payables(company_id, due_date DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_created_at ON transactions(created_at);
+
+-- Combined filtering indexes for Reports
+CREATE INDEX IF NOT EXISTS idx_report_agg ON transactions(company_id, type, amount_cents, occurred_at);
 
 CREATE INDEX IF NOT EXISTS idx_companies_owner ON companies(owner_id);
 

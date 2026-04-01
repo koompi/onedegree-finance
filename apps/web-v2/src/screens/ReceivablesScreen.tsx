@@ -93,7 +93,16 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
             <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--red)' }}>{overdueCount} {lang === 'km' ? 'នាក់' : 'persons'}</div>
           </div>
         </div>
-        <div className="flex gap-2">{SORTS(t).map(s => <Pill key={s.key} label={s.label} active={sort === s.key} onClick={() => setSort(s.key)} />)}</div>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+          {SORTS(t).map(s => (
+            <Pill
+              key={s.key}
+              label={s.label}
+              active={sort === s.key}
+              onClick={() => { haptic('light'); setSort(s.key) }}
+            />
+          ))}
+        </div>
         {filtered.length === 0 ? (
           <EmptyState icon="💸" title={t('receivables_empty_title')} subtitle={t('receivables_empty_subtitle')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
         ) : filtered.map(r => {
@@ -138,11 +147,17 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
           )
         })}
       </div>
-      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
-        <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90" style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
-          <Icon name="plus" size={22} color="var(--bg)" />
+
+      <div className="fixed bottom-28 right-6 z-40">
+        <button 
+          onClick={() => { haptic('medium'); setShowAdd(true) }} 
+          className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"
+          style={{ background: 'var(--gold)' }}
+        >
+          <Icon name="plus" size={28} color="#000000" />
         </button>
       </div>
+
       <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={t('receivables_add_title')}>
         <div className="space-y-4">
           <div>

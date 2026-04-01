@@ -22,7 +22,7 @@ transactions.get('/:companyId/transactions', async (c) => {
   const values: unknown[] = [companyId]
   let i = 2
   if (month) {
-    conditions.push(`to_char(t.occurred_at, 'YYYY-MM') = $${i++}`)
+    conditions.push(`t.occurred_at >= ($${i} || '-01')::DATE AND t.occurred_at < (($${i++} || '-01')::DATE + INTERVAL '1 month')`)
     values.push(month)
   }
   if (type) {

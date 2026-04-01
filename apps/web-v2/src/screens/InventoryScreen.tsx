@@ -91,10 +91,22 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
             <div className="text-sm font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--orange)' }}>{lowStockCount}</div>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Pill label={t('inventory_filter_all')} active={filter === 'all'} onClick={() => setFilter('all')} />
-          <Pill label={t('inventory_filter_low')} active={filter === 'low'} onClick={() => setFilter('low')} />
-          <Pill label={t('inventory_filter_out')} active={filter === 'out'} onClick={() => setFilter('out')} />
+        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+          <Pill
+            label={t('inventory_filter_all')}
+            active={filter === 'all'}
+            onClick={() => { haptic('light'); setFilter('all') }}
+          />
+          <Pill
+            label={t('inventory_filter_low')}
+            active={filter === 'low'}
+            onClick={() => { haptic('light'); setFilter('low') }}
+          />
+          <Pill
+            label={t('inventory_filter_out')}
+            active={filter === 'out'}
+            onClick={() => { haptic('light'); setFilter('out') }}
+          />
         </div>
         {filtered.length === 0 ? (
           <EmptyState icon="📦" title={t('inventory_empty_title')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
@@ -135,11 +147,17 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
           </div>
         ))}
       </div>
-      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40">
-        <button onClick={() => setShowAdd(true)} className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg active:scale-90" style={{ background: 'var(--gold)', boxShadow: '0 4px 20px rgba(232,184,75,0.3)' }}>
-          <Icon name="plus" size={22} color="var(--bg)" />
+
+      <div className="fixed bottom-28 right-6 z-40">
+        <button 
+          onClick={() => { haptic('medium'); setShowAdd(true) }} 
+          className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"
+          style={{ background: 'var(--gold)' }}
+        >
+          <Icon name="plus" size={28} color="#000000" />
         </button>
       </div>
+
       <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={t('inventory_form_name')}>
         <div className="space-y-4">
           <div><label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('inventory_form_name')}</label><input value={itemName} onChange={e => setItemName(e.target.value)} placeholder={t('inventory_form_name')} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} /></div>
