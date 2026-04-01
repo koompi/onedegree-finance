@@ -5,7 +5,7 @@ import { toast } from '../store/toastStore'
 
 export interface Transaction {
   id: string; type: string; amount_cents: number; category_id?: string; category_name?: string
-  account_id?: string; account_name?: string; occurred_at: string; description?: string
+  account_id?: string; account_name?: string; occurred_at: string; description?: string; note?: string
   receipt_url?: string | null
 }
 

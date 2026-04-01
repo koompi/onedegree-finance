@@ -186,7 +186,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                   {txs.map((tx) => (
                     <div key={tx.id} className="relative group">
                       <ListItem
-                        title={tx.description || tx.category_name || t('tx_default_title')}
+                        title={tx.note || tx.description || tx.category_name || t('tx_default_title')}
                         subtitle={(tx.account_name || '') + (tx.receipt_url ? ' 📎' : '')}
                         icon={tx.type === 'income' ? '↗️' : '↘️'}
                         iconBg={tx.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)'}
@@ -354,8 +354,8 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
               <div className="flex items-start gap-3 px-4 py-3">
                 <span className="text-base">📝</span>
                 <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_note')}</span>
-                <span className="text-sm font-bold text-right max-w-[55%]" style={{ color: selectedTx.description ? 'var(--text)' : 'var(--text-dim)' }}>
-                  {selectedTx.description || t('tx_detail_no_note')}
+                <span className="text-sm font-bold text-right max-w-[55%]" style={{ color: (selectedTx.note || selectedTx.description) ? 'var(--text)' : 'var(--text-dim)' }}>
+                  {selectedTx.note || selectedTx.description || t('tx_detail_no_note')}
                 </span>
               </div>
             </div>
