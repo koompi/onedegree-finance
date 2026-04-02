@@ -67,37 +67,24 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const expenseByCat = report?.by_category?.filter(c => c.type === 'expense') || []
   const maxCat = Math.max(...incomeByCat.map(c => c.total), ...expenseByCat.map(c => c.total), 1)
 
-  const exportCSV = () => {
+  const exportCSV = async () => {
     const m = `${year}-${String(month + 1).padStart(2, '0')}`
-    let csv = '\uFEFF' // BOM for Khmer
-    csv += `${t('nav_reports')} ${t(`month_${month}` as any)} ${year}\n\n`
-    csv += `${t('reports_total_income')},${income}\n`
-    csv += `${t('reports_total_expense')},${expense}\n`
-    csv += `${t('reports_profit')},${profit}\n\n`
-    csv += `${t('reports_by_cat_income')},ចំនួន\n`
-    incomeByCat.forEach(c => { csv += `${c.category_name},${c.total}\n` })
-    csv += `\n${t('reports_by_cat_expense')},ចំនួន\n`
-    expenseByCat.forEach(c => { csv += `${c.category_name},${c.total}\n` })
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = `report-${m}.csv`; a.click()
-    URL.revokeObjectURL(url)
+    try {
+      const res = await api.post(`/${companyId}/reports/export?month=${m}&type=excel`, {})
+      alert("Excel Report has been sent to your Telegram Chat!")
+    } catch (e) {
+      alert("Failed to send report")
+    }
   }
 
-  const exportPDF = () => {
+  const exportPDF = async () => {
     const m = `${year}-${String(month + 1).padStart(2, '0')}`
-    let text = `${t('nav_reports')} - ${t(`month_${month}` as any)} ${year}\n\n`
-    text += `${t('reports_total_income')}: ${fmt(income)}\n`
-    text += `${t('reports_total_expense')}: ${fmt(expense)}\n`
-    text += `${t('reports_profit')}: ${fmt(profit)} (${margin}%)\n\n`
-    text += `${t('reports_by_cat_income')}:\n`
-    incomeByCat.forEach(c => { text += `  ${c.category_name}: ${fmt(c.total)}\n` })
-    text += `\n${t('reports_by_cat_expense')}:\n`
-    expenseByCat.forEach(c => { text += `  ${c.category_name}: ${fmt(c.total)}\n` })
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = `report-${m}.txt`; a.click()
-    URL.revokeObjectURL(url)
+    try {
+      const res = await api.post(`/${companyId}/reports/export?month=${m}&type=pdf`, {})
+      alert("PDF Report has been sent to your Telegram Chat!")
+    } catch (e) {
+      alert("Failed to send report")
+    }
   }
 
   return (

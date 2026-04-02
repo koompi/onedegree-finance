@@ -9,8 +9,12 @@
     "@hono/node-server": "^1.19.11",
     "@hono/zod-validator": "^0.4.0",
     "@onedegree/shared": "workspace:*",
+    "@types/pdfkit": "^0.17.5",
+    "exceljs": "^4.4.0",
     "hono": "^4.0.0",
     "jose": "^5.0.0",
+    "node-fetch": "^3.3.2",
+    "pdfkit": "^0.18.0",
     "pg": "^8.11.0",
     "zod": "^3.22.0"
   },

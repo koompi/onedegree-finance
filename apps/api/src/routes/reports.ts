@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
 import { authMiddleware } from '../middleware/auth'
 import pool from '../db/client'
+import ExcelJS from 'exceljs'
+import PDFDocument from 'pdfkit'
 
 type Variables = { userId: string; companyId?: string }
 const reports = new Hono<{ Variables: Variables }>()
@@ -163,6 +165,122 @@ reports.get('/:companyId/reports/cashflow', async (c) => {
     })
 
   return c.json({ month, days })
+})
+
+reports.post('/:companyId/reports/export', async (c) => {
+  const userId = c.get('userId')
+  const { companyId } = c.req.param()
+  const month = c.req.query('month') || new Date().toISOString().slice(0, 7)
+  const format = c.req.query('type') as 'excel' | 'pdf' || 'excel'
+
+  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+
+  const [txResult] = await Promise.all([
+    pool.query(
+      `SELECT t.type, t.category_id, c.name as category_name, c.name_km as category_name_km, SUM(t.amount_cents)::BIGINT as total_cents
+       FROM transactions t
+       LEFT JOIN categories c ON t.category_id = c.id
+       WHERE t.company_id = $1 AND t.occurred_at >= ($2 || '-01')::DATE 
+         AND t.occurred_at < (($2 || '-01')::DATE + INTERVAL '1 month')
+       GROUP BY t.type, t.category_id, c.name, c.name_km`,
+      [companyId, month]
+    )
+  ])
+
+  const income = txResult.rows.filter(r => r.type === 'income')
+  const expense = txResult.rows.filter(r => r.type === 'expense')
+  const totalIncome = income.reduce((s, r) => s + parseInt(r.total_cents), 0)
+  const totalExpense = expense.reduce((s, r) => s + parseInt(r.total_cents), 0)
+  const profit = totalIncome - totalExpense
+
+  let buffer: Buffer
+  let filename = `Report_${month}`
+  let mimeType = ''
+
+  if (format === 'excel') {
+    filename += '.xlsx'
+    mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    const workbook = new ExcelJS.Workbook()
+    const sheet = workbook.addWorksheet(`Financial Report`)
+    
+    sheet.columns = [
+      { header: 'Type', key: 'type', width: 15 },
+      { header: 'Category', key: 'category', width: 25 },
+      { header: 'Amount Cents', key: 'amount', width: 20 },
+    ]
+
+    sheet.addRow(['Income', 'Total Income', totalIncome])
+    income.forEach(row => {
+      sheet.addRow(['Income', row.category_name || 'Unknown', parseInt(row.total_cents)])
+    })
+    
+    sheet.addRow([])
+    sheet.addRow(['Expense', 'Total Expense', totalExpense])
+    expense.forEach(row => {
+      sheet.addRow(['Expense', row.category_name || 'Unknown', parseInt(row.total_cents)])
+    })
+
+    sheet.addRow([])
+    sheet.addRow(['Net Profit', '', profit])
+
+    buffer = Buffer.from(await workbook.xlsx.writeBuffer())
+  } else {
+    filename += '.pdf'
+    mimeType = 'application/pdf'
+    
+    buffer = await new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50 })
+      const chunks: Buffer[] = []
+      
+      doc.on('data', chunk => chunks.push(chunk))
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', err => reject(err))
+
+      doc.fontSize(20).text(`Financial Report - ${month}`, { align: 'center' })
+      doc.moveDown()
+
+      doc.fontSize(14).text(`Total Income: ${totalIncome / 100}`, { align: 'left' })
+      doc.text(`Total Expense: ${totalExpense / 100}`)
+      doc.text(`Net Profit: ${profit / 100}`)
+      doc.moveDown()
+
+      doc.fontSize(16).text('Income Breakdown', { underline: true })
+      doc.fontSize(12)
+      income.forEach(row => {
+        doc.text(`${row.category_name || 'Unknown'}: ${parseInt(row.total_cents) / 100}`)
+      })
+      doc.moveDown()
+
+      doc.fontSize(16).text('Expense Breakdown', { underline: true })
+      doc.fontSize(12)
+      expense.forEach(row => {
+        doc.text(`${row.category_name || 'Unknown'}: ${parseInt(row.total_cents) / 100}`)
+      })
+
+      doc.end()
+    })
+  }
+
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (token) {
+    const formData = new FormData()
+    formData.append('chat_id', userId)
+    formData.append('document', new Blob([buffer], { type: mimeType }), filename)
+    
+    const response = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+      method: 'POST',
+      body: formData as any
+    })
+    
+    if (!response.ok) {
+       console.error("Telegram bot API error:", await response.text())
+       return c.json({ error: 'Failed to send to Telegram' }, 500)
+    }
+  } else {
+    return c.json({ error: 'Telegram bot token not configured' }, 500)
+  }
+
+  return c.json({ success: true, message: 'Report delivered to your chat' })
 })
 
 export default reports
