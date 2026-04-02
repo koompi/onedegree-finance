@@ -263,8 +263,15 @@ reports.post('/:companyId/reports/export', async (c) => {
 
   const token = process.env.TELEGRAM_BOT_TOKEN
   if (token) {
+    const userResult = await pool.query('SELECT telegram_id FROM users WHERE id = $1', [userId])
+    const tgId = userResult.rows[0]?.telegram_id
+    
+    if (!tgId) {
+      return c.json({ error: 'User does not have a telegram ID attached' }, 400)
+    }
+
     const formData = new FormData()
-    formData.append('chat_id', userId)
+    formData.append('chat_id', tgId.toString())
     formData.append('document', new Blob([buffer], { type: mimeType }), filename)
     
     const response = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
