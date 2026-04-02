@@ -1,9 +1,16 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 
 export default function BottomSheet({ isOpen, onClose, title, children, height = 'auto' }: {
   isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; height?: 'auto' | 'full' | number
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -15,8 +22,10 @@ export default function BottomSheet({ isOpen, onClose, title, children, height =
       document.body.style.overflow = 'auto'
     }
   }, [isOpen])
-  if (!isOpen) return null
-  return (
+  
+  if (!isOpen || !mounted) return null
+  
+  const content = (
     <div className="fixed inset-0 z-50 animate-fadeIn overscroll-none touch-none">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
       <div className="absolute bottom-0 left-0 right-0 animate-slideUp rounded-t-3xl overflow-y-auto overscroll-contain touch-pan-y"
@@ -29,4 +38,6 @@ export default function BottomSheet({ isOpen, onClose, title, children, height =
       </div>
     </div>
   )
+  
+  return createPortal(content, document.body)
 }

@@ -16,7 +16,7 @@ import CompanyProfileScreen from './sub-screens/CompanyProfileScreen'
 import RecurringScreen from './sub-screens/RecurringScreen'
 import { useAuthStore } from './store/authStore'
 import { useAuth } from './hooks/useAuth'
-import { initTelegram, haptic } from './lib/telegram'
+import { initTelegram, haptic, setupViewportHandling, getTelegram } from './lib/telegram'
 import { api } from './lib/api'
 import { useI18nStore } from './store/i18nStore'
 
@@ -47,7 +47,25 @@ export default function App() {
     document.documentElement.className = dark ? 'dark' : 'light'
   }, [])
 
-  useEffect(() => { initTelegram() }, [])
+  useEffect(() => { 
+    initTelegram()
+    const cleanup = setupViewportHandling()
+    
+    // Apply Safe Area Variables
+    const tg = getTelegram()
+    if (tg?.safeAreaInset) {
+      document.documentElement.style.setProperty('--safe-area-top', `${tg.safeAreaInset.top}px`)
+      document.documentElement.style.setProperty('--safe-area-bottom', `${tg.safeAreaInset.bottom}px`)
+    }
+    if (tg?.contentSafeAreaInset) {
+      // In some telegram versions content safe areas are better for bottom
+      if (tg.contentSafeAreaInset.bottom > 0) {
+         document.documentElement.style.setProperty('--safe-area-bottom', `${tg.contentSafeAreaInset.bottom}px`)
+      }
+    }
+    
+    return cleanup
+  }, [])
 
   const toggleTheme = () => {
     const next = !isDark

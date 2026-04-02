@@ -34,15 +34,27 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       <div className="rounded-[24px] p-6 relative overflow-hidden shadow-gold" style={{ background: 'var(--gold)' }}>
         <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full" style={{ background: 'rgba(255,255,255,0.15)' }} />
         <div className="text-[11px] font-bold tracking-widest uppercase opacity-70" style={{ color: 'rgba(0,0,0,0.8)' }}>{t('total_balance')}</div>
-        <div className="text-4xl font-black font-mono-num mt-1" style={{ color: '#000000', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-1px' }}>{isLoading ? '...' : fmt(income - expense)}</div>
+        {isLoading ? (
+          <div className="h-10 w-40 mt-1 rounded-lg animate-pulse" style={{ background: 'rgba(0,0,0,0.1)' }} />
+        ) : (
+          <div className="text-4xl font-black font-mono-num mt-1" style={{ color: '#000000', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-1px' }}>{fmt(income - expense)}</div>
+        )}
         <div className="flex gap-3 mt-6">
           <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'rgba(0,0,0,0.06)' }}>
             <div className="text-[10px] font-bold uppercase opacity-60" style={{ color: '#000000' }}>{t('income')}</div>
-            <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{isLoading ? '...' : fmt(income)}</div>
+            {isLoading ? (
+              <div className="h-5 w-20 mt-0.5 rounded animate-pulse" style={{ background: 'rgba(0,0,0,0.1)' }} />
+            ) : (
+              <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{fmt(income)}</div>
+            )}
           </div>
           <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'rgba(0,0,0,0.06)' }}>
             <div className="text-[10px] font-bold uppercase opacity-60" style={{ color: '#000000' }}>{t('expense')}</div>
-            <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{isLoading ? '...' : fmt(expense)}</div>
+            {isLoading ? (
+              <div className="h-5 w-20 mt-0.5 rounded animate-pulse" style={{ background: 'rgba(0,0,0,0.1)' }} />
+            ) : (
+              <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{fmt(expense)}</div>
+            )}
           </div>
         </div>
       </div>
@@ -112,7 +124,20 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       )}
 
       {/* Recent Transactions */}
-      {!isLoading && recentTx.length > 0 && (
+      {isLoading ? (
+        <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+          <div className="text-xs font-semibold mb-3" style={{ color: 'var(--text-sec)' }}>{t('recent_transactions')}</div>
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center justify-between py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="space-y-2">
+                <div className="h-4 w-24 rounded animate-pulse" style={{ background: 'var(--border)' }} />
+                <div className="h-3 w-16 rounded animate-pulse" style={{ background: 'var(--border)' }} />
+              </div>
+              <div className="h-5 w-20 rounded animate-pulse" style={{ background: 'var(--border)' }} />
+            </div>
+          ))}
+        </div>
+      ) : recentTx.length > 0 && (
         <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
           <div className="text-xs font-semibold mb-3" style={{ color: 'var(--text-sec)' }}>{t('recent_transactions')}</div>
           {recentTx.map(tx => (
@@ -132,7 +157,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-2.5">
         {QUICK.map(q => (
-          <button key={q.key} onClick={() => onNavigate(q.key)} className="rounded-2xl p-3.5 text-left active:scale-[0.98] transition-transform"
+          <button key={q.key} onClick={() => { haptic('light'); onNavigate(q.key) }} className="rounded-2xl p-3.5 text-left active:scale-[0.98] transition-transform"
             style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <Icon name={q.icon} size={18} color="var(--gold)" />
             <div className="text-xs font-semibold mt-1.5" style={{ color: 'var(--text)' }}>{q.label}</div>
@@ -148,11 +173,11 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
 
       {/* FAB */}
       <div className="fixed fab-bottom left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] px-6 flex gap-3 z-40">
-        <button onClick={() => onNavigate('transactions')} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
+        <button onClick={() => { haptic('medium'); onNavigate('transactions') }} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
           style={{ background: 'var(--green)', color: 'var(--bg)' }}>
           <Icon name="plus" size={16} /> {t('revenue')}
         </button>
-        <button onClick={() => onNavigate('transactions')} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
+        <button onClick={() => { haptic('medium'); onNavigate('transactions') }} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
           style={{ background: 'var(--red)', color: 'var(--bg)' }}>
           <Icon name="minus" size={16} /> {t('expense')}
         </button>

@@ -56,9 +56,11 @@ export default function PayablesScreen({ onBack }: { onBack: () => void }) {
   )
 
   return (
-    <div className="min-h-[100dvh] animate-fadeIn relative">
-      <ScreenHeader title={t('payables')} onBack={onBack} />
-      <div className="px-4 space-y-4">
+    <div className="min-h-[100dvh] pb-32 animate-fadeIn relative">
+      <div className="sticky top-0 z-30">
+        <ScreenHeader title={t('payables')} onBack={onBack} />
+      </div>
+      <div className="px-4 space-y-4 pt-2">
         <div className="rounded-3xl p-6 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, var(--red) 0%, #C0392B 100%)' }}>
           <div className="text-[11px] font-bold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.7)' }}>{t('payables_total')}</div>
           <div className="text-3xl font-black font-mono-num text-white">{fmt(totalPayable)}</div>
