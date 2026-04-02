@@ -83,6 +83,13 @@ body {
   overscroll-behavior: none;
   min-height: 100vh;
   min-height: 100dvh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+html {
+  overscroll-behavior: none;
+  height: 100%;
 }
 
 /* ─── Scrollbar hiding ─── */

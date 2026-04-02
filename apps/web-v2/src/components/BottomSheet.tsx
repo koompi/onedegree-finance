@@ -5,13 +5,21 @@ export default function BottomSheet({ isOpen, onClose, title, children, height =
 }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (isOpen) ref.current?.scrollIntoView({ behavior: 'smooth' })
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      ref.current?.scrollIntoView({ behavior: 'smooth' })
+    } else {
+      document.body.style.overflow = 'auto'
+    }
+    return () => {
+      document.body.style.overflow = 'auto'
+    }
   }, [isOpen])
   if (!isOpen) return null
   return (
-    <div className="fixed inset-0 z-50 animate-fadeIn">
+    <div className="fixed inset-0 z-50 animate-fadeIn overscroll-none touch-none">
       <div className="absolute inset-0 bg-black/70" onClick={onClose} />
-      <div className="absolute bottom-0 left-0 right-0 animate-slideUp rounded-t-3xl overflow-y-auto"
+      <div className="absolute bottom-0 left-0 right-0 animate-slideUp rounded-t-3xl overflow-y-auto overscroll-contain touch-pan-y"
         style={{ background: 'var(--card)', maxHeight: typeof height === 'number' ? height : height === 'full' ? '100dvh' : '85dvh', paddingTop: 'var(--safe-area-top)' }}>
         <div className="sticky top-0 z-10 pt-2 pb-3 text-center" style={{ background: 'var(--card)' }}>
           <div className="w-9 h-1 rounded-full mx-auto mb-3" style={{ background: 'var(--border)' }} />
