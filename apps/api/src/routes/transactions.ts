@@ -13,10 +13,10 @@ async function ownsCompany(userId: string, companyId: string): Promise<boolean> 
   return r.rows.length > 0
 }
 
-transactions.get('/:companyId/transactions', async (c) => {
+transactions.get('/', async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
-  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+  const companyId = c.get('companyId')
+  if (!companyId || !await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const { month, type, limit = '50', offset = '0' } = c.req.query()
   const conditions = ['t.company_id = $1']
   const values: unknown[] = [companyId]
@@ -56,10 +56,10 @@ const TxBody = z.object({
   occurred_at: z.string().datetime(),
 })
 
-transactions.post('/:companyId/transactions', zValidator('json', TxBody), async (c) => {
+transactions.post('/', zValidator('json', TxBody), async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
-  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+  const companyId = c.get('companyId')
+  if (!companyId || !await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const body = c.req.valid('json')
   const client = await pool.connect()
   try {
@@ -82,10 +82,11 @@ transactions.post('/:companyId/transactions', zValidator('json', TxBody), async 
   }
 })
 
-transactions.delete('/:companyId/transactions/:id', async (c) => {
+transactions.delete('/:id', async (c) => {
   const userId = c.get('userId')
-  const { companyId, id } = c.req.param()
-  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+  const companyId = c.get('companyId')
+  const { id } = c.req.param()
+  if (!companyId || !await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
@@ -108,10 +109,11 @@ transactions.delete('/:companyId/transactions/:id', async (c) => {
 export default transactions
 
 // GET single transaction (for EditTransaction pre-fill)
-transactions.get('/:companyId/transactions/:id', async (c) => {
+transactions.get('/:id', async (c) => {
   const userId = c.get('userId')
-  const { companyId, id } = c.req.param()
-  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+  const companyId = c.get('companyId')
+  const { id } = c.req.param()
+  if (!companyId || !await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const result = await pool.query(
     `SELECT t.*, c.name as category_name, c.name_km as category_name_km, c.icon as category_icon,
             a.name as account_name
@@ -135,10 +137,11 @@ const PatchTxBody = z.object({
 })
 
 // PATCH transaction (for EditTransaction save)
-transactions.patch('/:companyId/transactions/:id', zValidator('json', PatchTxBody), async (c) => {
+transactions.patch('/:id', zValidator('json', PatchTxBody), async (c) => {
   const userId = c.get('userId')
-  const { companyId, id } = c.req.param()
-  if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
+  const companyId = c.get('companyId')
+  const { id } = c.req.param()
+  if (!companyId || !await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const body = c.req.valid('json')
   const client = await pool.connect()
   try {

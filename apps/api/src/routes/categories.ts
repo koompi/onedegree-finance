@@ -13,9 +13,9 @@ async function ownsCompany(userId: string, companyId: string): Promise<boolean> 
   return r.rows.length > 0
 }
 
-categories.get('/:companyId/categories', async (c) => {
+categories.get('/', async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
+  const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const result = await pool.query(
     `SELECT * FROM categories WHERE company_id = $1 OR is_system = TRUE ORDER BY is_system DESC, name ASC`,
@@ -24,14 +24,14 @@ categories.get('/:companyId/categories', async (c) => {
   return c.json(result.rows)
 })
 
-categories.post('/:companyId/categories', zValidator('json', z.object({
+categories.post('/', zValidator('json', z.object({
   name: z.string().min(1),
   name_km: z.string().optional(),
   type: z.enum(['income', 'expense']),
   icon: z.string().optional(),
 })), async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
+  const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const body = c.req.valid('json')
   const result = await pool.query(

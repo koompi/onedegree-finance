@@ -22,8 +22,8 @@ const Body = z.object({
   status: z.enum(['pending', 'partial', 'paid']).default('pending'),
 })
 
-receivables.get('/:companyId/receivables', async (c) => {
-  const userId = c.get('userId'); const { companyId } = c.req.param()
+receivables.get('/', async (c) => {
+  const userId = c.get('userId'); const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const { status } = c.req.query()
   let q = 'SELECT * FROM receivables WHERE company_id = $1'
@@ -33,8 +33,8 @@ receivables.get('/:companyId/receivables', async (c) => {
   return c.json((await pool.query(q, vals)).rows)
 })
 
-receivables.post('/:companyId/receivables', zValidator('json', Body), async (c) => {
-  const userId = c.get('userId'); const { companyId } = c.req.param()
+receivables.post('/', zValidator('json', Body), async (c) => {
+  const userId = c.get('userId'); const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const b = c.req.valid('json')
   const r = await pool.query(
@@ -44,7 +44,7 @@ receivables.post('/:companyId/receivables', zValidator('json', Body), async (c) 
   return c.json(r.rows[0], 201)
 })
 
-receivables.patch('/:companyId/receivables/:id', zValidator('json', Body.partial()), async (c) => {
+receivables.patch('//:id', zValidator('json', Body.partial()), async (c) => {
   const userId = c.get('userId'); const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const b = c.req.valid('json')
@@ -63,7 +63,7 @@ receivables.patch('/:companyId/receivables/:id', zValidator('json', Body.partial
   return c.json(r.rows[0])
 })
 
-receivables.delete('/:companyId/receivables/:id', async (c) => {
+receivables.delete('//:id', async (c) => {
   const userId = c.get('userId'); const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   await pool.query('DELETE FROM receivables WHERE id=$1 AND company_id=$2', [id, companyId])

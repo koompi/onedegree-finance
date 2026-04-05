@@ -21,13 +21,13 @@ app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOStri
 
 app.route('/auth', auth)
 app.route('/companies', companies)
-app.route('/companies', accounts)
-app.route('/companies', categories)
-app.route('/companies', transactions)
-app.route('/companies', receivables)
-app.route('/companies', payables)
-app.route('/companies', reports)
-app.route('/companies', inventory)
+app.route('/accounts', accounts)
+app.route('/categories', categories)
+app.route('/transactions', transactions)
+app.route('/receivables', receivables)
+app.route('/payables', payables)
+app.route('/reports', reports)
+app.route('/inventory', inventory)
 
 import { serve } from '@hono/node-server'
 

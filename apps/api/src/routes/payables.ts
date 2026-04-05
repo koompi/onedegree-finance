@@ -22,8 +22,8 @@ const Body = z.object({
   status: z.enum(['pending', 'partial', 'paid']).default('pending'),
 })
 
-payables.get('/:companyId/payables', async (c) => {
-  const userId = c.get('userId'); const { companyId } = c.req.param()
+payables.get('/', async (c) => {
+  const userId = c.get('userId'); const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const { status } = c.req.query()
   let q = 'SELECT * FROM payables WHERE company_id = $1'
@@ -33,8 +33,8 @@ payables.get('/:companyId/payables', async (c) => {
   return c.json((await pool.query(q, vals)).rows)
 })
 
-payables.post('/:companyId/payables', zValidator('json', Body), async (c) => {
-  const userId = c.get('userId'); const { companyId } = c.req.param()
+payables.post('/', zValidator('json', Body), async (c) => {
+  const userId = c.get('userId'); const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const b = c.req.valid('json')
   const r = await pool.query(
@@ -44,7 +44,7 @@ payables.post('/:companyId/payables', zValidator('json', Body), async (c) => {
   return c.json(r.rows[0], 201)
 })
 
-payables.patch('/:companyId/payables/:id', zValidator('json', Body.partial()), async (c) => {
+payables.patch('//:id', zValidator('json', Body.partial()), async (c) => {
   const userId = c.get('userId'); const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const b = c.req.valid('json')
@@ -63,7 +63,7 @@ payables.patch('/:companyId/payables/:id', zValidator('json', Body.partial()), a
   return c.json(r.rows[0])
 })
 
-payables.delete('/:companyId/payables/:id', async (c) => {
+payables.delete('//:id', async (c) => {
   const userId = c.get('userId'); const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   await pool.query('DELETE FROM payables WHERE id=$1 AND company_id=$2', [id, companyId])

@@ -14,9 +14,9 @@ async function ownsCompany(userId: string, companyId: string): Promise<boolean> 
 }
 
 // List all inventory items
-inventory.get('/:companyId/inventory/items', async (c) => {
+inventory.get('//items', async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
+  const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
 
   const result = await pool.query(
@@ -34,9 +34,9 @@ const ItemBody = z.object({
   low_stock_threshold: z.number().min(0).default(0),
 })
 
-inventory.post('/:companyId/inventory/items', zValidator('json', ItemBody), async (c) => {
+inventory.post('//items', zValidator('json', ItemBody), async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
+  const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const body = c.req.valid('json')
 
@@ -49,7 +49,7 @@ inventory.post('/:companyId/inventory/items', zValidator('json', ItemBody), asyn
 })
 
 // Get single item with recent movements
-inventory.get('/:companyId/inventory/items/:id', async (c) => {
+inventory.get('//items/:id', async (c) => {
   const userId = c.get('userId')
   const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
@@ -69,7 +69,7 @@ inventory.get('/:companyId/inventory/items/:id', async (c) => {
 })
 
 // Delete item
-inventory.delete('/:companyId/inventory/items/:id', async (c) => {
+inventory.delete('//items/:id', async (c) => {
   const userId = c.get('userId')
   const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
@@ -90,7 +90,7 @@ const MovementBody = z.object({
   note: z.string().max(500).optional(),
 })
 
-inventory.post('/:companyId/inventory/items/:id/movements', zValidator('json', MovementBody), async (c) => {
+inventory.post('//items/:id/movements', zValidator('json', MovementBody), async (c) => {
   const userId = c.get('userId')
   const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
@@ -151,7 +151,7 @@ inventory.post('/:companyId/inventory/items/:id/movements', zValidator('json', M
 })
 
 // List movements for item
-inventory.get('/:companyId/inventory/items/:id/movements', async (c) => {
+inventory.get('//items/:id/movements', async (c) => {
   const userId = c.get('userId')
   const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)

@@ -11,9 +11,9 @@ async function ownsCompany(userId: string, companyId: string): Promise<boolean> 
   return r.rows.length > 0
 }
 
-reports.get('/:companyId/reports/monthly', async (c) => {
+reports.get('//monthly', async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
+  const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const month = c.req.query('month') || new Date().toISOString().slice(0, 7)
 

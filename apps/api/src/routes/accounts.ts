@@ -13,9 +13,9 @@ async function ownsCompany(userId: string, companyId: string): Promise<boolean> 
   return r.rows.length > 0
 }
 
-accounts.get('/:companyId/accounts', async (c) => {
+accounts.get('/', async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
+  const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const result = await pool.query('SELECT * FROM accounts WHERE company_id = $1 ORDER BY created_at ASC', [companyId])
   return c.json(result.rows)
@@ -27,9 +27,9 @@ const AccountBody = z.object({
   balance_cents: z.number().int().default(0),
 })
 
-accounts.post('/:companyId/accounts', zValidator('json', AccountBody), async (c) => {
+accounts.post('/', zValidator('json', AccountBody), async (c) => {
   const userId = c.get('userId')
-  const { companyId } = c.req.param()
+  const companyId = c.get("companyId")
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
   const body = c.req.valid('json')
   const result = await pool.query(
@@ -39,7 +39,7 @@ accounts.post('/:companyId/accounts', zValidator('json', AccountBody), async (c)
   return c.json(result.rows[0], 201)
 })
 
-accounts.patch('/:companyId/accounts/:id', zValidator('json', AccountBody.partial()), async (c) => {
+accounts.patch('//:id', zValidator('json', AccountBody.partial()), async (c) => {
   const userId = c.get('userId')
   const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
@@ -56,7 +56,7 @@ accounts.patch('/:companyId/accounts/:id', zValidator('json', AccountBody.partia
   return c.json(result.rows[0])
 })
 
-accounts.delete('/:companyId/accounts/:id', async (c) => {
+accounts.delete('//:id', async (c) => {
   const userId = c.get('userId')
   const { companyId, id } = c.req.param()
   if (!await ownsCompany(userId, companyId)) return c.json({ error: 'Not found' }, 404)
