@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
@@ -16,7 +16,7 @@ export function useInventory() {
     if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try { setItems(await api.get<InventoryItem[]>(`/${companyId}/inventory/items`) || []) }
-    catch (e) { console.error(e); toast.error('Failed to load inventory') }
+    catch (e) { if (e instanceof ApiError && e.status === 401) return; console.error(e); toast.error('Failed to load inventory') }
     setIsLoading(false)
   }, [companyId])
 

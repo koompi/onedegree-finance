@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
@@ -32,6 +32,7 @@ export function useRecurring() {
       const data = await api.get<RecurringRule[]>(`/${companyId}/recurring`)
       setRules(data || [])
     } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return
       console.error(e)
       toast.error('Failed to load recurring rules')
     }

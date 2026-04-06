@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
@@ -16,7 +16,7 @@ export function usePayables() {
     if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try { setItems(await api.get<Payable[]>(`/${companyId}/payables`) || []) }
-    catch (e) { console.error(e); toast.error('Failed to load payables') }
+    catch (e) { if (e instanceof ApiError && e.status === 401) return; console.error(e); toast.error('Failed to load payables') }
     setIsLoading(false)
   }, [companyId])
 

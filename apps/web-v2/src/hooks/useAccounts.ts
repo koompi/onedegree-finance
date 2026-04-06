@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
@@ -14,7 +14,7 @@ export function useAccounts() {
     if (!companyId) { setIsLoading(false); return }
     setIsLoading(true)
     try { setAccounts(await api.get<Account[]>(`/${companyId}/accounts`) || []) }
-    catch (e) { console.error(e); toast.error('Failed to load accounts') }
+    catch (e) { if (e instanceof ApiError && e.status === 401) return; console.error(e); toast.error('Failed to load accounts') }
     setIsLoading(false)
   }, [companyId])
 

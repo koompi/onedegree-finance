@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
@@ -20,7 +20,7 @@ export function useCompany() {
       const data = await api.get<Company[]>('/companies') || []
       setCompanies(data)
       setCurrentCompany(data.find((c: Company) => c.id === companyId) || null)
-    } catch (e) { console.error(e); toast.error('Failed to load company') }
+    } catch (e) { if (e instanceof ApiError && e.status === 401) return; console.error(e); toast.error('Failed to load company') }
     setIsLoading(false)
   }, [companyId])
 

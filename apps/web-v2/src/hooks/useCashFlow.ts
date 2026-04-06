@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
@@ -28,6 +28,7 @@ export function useCashFlow(month?: string) {
       setDays(data.days || [])
       setReportMonth(data.month || currentMonth)
     } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return
       console.error(e)
       toast.error('Failed to load cash flow')
     }

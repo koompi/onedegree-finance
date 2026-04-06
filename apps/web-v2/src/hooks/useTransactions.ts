@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
@@ -24,7 +24,7 @@ export function useTransactions(month?: string, type?: string) {
       params.set('limit', '100')
       const data = await api.get<Transaction[]>(`/${companyId}/transactions?${params}`)
       setTransactions(data || [])
-    } catch (e) { console.error(e); toast.error('Failed to load transactions') }
+    } catch (e) { if (e instanceof ApiError && e.status === 401) return; console.error(e); toast.error('Failed to load transactions') }
     setIsLoading(false)
   }, [companyId, month, type])
 

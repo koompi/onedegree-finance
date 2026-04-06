@@ -99,14 +99,12 @@ function tryValidateDecoded(initData: string, botToken: string): TelegramUser | 
 export async function createJWT(userId: string, companyId?: string): Promise<string> {
   return new SignJWT({ userId, companyId })
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('15m')
     .sign(JWT_SECRET)
 }
 
 export async function createRefreshToken(userId: string): Promise<string> {
   return new SignJWT({ userId, type: 'refresh' })
     .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('7d')
     .sign(JWT_SECRET)
 }
 

@@ -7169,10 +7169,10 @@ function tryValidateDecoded(initData, botToken) {
   }
 }
 async function createJWT(userId, companyId) {
-  return new SignJWT({ userId, companyId }).setProtectedHeader({ alg: "HS256" }).setExpirationTime("15m").sign(JWT_SECRET);
+  return new SignJWT({ userId, companyId }).setProtectedHeader({ alg: "HS256" }).sign(JWT_SECRET);
 }
 async function createRefreshToken(userId) {
-  return new SignJWT({ userId, type: "refresh" }).setProtectedHeader({ alg: "HS256" }).setExpirationTime("7d").sign(JWT_SECRET);
+  return new SignJWT({ userId, type: "refresh" }).setProtectedHeader({ alg: "HS256" }).sign(JWT_SECRET);
 }
 var authMiddleware = createMiddleware(async (c, next) => {
   const authHeader = c.req.header("Authorization");
