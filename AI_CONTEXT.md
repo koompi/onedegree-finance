@@ -66,6 +66,11 @@ This document provides critical engineering context for AI assistants working on
   - `➖ Log Expense` → `quick_expense_help`
 - `apps/bot/src/handlers/callback.ts` handles all `callback_query` events for these buttons.
 - `apps/bot/src/index.ts` routes `callback_query` updates before the `message` handler.
+- The bot authenticates via `/auth/bot` (uses `BOT_AUTH_SECRET`), caches the token per `user.id` in `tokenCache` (in `message.ts`).
+- **Known limitation / TODO:** Bot always picks `companies[0]` and `accounts[0]`. If a user has multiple companies, there is no way to switch. Need to add a **Switch Org** feature:
+  - New `/switchorg` command (or `🔀 Switch Org` quick-action button) that lists companies as inline keyboard buttons
+  - New `callback_query` data prefix `switch_org:<companyId>` handled in `callback.ts`
+  - On selection: updates `tokenCache` entry with new `companyId` + resolve first account via `getAccounts`
 
 ## 10. Period Locking
 - `period_locks` table — stores locked months per company (owner/manager can toggle).
