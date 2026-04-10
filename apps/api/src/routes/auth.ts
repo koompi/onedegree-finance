@@ -101,10 +101,19 @@ auth.post('/telegram', zValidator('json', z.object({ initData: z.string() })), a
       "INSERT INTO companies (owner_id, name, type) VALUES ($1, 'Admin Business', 'general') RETURNING id, name",
       [user.id]
     )
-    await pool.query(
-      "INSERT INTO accounts (company_id, name, type) VALUES ($1, 'Cash in Hand', 'cash')",
-      [companyResult.rows[0].id]
-    )
+    const newCompanyId = companyResult.rows[0].id
+    await Promise.all([
+      pool.query(
+        "INSERT INTO accounts (company_id, name, type) VALUES ($1, 'Cash in Hand', 'cash')",
+        [newCompanyId]
+      ),
+      pool.query(
+        `INSERT INTO team_members (user_id, company_id, role, invited_by, active)
+         VALUES ($1, $2, 'owner', $1, TRUE)
+         ON CONFLICT DO NOTHING`,
+        [user.id, newCompanyId]
+      ),
+    ])
   }
 
   const company = companyResult.rows[0] ? { id: companyResult.rows[0].id, name: companyResult.rows[0].name } : null

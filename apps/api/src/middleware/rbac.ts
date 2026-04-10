@@ -16,8 +16,13 @@ interface TeamMember {
  * Get user's role in a company
  */
 async function getUserRole(userId: string, companyId: string): Promise<UserRole | null> {
+  // Check team_members first, fallback to companies.owner_id so that
+  // owners of companies created before RBAC was enforced still get access.
   const result = await pool.query(
-    'SELECT role FROM team_members WHERE user_id = $1 AND company_id = $2 AND active = TRUE',
+    `SELECT COALESCE(
+      (SELECT role FROM team_members WHERE user_id = $1 AND company_id = $2 AND active = TRUE),
+      (SELECT 'owner' FROM companies WHERE id = $2 AND owner_id = $1)
+    ) AS role`,
     [userId, companyId]
   )
   return result.rows[0]?.role as UserRole | null || null
@@ -27,11 +32,8 @@ async function getUserRole(userId: string, companyId: string): Promise<UserRole 
  * Check if user is member of company
  */
 async function isTeamMember(userId: string, companyId: string): Promise<boolean> {
-  const result = await pool.query(
-    'SELECT id FROM team_members WHERE user_id = $1 AND company_id = $2 AND active = TRUE',
-    [userId, companyId]
-  )
-  return result.rows.length > 0
+  const role = await getUserRole(userId, companyId)
+  return role !== null
 }
 
 /**
