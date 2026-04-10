@@ -99,6 +99,16 @@ transactions.post(
     const { companyId } = c.req.param()
     const body = c.req.valid('json')
 
+    // Auto-assign first account if none provided (quick mode)
+    let accountId = body.account_id
+    if (!accountId) {
+      const firstAccount = await pool.query(
+        'SELECT id FROM accounts WHERE company_id = $1 ORDER BY created_at ASC LIMIT 1',
+        [companyId]
+      )
+      accountId = firstAccount.rows[0]?.id || null
+    }
+
     // Calculate dual currency amounts
     const inputAmount = body.amount_cents || body.amount_khr || 0
     const { amount_cents, amount_khr, exchange_rate } = exchangeRateService.calculateDualCurrency(
@@ -112,13 +122,13 @@ transactions.post(
       const result = await client.query(
         `INSERT INTO transactions (company_id, account_id, category_id, type, amount_cents, amount_khr, exchange_rate, currency_input, note, occurred_at, receipt_url, is_personal)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-        [companyId, body.account_id, body.category_id || null, body.type, amount_cents,
+        [companyId, accountId, body.category_id || null, body.type, amount_cents,
          amount_khr, exchange_rate, body.currency_input, body.note || null, body.occurred_at,
          body.receipt_url || null, body.is_personal ?? false]
       )
       const delta = body.type === 'income' ? amount_cents : -amount_cents
-      if (body.account_id) {
-        await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, body.account_id])
+      if (accountId) {
+        await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, accountId])
       }
       await client.query('COMMIT')
       return c.json(result.rows[0], 201)

@@ -36,7 +36,7 @@ export const checkPeriodLock = createMiddleware<{
   }
 
   // For POST/PATCH/DELETE, check if the period is locked
-  const method = c.req.method()
+  const method = c.req.method
   if (method === 'POST' || method === 'PATCH' || method === 'DELETE') {
     // Try to get period from request body or query
     const body = await c.req.json().catch(() => ({}))
