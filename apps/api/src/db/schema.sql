@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS payables (
 CREATE INDEX IF NOT EXISTS idx_transactions_company ON transactions(company_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_occurred ON transactions(occurred_at DESC);
-CREATE INDEX IF NOT EXISTS idx_transactions_company_month ON transactions(company_id, to_char(occurred_at, 'YYYY-MM'));
+-- CREATE INDEX IF NOT EXISTS idx_transactions_company_month ON transactions(company_id, to_char(occurred_at, 'YYYY-MM'));
 CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(company_id, type);
 
 CREATE INDEX IF NOT EXISTS idx_receivables_company ON receivables(company_id);

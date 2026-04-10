@@ -180,6 +180,28 @@ companies.get('/:companyId/members', teamMember, async (c) => {
   return c.json(result.rows)
 })
 
+// GET my role in company
+companies.get('/:companyId/members/me', teamMember, async (c) => {
+  const { companyId } = c.req.param()
+  const userId = c.get('userId')
+
+  const result = await pool.query(
+    `SELECT tm.id, tm.role, tm.active, tm.created_at,
+      u.id as user_id, u.name, u.username, u.telegram_id
+     FROM team_members tm
+     JOIN users u ON u.id = tm.user_id
+     WHERE tm.company_id = $1 AND tm.user_id = $2 AND tm.active = TRUE
+     LIMIT 1`,
+    [companyId, userId]
+  )
+
+  if (result.rows.length === 0) {
+    return c.json({ error: 'Team member not found' }, 404)
+  }
+
+  return c.json(result.rows[0])
+})
+
 const UpdateRoleBody = z.object({
   role: z.enum(['owner', 'manager', 'staff']),
 })
