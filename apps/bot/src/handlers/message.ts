@@ -1,6 +1,6 @@
 import { parseTransaction } from '../gemini'
 import { authenticate, getCompanies, getAccounts, logTransaction } from '../api'
-import { sendMessage } from './telegram'
+import { sendMessage, quickActionsKeyboard } from './telegram'
 
 interface TelegramUser {
   id: number
@@ -41,7 +41,7 @@ export async function handleTextMessage(chatId: number, text: string, user: Tele
       ``,
       `Please try again with a clearer message like:`,
       `"sold rice $50" or "bought supplies 200000 riel"`,
-    ].join('\n'))
+    ].join('\n'), { replyMarkup: quickActionsKeyboard })
     return
   }
 
@@ -51,11 +51,11 @@ export async function handleTextMessage(chatId: number, text: string, user: Tele
   } catch (e) {
     const err = e as Error
     if (err.message === 'NO_COMPANY') {
-      await sendMessage(chatId, 'Please set up your business first in the OneDegree app.\nសូមបង្កើតអាជីវកម្មរបស់អ្នកក្នុង OneDegree app ជាមុនសិន។')
+      await sendMessage(chatId, 'Please set up your business first in the OneDegree app.\nសូមបង្កើតអាជីវកម្មរបស់អ្នកក្នុង OneDegree app ជាមុនសិន។', { replyMarkup: quickActionsKeyboard })
       return
     }
     if (err.message === 'NO_ACCOUNT') {
-      await sendMessage(chatId, 'Please add an account first in the OneDegree app.\nសូមបន្ថែមគណនីក្នុង OneDegree app ជាមុនសិន។')
+      await sendMessage(chatId, 'Please add an account first in the OneDegree app.\nសូមបន្ថែមគណនីក្នុង OneDegree app ជាមុនសិន។', { replyMarkup: quickActionsKeyboard })
       return
     }
     throw err
@@ -74,8 +74,8 @@ export async function handleTextMessage(chatId: number, text: string, user: Tele
   const currencySymbol = parsed.currency === 'USD' ? '$' : 'KHR '
 
   await sendMessage(chatId, [
-    `Logged / បានកត់ត្រា`,
-    `${sign}${currencySymbol}${parsed.amount.toFixed(2)} — ${parsed.note}`,
+    `✅ Logged / បានកត់ត្រា`,
+    `<b>${sign}${currencySymbol}${parsed.amount.toFixed(2)}</b> — ${parsed.note}`,
     parsed.note_km !== parsed.note ? parsed.note_km : '',
-  ].filter(Boolean).join('\n'))
+  ].filter(Boolean).join('\n'), { parseMode: 'HTML', replyMarkup: quickActionsKeyboard })
 }

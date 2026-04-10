@@ -3,10 +3,11 @@ import { haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
 import { fmtKHR, fmtUSD } from '../lib/format'
 
-export default function CurrencyInput({ value, onChange, placeholder, autoFocus }: {
-  value: number; onChange: (v: number) => void; placeholder?: string; autoFocus?: boolean
+export default function CurrencyInput({ value, onChange, placeholder, autoFocus, currency: currencyOverride }: {
+  value: number; onChange: (v: number) => void; placeholder?: string; autoFocus?: boolean; currency?: 'USD' | 'KHR'
 }) {
-  const currency = useI18nStore(s => s.currency)
+  const storeCurrency = useI18nStore(s => s.currency)
+  const currency = currencyOverride ?? storeCurrency
   const rate = useI18nStore(s => s.usdRate)
   const prevCurrency = useRef(currency)
 

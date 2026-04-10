@@ -3,6 +3,7 @@ import { serve } from '@hono/node-server'
 import { handleTextMessage } from './handlers/message'
 import { handleVoiceMessage } from './handlers/voice'
 import { handleCommand } from './handlers/commands'
+import { handleCallbackQuery } from './handlers/callback'
 import { startDailyCron } from './cron'
 
 const app = new Hono()
@@ -22,6 +23,17 @@ interface TelegramUpdate {
     text?: string
     voice?: { file_id: string; duration: number; mime_type?: string }
   }
+  callback_query?: {
+    id: string
+    from: {
+      id: number
+      first_name: string
+      last_name?: string
+      username?: string
+    }
+    message?: { chat: { id: number }; message_id: number }
+    data?: string
+  }
 }
 
 app.get('/health', (c) => c.json({ status: 'ok' }))
@@ -35,6 +47,21 @@ app.post('/webhook', async (c) => {
   }
 
   const update = await c.req.json<TelegramUpdate>()
+
+  // Handle inline keyboard button taps
+  if (update.callback_query) {
+    const { callback_query } = update
+    const chatId = callback_query.message?.chat.id
+    const user = callback_query.from
+    if (chatId) {
+      try {
+        await handleCallbackQuery(chatId, callback_query.data ?? '', user, callback_query.id)
+      } catch (err) {
+        console.error('Error handling callback_query:', err)
+      }
+    }
+    return c.json({ ok: true })
+  }
 
   if (!update.message) {
     return c.json({ ok: true })

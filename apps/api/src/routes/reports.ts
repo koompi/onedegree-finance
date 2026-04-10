@@ -28,6 +28,9 @@ reports.get('/:companyId/reports/monthly', teamMember, async (c) => {
   const { companyId } = c.req.param()
   const month = c.req.query('month') || new Date().toISOString().slice(0, 7)
   const currency = c.req.query('currency') || 'USD'
+  // business_only=true excludes personal transactions from totals
+  const businessOnly = c.req.query('business_only') === 'true'
+  const personalFilter = businessOnly ? 'AND t.is_personal = FALSE' : ''
 
   const [txResult, accountsResult, receivablesResult, payablesResult] = await Promise.all([
     pool.query(
@@ -38,6 +41,7 @@ reports.get('/:companyId/reports/monthly', teamMember, async (c) => {
        LEFT JOIN categories c ON t.category_id = c.id
        WHERE t.company_id = $1 AND t.occurred_at >= ($2 || '-01')::DATE
          AND t.occurred_at < (($2 || '-01')::DATE + INTERVAL '1 month')
+         ${personalFilter}
        GROUP BY t.type, t.category_id, c.name, c.name_km`,
       [companyId, month]
     ),

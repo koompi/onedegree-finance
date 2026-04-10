@@ -69,6 +69,8 @@ export const en = {
     tx_detail_no_account: 'No account',
     tx_receipt_label: 'Receipt',
     tx_receipt_tap: 'Tap to view full image',
+    tx_personal: 'Personal (Excluded from reports)',
+    tx_business: 'Business',
 
     // Receivables/Payables
     receivables_total: 'Total Receivable',
@@ -316,8 +318,8 @@ export const km = {
     tx_detail_no_category: 'គ្មានប្រភេទ',
     tx_detail_no_account: 'គ្មានគណនី',
     tx_receipt_label: 'វិក្កយបត្រ',
-    tx_receipt_tap: 'ចុចដើម្បីមើលរូបភាពពេញ',
-
+    tx_receipt_tap: 'ចុចដើម្បីមើលរូបភាពពេញ',    tx_personal: 'ខ្លួនខ្លួន (មិនរួមបញ្ចូលរបាយការណ៍)',
+    tx_business: 'អាជីវកម្ម',
     // Receivables/Payables
     receivables_total: 'សរុបគេជំពាក់',
     receivables_overdue: 'ហួសកំណត់',

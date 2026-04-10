@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Icon from '../components/Icon'
+import AddTransactionSheet from '../components/AddTransactionSheet'
 import { useDashboard } from '../hooks/useDashboard'
 import { useAmount } from '../hooks/useAmount'
 import { getGreeting, haptic } from '../lib/telegram'
@@ -16,6 +17,8 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
   const { isLoading, transactions, monthlyData, receivablesCount, income, expense, profitMargin, getMonthLabel } = useDashboard()
   const { fmt } = useAmount()
   const [tipIdx, setTipIdx] = useState(0)
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
+  const [quickAddType, setQuickAddType] = useState<'income' | 'expense'>('income')
   const t = useI18nStore(s => s.t)
   const TIPS = ['កត់ត្រារាល់ប្រតិបត្តិការជារៀងរាល់ថ្ងៃ', 'ផ្ញើរំលឹកមុនកាលកំណត់ 3 ថ្ងៃ', 'តាមដានស្តុកទំនិញជារៀងរាល់សប្ដាហ៍', 'បំបែកគណនីអាជីវកម្ម និងផ្ទាល់ខ្លួន', 'ផ្ទៀងផ្ទាត់តុល្យការជារៀងរាល់ខែ']
   useEffect(() => { const t = setInterval(() => setTipIdx(i => (i + 1) % TIPS.length), 5000); return () => clearInterval(t) }, [])
@@ -173,15 +176,28 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
 
       {/* FAB */}
       <div className="fixed fab-bottom left-1/2 -translate-x-1/2 w-full sm:max-w-[400px] px-6 flex gap-3 z-40">
-        <button onClick={() => { haptic('medium'); onNavigate('transactions') }} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
-          style={{ background: 'var(--green)', color: 'var(--bg)' }}>
+        <button
+          onClick={() => { haptic('medium'); setQuickAddType('income'); setShowQuickAdd(true) }}
+          className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
+          style={{ background: 'var(--green)', color: 'var(--bg)' }}
+        >
           <Icon name="plus" size={16} /> {t('revenue')}
         </button>
-        <button onClick={() => { haptic('medium'); onNavigate('transactions') }} className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
-          style={{ background: 'var(--red)', color: 'var(--bg)' }}>
+        <button
+          onClick={() => { haptic('medium'); setQuickAddType('expense'); setShowQuickAdd(true) }}
+          className="flex-1 py-3.5 rounded-2xl font-semibold text-sm flex items-center justify-center gap-2 active:scale-95 shadow-lg"
+          style={{ background: 'var(--red)', color: 'var(--bg)' }}
+        >
           <Icon name="minus" size={16} /> {t('expense')}
         </button>
       </div>
+
+      <AddTransactionSheet
+        isOpen={showQuickAdd}
+        onClose={() => setShowQuickAdd(false)}
+        defaultType={quickAddType}
+        onSaved={() => onNavigate('transactions')}
+      />
     </div>
   )
 }

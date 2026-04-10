@@ -24,6 +24,28 @@ export async function sendMessage(chatId: number, text: string, options?: {
   }
 }
 
+/** Inline keyboard shown after every bot response for quick navigation */
+export const quickActionsKeyboard = {
+  inline_keyboard: [
+    [
+      { text: '📊 Balance', callback_data: 'quick_balance' },
+      { text: '📅 Summary', callback_data: 'quick_summary' },
+    ],
+    [
+      { text: '💰 Income ចំណូល', callback_data: 'quick_income_help' },
+      { text: '💸 Expense ចំណាយ', callback_data: 'quick_expense_help' },
+    ],
+  ],
+}
+
+export async function answerCallbackQuery(callbackQueryId: string, text?: string): Promise<void> {
+  await fetch(`${TG_API}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ callback_query_id: callbackQueryId, text }),
+  })
+}
+
 export async function getFileUrl(fileId: string): Promise<string> {
   const res = await fetch(`${TG_API}/getFile`, {
     method: 'POST',

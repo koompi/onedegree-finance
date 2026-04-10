@@ -27,7 +27,7 @@ transactions.get('/:companyId/transactions', teamMember, async (c) => {
   const userId = c.get('userId')
   const userRole = c.get('userRole')
   const { companyId } = c.req.param()
-  const { month, type, limit = '50', offset = '0', currency } = c.req.query()
+  const { month, type, limit = '50', offset = '0', currency, is_personal } = c.req.query()
 
   const conditions = ['t.company_id = $1']
   const values: unknown[] = [companyId]
@@ -40,6 +40,12 @@ transactions.get('/:companyId/transactions', teamMember, async (c) => {
   if (type) {
     conditions.push(`t.type = $${i++}`)
     values.push(type)
+  }
+  // Filter by personal/business if explicitly requested
+  if (is_personal === 'true') {
+    conditions.push(`t.is_personal = TRUE`)
+  } else if (is_personal === 'false') {
+    conditions.push(`t.is_personal = FALSE`)
   }
 
   values.push(parseInt(limit), parseInt(offset))
@@ -78,6 +84,7 @@ const TxBody = z.object({
   note: z.string().max(500).optional(),
   occurred_at: z.string().datetime(),
   receipt_url: z.string().url().optional(),
+  is_personal: z.boolean().default(false).optional(),
 })
 
 // POST transaction - requires team member, checks period lock
@@ -103,11 +110,11 @@ transactions.post(
     try {
       await client.query('BEGIN')
       const result = await client.query(
-        `INSERT INTO transactions (company_id, account_id, category_id, type, amount_cents, amount_khr, exchange_rate, currency_input, note, occurred_at, receipt_url)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+        `INSERT INTO transactions (company_id, account_id, category_id, type, amount_cents, amount_khr, exchange_rate, currency_input, note, occurred_at, receipt_url, is_personal)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
         [companyId, body.account_id, body.category_id || null, body.type, amount_cents,
          amount_khr, exchange_rate, body.currency_input, body.note || null, body.occurred_at,
-         body.receipt_url || null]
+         body.receipt_url || null, body.is_personal ?? false]
       )
       const delta = body.type === 'income' ? amount_cents : -amount_cents
       if (body.account_id) {
@@ -193,6 +200,7 @@ const PatchTxBody = z.object({
   amount_khr: z.number().int().positive().optional(),
   currency_input: z.enum(['USD', 'KHR']).optional(),
   note: z.string().max(500).optional().nullable(),
+  is_personal: z.boolean().optional(),
 })
 
 // PATCH transaction - owner/manager only, checks period lock
@@ -238,10 +246,11 @@ transactions.patch(
       const result = await client.query(
         `UPDATE transactions SET
           account_id = $1, category_id = $2, type = $3, amount_cents = $4,
-          currency_input = $5, note = $6, updated_at = NOW()
-         WHERE id = $7 AND company_id = $8 RETURNING *`,
+          currency_input = $5, note = $6, is_personal = $7, updated_at = NOW()
+         WHERE id = $8 AND company_id = $9 RETURNING *`,
         [newAccountId, body.category_id ?? old.category_id, newType, newAmount,
          currencyInput, body.note !== undefined ? body.note : old.note,
+         body.is_personal !== undefined ? body.is_personal : old.is_personal,
          id, companyId]
       )
 

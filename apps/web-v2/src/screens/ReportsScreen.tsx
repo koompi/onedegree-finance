@@ -30,6 +30,7 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const [report, setReport] = useState<ReportData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'pl' | 'cashflow'>('pl')
+  const [businessOnly, setBusinessOnly] = useState(false)
   const [periodLocks, setPeriodLocks] = useState<Record<string, { locked_by: string; locked_at: string }>>({})
   const [isOwner, setIsOwner] = useState(false)
   const [locking, setLocking] = useState(false)
@@ -88,7 +89,7 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
     setIsLoading(true)
     const m = `${year}-${String(month + 1).padStart(2, '0')}`
     try {
-      const raw = await api.get<any>(`/${companyId}/reports/monthly?month=${m}`)
+      const raw = await api.get<any>(`/${companyId}/reports/monthly?month=${m}${businessOnly ? '&business_only=true' : ''}`)
       setReport({
         income: raw.total_income_cents ?? raw.total_income_khr ?? raw.income ?? 0,
         expense: raw.total_expense_cents ?? raw.total_expense_khr ?? raw.expense ?? 0,
@@ -115,7 +116,7 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
     setIsLoading(false)
   }
 
-  useEffect(() => { fetchReport() }, [companyId, year, month])
+  useEffect(() => { fetchReport() }, [companyId, year, month, businessOnly])
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1); }
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1); }
 
@@ -197,6 +198,19 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
           <>
             {activeTab === 'pl' && (
               <>
+            {/* Business-only toggle */}
+            <button
+              onClick={() => setBusinessOnly(b => !b)}
+              className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all"
+              style={{
+                background: businessOnly ? 'var(--gold-soft)' : 'var(--border)',
+                color: businessOnly ? 'var(--gold)' : 'var(--text-dim)',
+                border: `1px solid ${businessOnly ? 'var(--gold-med)' : 'var(--border)'}`,
+              }}
+            >
+              <span>💼</span>
+              <span>{businessOnly ? t('tx_business') + ' Only' : 'All Transactions (incl. Personal)'}</span>
+            </button>
             {/* P&L Statement */}
             <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
               <div className="px-4 py-3" style={{ background: 'var(--gold-soft)', borderBottom: '1px solid var(--gold-med)' }}>
