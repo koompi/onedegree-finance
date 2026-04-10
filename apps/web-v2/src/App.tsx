@@ -20,6 +20,7 @@ import { useAuth } from './hooks/useAuth'
 import { initTelegram, haptic, setupViewportHandling, getTelegram } from './lib/telegram'
 import { api } from './lib/api'
 import { useI18nStore } from './store/i18nStore'
+import CreateCompanyScreen from './screens/CreateCompanyScreen'
 
 type Screen = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'inventory' | 'reports' | 'settings' | 'categories' | 'accounts' | 'companyProfile' | 'recurring' | 'teamMembers'
 
@@ -27,7 +28,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>('dashboard')
   const scrollRef = useRef<HTMLDivElement>(null)
   const [isDark, setIsDark] = useState(true)
-  const { token, companyName, setAuth } = useAuthStore()
+  const { token, companyName, companyId, setAuth } = useAuthStore()
   const { isLoading: authLoading, isAuthenticated, error: authError } = useAuth()
   const t = useI18nStore(s => s.t)
 
@@ -152,6 +153,16 @@ export default function App() {
         <div className="text-lg font-extrabold mb-2" style={{ color: 'var(--text)' }}>{t('auth_loading_title')}</div>
         <div className="text-sm px-6" style={{ color: 'var(--text-sec)' }}>{authError || t('auth_open_in_tg')}</div>
       </div>
+    )
+  }
+
+  // No company yet — show onboarding
+  if (isAuthenticated && !companyId) {
+    return (
+      <ErrorBoundary>
+        <Toast />
+        <CreateCompanyScreen />
+      </ErrorBoundary>
     )
   }
 
