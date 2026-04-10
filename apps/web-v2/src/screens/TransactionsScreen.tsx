@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import ScreenHeader from '../components/ScreenHeader'
 import Pill from '../components/Pill'
 import Icon from '../components/Icon'
@@ -16,9 +16,16 @@ import { fmtDateKhmer } from '../lib/format'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
+import { useAuthStore } from '../store/authStore'
+import { api, ApiError } from '../lib/api'
 
 export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const t = useI18nStore(s => s.t)
+  const { companyId } = useAuthStore()
+  const { currency } = useAmount()
+  const [periodLocks, setPeriodLocks] = useState<Record<string, { locked_by: string; locked_at: string }>>({})
+  const [isOwner, setIsOwner] = useState(false)
+  const [locking, setLocking] = useState(false)
   const FILTERS = [
     { key: 'all', label: t('tx_filter_all') },
     { key: 'income', label: t('tx_filter_income') },
@@ -48,6 +55,49 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const { accounts } = useAccounts()
   const { fmt } = useAmount()
   const { uploadReceipt, uploading, progress } = useReceiptUpload()
+
+  const handleLockToggle = async () => {
+    if (!companyId || locking) return
+    setLocking(true)
+    try {
+      if (periodLocks[month]) {
+        await api.delete(`/${companyId}/periods/locks/${month}`)
+        const newLocks = { ...periodLocks }
+        delete newLocks[month]
+        setPeriodLocks(newLocks)
+        toast.success(t('period_unlock_success', { period: month }))
+      } else {
+        await api.post(`/${companyId}/periods/locks/${month}`, {})
+        setPeriodLocks({ ...periodLocks, [month]: { locked_by: 'me', locked_at: new Date().toISOString() } })
+        toast.success(t('period_lock_success', { period: month }))
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to toggle period lock')
+    }
+    setLocking(false)
+  }
+
+  // Fetch period locks and user role on mount
+  useEffect(() => {
+    const fetchPeriodLocks = async () => {
+      if (!companyId) return
+      try {
+        const locks = await api.get<Array<{ month: string; locked_by: string; locked_at: string }>>(`/${companyId}/periods/locks`)
+        const lockMap: Record<string, { locked_by: string; locked_at: string }> = {}
+        locks.forEach(l => { lockMap[l.month] = { locked_by: l.locked_by, locked_at: l.locked_at } })
+        setPeriodLocks(lockMap)
+      } catch { /* ignore */ }
+    }
+    const fetchUserRole = async () => {
+      if (!companyId) return
+      try {
+        const data = await api.get<{ role: string }>(`/${companyId}/members/me`)
+        setIsOwner(data?.role === 'owner')
+      } catch { setIsOwner(false) }
+    }
+    fetchPeriodLocks()
+    fetchUserRole()
+  }, [companyId])
 
 
   const filteredCategories = type === 'income' ? incomeCategories : expenseCategories
@@ -82,12 +132,18 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
       toast.error(t('tx_form_amount') + ' > 0')
       return
     }
+    // Check if period is locked
+    const txMonth = date.substring(0, 7)
+    if (periodLocks[txMonth]) {
+      toast.error(t('period_locked_error', { period: txMonth }))
+      return
+    }
     haptic('success')
     try {
       await create({
         type,
         amount_cents: amount,
-        currency_input: 'KHR',
+        currency_input: currency.toUpperCase(),
         category_id: categoryId || undefined,
         account_id: accountId || undefined,
         occurred_at: new Date(date).toISOString(),
@@ -100,16 +156,28 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
       setReceiptUrl(null); setReceiptPreview(null)
     } catch (e: any) {
       console.error(e)
-      toast.error(e.message || 'Failed to save transaction')
+      if (e instanceof ApiError && e.code === 'PeriodLocked') {
+        toast.error(t('period_locked_error', { period: txMonth }))
+      } else {
+        toast.error(e.message || 'Failed to save transaction')
+      }
     }
   }
 
   const handleDelete = async () => {
     if (!deleteId) return
     haptic('error')
-    await remove(deleteId)
-    toast.success(t('tx_deleted_success'))
-    setDeleteId(null)
+    try {
+      await remove(deleteId)
+      toast.success(t('tx_deleted_success'))
+      setDeleteId(null)
+    } catch (e: any) {
+      if (e instanceof ApiError && e.code === 'PeriodLocked') {
+        toast.error(t('period_locked_error', { period: month }))
+      } else {
+        toast.error(e.message || 'Failed to delete transaction')
+      }
+    }
   }
 
   if (isLoading) return (
@@ -123,7 +191,27 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
     <div className="min-h-[100dvh] pb-32 animate-fadeIn relative">
       <div className="sticky top-0 z-30">
         <ScreenHeader title={t('nav_transactions')} onBack={onBack}
-          right={<button onClick={() => { haptic('light'); setSearchOpen(!searchOpen) }} className="w-10 h-10 flex items-center justify-center rounded-2xl active:bg-white/5 transition-all"><Icon name="search" size={20} color="var(--text-sec)" /></button>} />
+          right={
+            <div className="flex items-center gap-2">
+              {isOwner && (
+                <button
+                  onClick={handleLockToggle}
+                  disabled={locking}
+                  className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locking ? 'opacity-50' : ''}`}
+                  style={{ background: periodLocks[month] ? 'var(--red-soft)' : 'var(--gold-soft)' }}
+                >
+                  <Icon name={periodLocks[month] ? 'lock' : 'unlock'} size={16} color={periodLocks[month] ? 'var(--red)' : 'var(--gold)'} />
+                </button>
+              )}
+              {periodLocks[month] && !isOwner && (
+                <span className="text-[11px] font-bold px-2 py-1 rounded-lg" style={{ background: 'var(--red-soft)', color: 'var(--red)' }}>
+                  🔒
+                </span>
+              )}
+              <button onClick={() => { haptic('light'); setSearchOpen(!searchOpen) }} className="w-10 h-10 flex items-center justify-center rounded-2xl active:bg-white/5 transition-all"><Icon name="search" size={20} color="var(--text-sec)" /></button>
+            </div>
+          }
+        />
       </div>
       
       <div className="px-4 space-y-4 pt-2">
@@ -215,13 +303,24 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="fixed fab-bottom right-6 z-40">
-        <button 
-          onClick={() => { haptic('medium'); setShowAdd(true) }} 
-          className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"
-          style={{ background: 'var(--gold)' }}
-        >
-          <Icon name="plus" size={28} color="#000000" />
-        </button>
+        {!periodLocks[month] ? (
+          <button
+            onClick={() => { haptic('medium'); setShowAdd(true) }}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"
+            style={{ background: 'var(--gold)' }}
+          >
+            <Icon name="plus" size={28} color="#000000" />
+          </button>
+        ) : (
+          <button
+            onClick={() => toast.error(t('period_locked_error', { period: month }))}
+            className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95"
+            style={{ background: 'var(--border)', opacity: 0.5 }}
+            disabled
+          >
+            <Icon name="lock" size={20} color="var(--text-dim)" />
+          </button>
+        )}
       </div>
 
       <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={type === 'income' ? 'ចំណូលថ្មី' : 'ចំណាយថ្មី'}>
@@ -378,7 +477,11 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
             )}
 
             {/* Delete */}
-            {deleteId === selectedTx.id ? (
+            {periodLocks[selectedTx.occurred_at?.substring(0, 7)] ? (
+              <div className="w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2" style={{ background: 'var(--border)', color: 'var(--text-dim)' }}>
+                <Icon name="lock" size={14} color="var(--text-dim)" /> {t('period_lock_title')}
+              </div>
+            ) : deleteId === selectedTx.id ? (
               <div className="flex gap-2">
                 <button onClick={async () => { await handleDelete(); setSelectedTx(null) }} className="flex-1 py-3 rounded-xl text-sm font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
                 <button onClick={() => setDeleteId(null)} className="flex-1 py-3 rounded-xl text-sm font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>

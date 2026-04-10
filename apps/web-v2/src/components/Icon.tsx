@@ -5,8 +5,8 @@ type IconName =
   | 'inventory' | 'reports' | 'settings' | 'plus' | 'minus'
   | 'bell' | 'chevron' | 'chevronDown' | 'send' | 'download'
   | 'back' | 'telegram' | 'building' | 'tag' | 'wallet'
-  | 'globe' | 'lock' | 'user' | 'logout' | 'moon' | 'sun'
-  | 'info' | 'check' | 'x' | 'edit' | 'trash' | 'search'
+  | 'globe' | 'lock' | 'unlock' | 'user' | 'users' | 'logout' | 'moon' | 'sun'
+  | 'info' | 'check' | 'x' | 'edit' | 'trash' | 'search' | 'close'
   | 'calendar' | 'package' | 'arrowUp' | 'arrowDown'
   | 'fileText' | 'share' | 'refresh' | 'alertTriangle'
 
@@ -74,9 +74,16 @@ const icons: Record<IconName, React.ReactNode> = {
   lock: (
     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
   ),
+  unlock: (
+    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+  ),
   user: (
     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
   ),
+  users: (
+    <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+  ),
+  close: <path stroke="currentColor" strokeLinecap="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />,
   logout: (
     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
   ),

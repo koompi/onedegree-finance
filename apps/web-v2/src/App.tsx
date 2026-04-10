@@ -14,13 +14,14 @@ import CategoriesScreen from './sub-screens/CategoriesScreen'
 import AccountsScreen from './sub-screens/AccountsScreen'
 import CompanyProfileScreen from './sub-screens/CompanyProfileScreen'
 import RecurringScreen from './sub-screens/RecurringScreen'
+import TeamMembersScreen from './sub-screens/TeamMembersScreen'
 import { useAuthStore } from './store/authStore'
 import { useAuth } from './hooks/useAuth'
 import { initTelegram, haptic, setupViewportHandling, getTelegram } from './lib/telegram'
 import { api } from './lib/api'
 import { useI18nStore } from './store/i18nStore'
 
-type Screen = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'inventory' | 'reports' | 'settings' | 'categories' | 'accounts' | 'companyProfile' | 'recurring'
+type Screen = 'dashboard' | 'transactions' | 'receivables' | 'payables' | 'inventory' | 'reports' | 'settings' | 'categories' | 'accounts' | 'companyProfile' | 'recurring' | 'teamMembers'
 
 export default function App() {
   const [screen, setScreen] = useState<Screen>('dashboard')
@@ -167,6 +168,7 @@ export default function App() {
       case 'accounts': return <AccountsScreen onBack={goBack} />
       case 'companyProfile': return <CompanyProfileScreen onBack={goBack} />
       case 'recurring': return <RecurringScreen onBack={goBack} />
+      case 'teamMembers': return <TeamMembersScreen onBack={goBack} />
     }
   }
 
@@ -187,7 +189,7 @@ export default function App() {
             )}
             {renderScreen()}
           </div>
-          <BottomNav active={['categories', 'accounts', 'companyProfile', 'payables'].includes(screen) ? '' : screen} onTab={(key) => navigate(key as Screen)} />
+          <BottomNav active={['categories', 'accounts', 'companyProfile', 'payables', 'teamMembers'].includes(screen) ? '' : screen} onTab={(key) => navigate(key as Screen)} />
         </div>
       </div>
     </ErrorBoundary>

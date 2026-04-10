@@ -3,15 +3,24 @@ import ScreenHeader from '../components/ScreenHeader'
 import Icon from '../components/Icon'
 import SkeletonLoader from '../components/SkeletonLoader'
 import { useAuthStore } from '../store/authStore'
-import { api } from '../lib/api'
-import { calcProfitMargin } from '../lib/format'
+import { api, ApiError } from '../lib/api'
+import { calcProfitMargin, fmtUSD, fmtKHR } from '../lib/format'
 import { useAmount } from '../hooks/useAmount'
 import { useCashFlow } from '../hooks/useCashFlow'
 import { useI18nStore } from '../store/i18nStore'
+import { toast } from '../store/toastStore'
 
 const MONTHS_KM = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
 
-interface ReportData { income: number; expense: number; by_category: Array<{ category_id: string; category_name: string; type: string; total: number }> }
+interface ReportData {
+  income: number
+  expense: number
+  income_usd?: number
+  expense_usd?: number
+  income_khr?: number
+  expense_khr?: number
+  by_category: Array<{ category_id: string; category_name: string; type: string; total: number }>
+}
 
 export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const companyId = useAuthStore(s => s.companyId)
@@ -21,11 +30,58 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const [report, setReport] = useState<ReportData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'pl' | 'cashflow'>('pl')
+  const [periodLocks, setPeriodLocks] = useState<Record<string, { locked_by: string; locked_at: string }>>({})
+  const [isOwner, setIsOwner] = useState(false)
+  const [locking, setLocking] = useState(false)
   const t = useI18nStore(s => s.t)
   const { fmt, currency } = useAmount()
 
   const currentMonthStr = `${year}-${String(month + 1).padStart(2, '0')}`
   const { days: cfDays, totalInflow, totalOutflow, endBalance, isLoading: cfLoading } = useCashFlow(currentMonthStr)
+
+  const handleLockToggle = async () => {
+    if (!companyId || locking) return
+    setLocking(true)
+    try {
+      const m = `${year}-${String(month + 1).padStart(2, '0')}`
+      if (periodLocks[m]) {
+        await api.delete(`/${companyId}/periods/locks/${m}`)
+        const newLocks = { ...periodLocks }
+        delete newLocks[m]
+        setPeriodLocks(newLocks)
+        toast.success(t('period_unlock_success', { period: m }))
+      } else {
+        await api.post(`/${companyId}/periods/locks/${m}`, {})
+        setPeriodLocks({ ...periodLocks, [m]: { locked_by: 'me', locked_at: new Date().toISOString() } })
+        toast.success(t('period_lock_success', { period: m }))
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to toggle period lock')
+    }
+    setLocking(false)
+  }
+
+  // Fetch period locks and user role on mount
+  useEffect(() => {
+    const fetchPeriodLocks = async () => {
+      if (!companyId) return
+      try {
+        const locks = await api.get<Array<{ month: string; locked_by: string; locked_at: string }>>(`/${companyId}/periods/locks`)
+        const lockMap: Record<string, { locked_by: string; locked_at: string }> = {}
+        locks.forEach(l => { lockMap[l.month] = { locked_by: l.locked_by, locked_at: l.locked_at } })
+        setPeriodLocks(lockMap)
+      } catch { /* ignore */ }
+    }
+    const fetchUserRole = async () => {
+      if (!companyId) return
+      try {
+        const data = await api.get<{ role: string }>(`/${companyId}/members/me`)
+        setIsOwner(data?.role === 'owner')
+      } catch { setIsOwner(false) }
+    }
+    fetchPeriodLocks()
+    fetchUserRole()
+  }, [companyId])
 
   const fetchReport = async () => {
     if (!companyId) { setIsLoading(false); return }
@@ -34,20 +90,24 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
     try {
       const raw = await api.get<any>(`/${companyId}/reports/monthly?month=${m}`)
       setReport({
-        income: raw.total_income_cents ?? raw.income ?? 0,
-        expense: raw.total_expense_cents ?? raw.expense ?? 0,
+        income: raw.total_income_cents ?? raw.total_income_khr ?? raw.income ?? 0,
+        expense: raw.total_expense_cents ?? raw.total_expense_khr ?? raw.expense ?? 0,
+        income_usd: raw.total_income_usd ?? 0,
+        expense_usd: raw.total_expense_usd ?? 0,
+        income_khr: raw.total_income_khr ?? raw.total_income_cents ?? raw.income ?? 0,
+        expense_khr: raw.total_expense_khr ?? raw.total_expense_cents ?? raw.expense ?? 0,
         by_category: [
           ...(raw.income_by_category || []).map((c: any) => ({
             category_id: c.category_id || c.category_name,
             category_name: c.category_name,
             type: 'income',
-            total: c.amount_cents ?? c.total ?? 0,
+            total: c.amount_cents ?? c.amount_khr ?? c.total ?? 0,
           })),
           ...(raw.expense_by_category || []).map((c: any) => ({
             category_id: c.category_id || c.category_name,
             category_name: c.category_name,
             type: 'expense',
-            total: c.amount_cents ?? c.total ?? 0,
+            total: c.amount_cents ?? c.amount_khr ?? c.total ?? 0,
           })),
         ],
       })
@@ -70,20 +130,20 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const exportCSV = async () => {
     const m = `${year}-${String(month + 1).padStart(2, '0')}`
     try {
-      const res = await api.post(`/${companyId}/reports/export?month=${m}&type=excel`, {})
-      alert("Excel Report has been sent to your Telegram Chat!")
+      await api.post(`/${companyId}/reports/export`, { month: m, type: 'excel' })
+      toast.success(t('export_success'))
     } catch (e) {
-      alert("Failed to send report")
+      toast.error(t('export_error'))
     }
   }
 
   const exportPDF = async () => {
     const m = `${year}-${String(month + 1).padStart(2, '0')}`
     try {
-      const res = await api.post(`/${companyId}/reports/export?month=${m}&type=pdf`, {})
-      alert("PDF Report has been sent to your Telegram Chat!")
+      await api.post(`/${companyId}/reports/export`, { month: m, type: 'pdf' })
+      toast.success(t('export_success'))
     } catch (e) {
-      alert("Failed to send report")
+      toast.error(t('export_error'))
     }
   }
 
@@ -95,10 +155,25 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
           <button onClick={() => { prevMonth(); fetchReport() }} className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-90" style={{ background: 'var(--gold-soft)' }}>
             <Icon name="back" size={14} color="var(--gold)" />
           </button>
-          <span className="text-sm font-extrabold" style={{ color: 'var(--text)' }}>{t(`month_${month}` as any)} {year}</span>
-          <button onClick={() => { nextMonth(); fetchReport() }} className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-90" style={{ background: 'var(--gold-soft)' }}>
-            <Icon name="chevron" size={14} color="var(--gold)" />
-          </button>
+          <span className="text-sm font-extrabold flex items-center gap-1" style={{ color: 'var(--text)' }}>
+            {t(`month_${month}` as any)} {year}
+            {periodLocks[`${year}-${String(month + 1).padStart(2, '0')}`] && <span>🔒</span>}
+          </span>
+          <div className="flex items-center gap-1">
+            {isOwner && (
+              <button
+                onClick={handleLockToggle}
+                disabled={locking}
+                className={`w-8 h-8 rounded-xl flex items-center justify-center active:scale-90 ${locking ? 'opacity-50' : ''}`}
+                style={{ background: periodLocks[`${year}-${String(month + 1).padStart(2, '0')}`] ? 'var(--red-soft)' : 'var(--gold-soft)' }}
+              >
+                <Icon name={periodLocks[`${year}-${String(month + 1).padStart(2, '0')}`] ? 'lock' : 'unlock'} size={14} color={periodLocks[`${year}-${String(month + 1).padStart(2, '0')}`] ? 'var(--red)' : 'var(--gold)'} />
+              </button>
+            )}
+            <button onClick={() => { nextMonth(); fetchReport() }} className="w-8 h-8 rounded-xl flex items-center justify-center active:scale-90" style={{ background: 'var(--gold-soft)' }}>
+              <Icon name="chevron" size={14} color="var(--gold)" />
+            </button>
+          </div>
         </div>
 
         {/* Tab switcher */}
@@ -128,18 +203,33 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
                 <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--gold)' }}>P&amp;L Statement</div>
               </div>
               <div className="px-4 py-3 space-y-2">
-                <div className="flex justify-between items-center py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="flex justify-between items-start py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span className="text-xs font-semibold" style={{ color: 'var(--text-sec)' }}>{t('reports_total_income')}</span>
-                  <span className="text-sm font-bold font-mono-num" style={{ color: 'var(--green)' }}>+ {fmt(income)}</span>
+                  <div className="text-right">
+                    <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--green)' }}>+ {fmt(income)}</div>
+                    {report?.income_usd && (
+                      <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>${report.income_usd.toFixed(2)}</div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between items-center py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="flex justify-between items-start py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span className="text-xs font-semibold" style={{ color: 'var(--text-sec)' }}>{t('reports_total_expense')}</span>
-                  <span className="text-sm font-bold font-mono-num" style={{ color: 'var(--red)' }}>- {fmt(expense)}</span>
+                  <div className="text-right">
+                    <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--red)' }}>- {fmt(expense)}</div>
+                    {report?.expense_usd && (
+                      <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>${report.expense_usd.toFixed(2)}</div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-xs font-black" style={{ color: 'var(--text)' }}>{t('reports_profit')}</span>
                   <div className="text-right">
                     <div className="text-base font-black font-mono-num" style={{ color: profit >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(profit)}</div>
+                    {report?.income_usd && report?.expense_usd && (
+                      <div className="text-[10px] font-mono-num" style={{ color: profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                        ${(report.income_usd - report.expense_usd).toFixed(2)}
+                      </div>
+                    )}
                     <div className="text-[10px] font-bold" style={{ color: 'var(--text-dim)' }}>{t('reports_margin')}: {margin}%</div>
                   </div>
                 </div>
