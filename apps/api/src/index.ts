@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { exchangeRateService, initExchangeRate } from './services/exchangeRate'
 import auth from './routes/auth'
 import companies from './routes/companies'
 import accounts from './routes/accounts'
@@ -22,6 +23,14 @@ app.use('*', logger())
 app.get('/', (c) => c.json({ service: '1° OneDegree Finance API', status: 'ok', version: '1.0.0' }))
 app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
 
+// GET exchange rate
+app.get('/exchange-rate', (c) => {
+  return c.json({
+    usd_to_khr: exchangeRateService.getRate(),
+    last_updated: new Date().toISOString()
+  })
+})
+
 app.route('/auth', auth)
 app.route('/companies', companies)
 app.route('/companies', accounts)
@@ -41,5 +50,6 @@ import { initDb } from './db/client'
 const port = parseInt(process.env.PORT || '3001')
 serve({ fetch: app.fetch, port }, async () => {
   await initDb()
+  await initExchangeRate()
   console.log(`1° OneDegree API running on port ${port}`)
 })

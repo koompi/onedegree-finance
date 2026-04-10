@@ -190,7 +190,60 @@ export const en = {
     auth_login_btn: 'Login Local',
     auth_logging_in_btn: 'Logging in...',
     auth_open_in_tg: 'Please open in Telegram',
-    auth_login_failed: 'Dev Login failed'
+    auth_login_failed: 'Dev Login failed',
+
+    // RBAC & Team
+    team_title: 'Team Members',
+    team_invite: 'Invite Member',
+    team_role: 'Role',
+    team_role_owner: 'Owner',
+    team_role_manager: 'Manager',
+    team_role_staff: 'Staff',
+    team_active: 'Active',
+    team_inactive: 'Inactive',
+    team_invite_telegram_id: 'Telegram ID',
+    team_invite_placeholder: 'Enter Telegram ID',
+    team_invite_success: 'Member invited',
+    team_invite_error: 'User not found. Ask them to start the bot first.',
+    team_remove_confirm: 'Remove this member?',
+    team_change_role: 'Change Role',
+    team_insufficient_perms: 'Insufficient permissions',
+    team_not_member: 'Not a team member',
+
+    // Period Locking
+    period_lock_title: 'Period Locks',
+    period_lock_month: 'Month',
+    period_lock_locked_by: 'Locked By',
+    period_lock_locked_at: 'Locked At',
+    period_lock_action: 'Lock Period',
+    period_unlock_action: 'Unlock Period',
+    period_locked_error: 'Period {period} is locked. Contact owner to unlock.',
+    period_lock_success: 'Period {period} locked',
+    period_unlock_success: 'Period {period} unlocked',
+
+    // Dual Currency
+    currency_usd: 'USD',
+    currency_khr: 'KHR',
+    currency_input: 'Currency',
+    currency_toggle: 'Switch Currency',
+    exchange_rate: 'Exchange Rate',
+    exchange_rate_updated: 'Exchange rate updated: 1 USD = {rate} KHR',
+    amount_usd: 'Amount (USD)',
+    amount_khr: 'Amount (KHR)',
+    report_currency_both: 'Both Currencies',
+
+    // Export enhancements
+    export_select_month: 'Select Month',
+    export_select_type: 'Export Format',
+    export_generating: 'Generating report...',
+    export_success: 'Report sent to Telegram',
+    export_error: 'Failed to generate report',
+    report_pl_summary: 'P&L Summary',
+    report_transactions: 'Transactions',
+    report_income_cat: 'Income by Category',
+    report_expense_cat: 'Expense by Category',
+    report_receivables: 'Receivables Aging',
+    report_payables: 'Payables Aging'
 }
 
 export const km = {
@@ -385,5 +438,58 @@ export const km = {
     auth_login_btn: 'ចូលប្រើប្រាស់',
     auth_logging_in_btn: 'កំពុងចូល...',
     auth_open_in_tg: 'សូមបើកតាម Telegram',
-    auth_login_failed: 'ការចូលបរាជ័យ'
+    auth_login_failed: 'ការចូលបរាជ័យ',
+
+    // RBAC & Team
+    team_title: 'សមាជិកក្រុម',
+    team_invite: 'អញ្ជើញសមាជិក',
+    team_role: 'តួនាទី',
+    team_role_owner: 'ម្ចាស់',
+    team_role_manager: 'គ្រប់គ្រង',
+    team_role_staff: 'បុគ្គលិក',
+    team_active: 'សកម្ម',
+    team_inactive: 'មិនសកម្ម',
+    team_invite_telegram_id: 'លេខ Telegram ID',
+    team_invite_placeholder: 'បញ្ចូល Telegram ID',
+    team_invite_success: 'អញ្ជើញសមាជិកដោយជោគជ័យ',
+    team_invite_error: 'រកមិនឃើញអ្នកប្រើប្រាស់។ សូមស្នើឱ្យពួកគេចាប់ផ្តើម bot ជាមុនសិន។',
+    team_remove_confirm: 'លុបសមាជិកនេះ?',
+    team_change_role: 'ផ្លាស់ប្តូរតួនាទី',
+    team_insufficient_perms: 'សិទ្ធិមិនគ្របគ្រប់គ្រាន់',
+    team_not_member: 'មិនមែនជាសមាជិកក្រុម',
+
+    // Period Locking
+    period_lock_title: 'ចាកល់រយៈពេល',
+    period_lock_month: 'ខែ',
+    period_lock_locked_by: 'ចាកល់ដោយ',
+    period_lock_locked_at: 'ចាកល់នៅ',
+    period_lock_action: 'ចាកល់រយៈពេល',
+    period_unlock_action: 'ដោះចាកល់រយៈពេល',
+    period_locked_error: 'រយៈពេល {period} ត្រូវបានចាកល់។ ទាក់ទងម្ចាស់ដើម្បីដោះចាកល់។',
+    period_lock_success: 'រយៈពេល {period} ត្រូវបានចាកល់',
+    period_unlock_success: 'រយៈពេល {period} ត្រូវបានដោះចាកល់',
+
+    // Dual Currency
+    currency_usd: 'USD',
+    currency_khr: 'KHR',
+    currency_input: 'រូបិយប័ណ្ណ',
+    currency_toggle: 'ប្តូររូបិយប័ណ្ណ',
+    exchange_rate: 'អត្រាប្តូរប្រាក់',
+    exchange_rate_updated: 'អត្រាប្តូរប្រាក់បានធ្វើបច្ចុប្បន្នភាព៖ 1 USD = {rate} KHR',
+    amount_usd: 'ចំនួន (USD)',
+    amount_khr: 'ចំនួន (KHR)',
+    report_currency_both: 'រូបិយប័ណ្ណទាំងពីរ',
+
+    // Export enhancements
+    export_select_month: 'ជ្រើសរើសខែ',
+    export_select_type: 'ទម្រង់នៃការនាំចេញ',
+    export_generating: 'កំពុងបង្កើតរបាយការណ៍...',
+    export_success: 'របាយការណ៍ត្រូវបានផ្ញើទៅ Telegram',
+    export_error: 'បរាជ័យក្នុងការបង្កើតរបាយការណ៍',
+    report_pl_summary: 'សេចក្តីសង្ខេប ចំណូល-ចំណាយ',
+    report_transactions: 'ប្រតិបត្តិការ',
+    report_income_cat: 'ចំណូលតាមប្រភេទ',
+    report_expense_cat: 'ចំណាយតាមប្រភេទ',
+    report_receivables: 'អាយុគេជំពាក់',
+    report_payables: 'អាយុយើងជំពាក់គេ'
 }
