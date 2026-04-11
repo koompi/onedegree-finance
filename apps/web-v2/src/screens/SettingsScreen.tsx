@@ -6,13 +6,40 @@ import Icon from '../components/Icon'
 import { useState } from 'react'
 import { useAuthStore } from '../store/authStore'
 import { useI18nStore } from '../store/i18nStore'
+import { api } from '../lib/api'
 
 export default function SettingsScreen({ onNavigate, toggleTheme, isDark }: {
   onNavigate: (s: any) => void; toggleTheme: () => void; isDark: boolean
 }) {
   const [notif, setNotif] = useState(true)
+  const [pairPin, setPairPin] = useState<string | null>(null)
+  const [pairLoading, setPairLoading] = useState(false)
+  const [pairError, setPairError] = useState(false)
+  const [copied, setCopied] = useState(false)
   const { companyName, logout } = useAuthStore()
   const { lang, setLang, currency, setCurrency, t } = useI18nStore()
+
+  async function generatePin() {
+    setPairLoading(true)
+    setPairError(false)
+    setPairPin(null)
+    try {
+      const res = await api.post<{ code: string }>('/auth/pair-code', {})
+      setPairPin(res.code)
+    } catch {
+      setPairError(true)
+    } finally {
+      setPairLoading(false)
+    }
+  }
+
+  function copyPin() {
+    if (!pairPin) return
+    navigator.clipboard.writeText(`/pair ${pairPin}`).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
 
   return (
     <div className="min-h-[100dvh] flex animate-fadeIn relative">
@@ -62,7 +89,58 @@ export default function SettingsScreen({ onNavigate, toggleTheme, isDark }: {
             />
           </SGroup>
           <SGroup title={t('settings_security')}>
-            <SRow iconName="telegram" label={t('settings_tg_account')} />
+            <div className="px-4 py-3 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(0,136,204,0.15)' }}>
+                  <Icon name="telegram" size={18} color="#0088CC" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm font-bold" style={{ color: 'var(--text)' }}>{t('settings_tg_account')}</div>
+                  <div className="text-[11px]" style={{ color: 'var(--text-dim)' }}>{t('pair_subtitle')}</div>
+                </div>
+              </div>
+
+              {!pairPin && (
+                <div className="text-[11px] space-y-0.5" style={{ color: 'var(--text-dim)' }}>
+                  <div>{t('pair_how')}</div>
+                  <div>{t('pair_step1')}</div>
+                  <div>{t('pair_step2')}</div>
+                  <div>{t('pair_step3')}</div>
+                </div>
+              )}
+
+              {pairPin && (
+                <div className="rounded-xl p-3 flex items-center justify-between" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                  <div>
+                    <div className="text-[10px] font-semibold mb-0.5" style={{ color: 'var(--text-dim)' }}>PIN</div>
+                    <div className="text-2xl font-black tracking-[0.3em]" style={{ color: 'var(--gold)', fontVariantNumeric: 'tabular-nums' }}>{pairPin}</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>{t('pair_expires')}</div>
+                  </div>
+                  <button onClick={copyPin}
+                    className="px-4 py-2 rounded-lg text-xs font-bold active:scale-95 transition-all"
+                    style={{ background: copied ? 'var(--green-soft)' : 'var(--gold)', color: copied ? 'var(--green)' : '#000' }}>
+                    {copied ? t('pair_copied') : t('pair_copy')}
+                  </button>
+                </div>
+              )}
+
+              {pairPin && (
+                <div className="text-[11px] text-center py-1 rounded-lg" style={{ background: 'var(--card)', color: 'var(--text-dim)' }}>
+                  {t('pair_instructions')}:{' '}
+                  <span className="font-mono font-bold" style={{ color: 'var(--text)' }}>/pair {pairPin}</span>
+                </div>
+              )}
+
+              {pairError && (
+                <div className="text-[11px] text-center" style={{ color: 'var(--red)' }}>{t('pair_error')}</div>
+              )}
+
+              <button onClick={generatePin} disabled={pairLoading}
+                className="w-full py-2.5 rounded-xl text-sm font-bold active:scale-[0.98] transition-all disabled:opacity-60"
+                style={{ background: 'rgba(0,136,204,0.15)', color: '#0088CC', border: '1px solid rgba(0,136,204,0.3)' }}>
+                {pairLoading ? t('pair_generating') : t('pair_generate_pin')}
+              </button>
+            </div>
             <SRow iconName="info" label={t('settings_about')} />
           </SGroup>
           <button onClick={logout} className="w-full mt-6 mb-8 py-3 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--red-soft)', color: 'var(--red)', border: '1px solid var(--red-border)' }}>

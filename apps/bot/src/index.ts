@@ -76,8 +76,10 @@ app.post('/webhook', async (c) => {
       await handleVoiceMessage(chatId, message.voice.file_id, user)
     } else if (message.text) {
       if (message.text.startsWith('/')) {
-        const command = message.text.split(' ')[0].split('@')[0]
-        await handleCommand(chatId, command, user)
+        const parts = message.text.split(' ')
+        const command = parts[0].split('@')[0]
+        const args = parts.slice(1).join(' ') || undefined
+        await handleCommand(chatId, command, user, args)
       } else {
         await handleTextMessage(chatId, message.text, user)
       }

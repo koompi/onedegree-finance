@@ -149,6 +149,83 @@ auth.post('/bot', zValidator('json', z.object({
   return c.json({ user, accessToken, refreshToken })
 })
 
+// Web app: generate a pairing PIN for the bot
+auth.post('/pair-code', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  const token = authHeader.slice(7)
+  let userId: string
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    if (payload.type !== 'access') return c.json({ error: 'Invalid token' }, 401)
+    userId = payload.userId as string
+  } catch {
+    return c.json({ error: 'Invalid or expired token' }, 401)
+  }
+
+  // Invalidate any existing unused codes for this user
+  await pool.query(
+    `DELETE FROM bot_pair_codes WHERE user_id = $1 AND used_at IS NULL`,
+    [userId]
+  )
+
+  // Generate a random 6-digit numeric code
+  const code = String(Math.floor(100000 + Math.random() * 900000))
+  await pool.query(
+    `INSERT INTO bot_pair_codes (user_id, code, expires_at)
+     VALUES ($1, $2, NOW() + INTERVAL '10 minutes')`,
+    [userId, code]
+  )
+
+  return c.json({ code, expiresInMinutes: 10 })
+})
+
+// Bot: redeem a pairing PIN to link Telegram ID to a web-app user
+auth.post('/pair-bot', zValidator('json', z.object({
+  code: z.string(),
+  telegramId: z.number(),
+  firstName: z.string(),
+  lastName: z.string().optional(),
+  username: z.string().optional(),
+  secret: z.string(),
+})), async (c) => {
+  const { code, telegramId, firstName, lastName, username, secret } = c.req.valid('json')
+
+  if (secret !== (process.env.BOT_AUTH_SECRET || '')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  // Look up valid (unexpired, unused) pair code
+  const pairResult = await pool.query(
+    `SELECT user_id FROM bot_pair_codes
+     WHERE code = $1 AND used_at IS NULL AND expires_at > NOW()`,
+    [code]
+  )
+  if (pairResult.rowCount === 0) {
+    return c.json({ error: 'Invalid or expired code' }, 400)
+  }
+  const { user_id } = pairResult.rows[0]
+
+  // Update the web-app user's telegram_id to this Telegram account
+  await pool.query(
+    `UPDATE users SET telegram_id = $1, name = $2, username = $3 WHERE id = $4`,
+    [telegramId, firstName + (lastName ? ' ' + lastName : ''), username || null, user_id]
+  )
+
+  // Mark the code as used
+  await pool.query(
+    `UPDATE bot_pair_codes SET used_at = NOW() WHERE code = $1`,
+    [code]
+  )
+
+  // Return auth token so bot can immediately start using the API
+  const [accessToken, refreshToken] = await Promise.all([
+    createJWT(user_id),
+    createRefreshToken(user_id),
+  ])
+  return c.json({ accessToken, refreshToken })
+})
+
 auth.post('/refresh', zValidator('json', z.object({ refreshToken: z.string() })), async (c) => {
   const { refreshToken } = c.req.valid('json')
   try {

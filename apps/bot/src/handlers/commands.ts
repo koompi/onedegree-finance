@@ -1,5 +1,5 @@
 import { sendMessage, quickActionsKeyboard } from './telegram'
-import { authenticate, getCompanies, getAccounts, getDailySummary } from '../api'
+import { authenticate, getCompanies, getAccounts, getDailySummary, pairBotCode } from '../api'
 
 interface TelegramUser {
   id: number
@@ -8,8 +8,9 @@ interface TelegramUser {
   username?: string
 }
 
-export async function handleCommand(chatId: number, command: string, user: TelegramUser): Promise<void> {
-  switch (command) {
+export async function handleCommand(chatId: number, command: string, user: TelegramUser, args?: string): Promise<void> {
+  const baseCmd = command.split('@')[0] // strip @botname suffix
+  switch (baseCmd) {
     case '/start':
       await handleStart(chatId, user)
       break
@@ -18,6 +19,9 @@ export async function handleCommand(chatId: number, command: string, user: Teleg
       break
     case '/summary':
       await handleSummary(chatId, user)
+      break
+    case '/pair':
+      await handlePair(chatId, user, args)
       break
     case '/help':
       await handleHelp(chatId)
@@ -99,6 +103,43 @@ async function handleSummary(chatId: number, user: TelegramUser): Promise<void> 
   }
 }
 
+async function handlePair(chatId: number, user: TelegramUser, args?: string): Promise<void> {
+  const code = args?.trim()
+  if (!code || !/^\d{6}$/.test(code)) {
+    await sendMessage(chatId, [
+      '🔗 <b>Pair your Telegram to OneDegree</b>',
+      '🔗 <b>ភ្ជាប់ Telegram របស់អ្នកទៅ OneDegree</b>',
+      '',
+      '1. Open the OneDegree app',
+      '   បើក OneDegree app',
+      '2. Go to Settings → Telegram Bot',
+      '   ទៅ ការកំណត់ → Telegram Bot',
+      '3. Tap <b>Generate PIN</b> and send it here:',
+      '   ចុច <b>Generate PIN</b> ហើយផ្ញើលេខនោះមកនេះ:',
+      '',
+      'Example: <code>/pair 123456</code>',
+    ].join('\n'), { parseMode: 'HTML' })
+    return
+  }
+
+  try {
+    const auth = await pairBotCode(code, user.id, user.first_name, user.last_name, user.username)
+    await sendMessage(chatId, [
+      '✅ <b>Paired successfully! / ភ្ជាប់បានជោគជ័យ!</b>',
+      '',
+      'Your Telegram is now linked to your OneDegree account.',
+      'Telegram របស់អ្នកឥឡូវនេះត្រូវបានភ្ជាប់ទៅគណនី OneDegree របស់អ្នក។',
+    ].join('\n'), { parseMode: 'HTML', replyMarkup: quickActionsKeyboard })
+    // Warm up cache with the new auth
+    void auth
+  } catch (e: any) {
+    const msg = e.message?.includes('Invalid or expired') 
+      ? 'Invalid or expired PIN. Please generate a new one in the app.\nPIN មិនត្រឹមត្រូវ ឬផុតកំណត់។ សូមបង្កើតPIN ថ្មីក្នុង app។'
+      : 'Pairing failed. Please try again.\nការភ្ជាប់បរាជ័យ។ សូមព្យាយាមម្តងទៀត។'
+    await sendMessage(chatId, msg)
+  }
+}
+
 async function handleHelp(chatId: number): Promise<void> {
   await sendMessage(chatId, [
     '<b>OneDegree Bot Commands / ពាក្យបញ្ជា:</b>',
@@ -106,6 +147,7 @@ async function handleHelp(chatId: number): Promise<void> {
     '/start — Welcome / សូមស្វាគមន៍',
     '/balance — Account balances / សមតុល្យគណនី',
     '/summary — Monthly summary / សង្ខេបប្រចាំខែ',
+    '/pair 123456 — Link your account / ភ្ជាប់គណនី',
     '/help — This message / សារនេះ',
     '',
     'Or just send a text/voice message to log a transaction!',

@@ -93,3 +93,11 @@ export async function getDailySummary(token: string, companyId: string): Promise
   const month = new Date().toISOString().slice(0, 7)
   return apiRequest<MonthlyReport>(`/companies/${companyId}/reports/monthly?month=${month}`, { token })
 }
+
+export async function pairBotCode(code: string, telegramId: number, firstName: string, lastName?: string, username?: string): Promise<AuthResponse> {
+  const secret = process.env.BOT_AUTH_SECRET ?? ''
+  return apiRequest<AuthResponse>('/auth/pair-bot', {
+    method: 'POST',
+    body: { code, telegramId, firstName, lastName, username, secret },
+  })
+}
