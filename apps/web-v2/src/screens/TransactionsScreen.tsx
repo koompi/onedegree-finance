@@ -9,7 +9,7 @@ import ListItem from '../components/ListItem'
 import AddTransactionSheet from '../components/AddTransactionSheet'
 import { useTransactions } from '../hooks/useTransactions'
 import { useAmount } from '../hooks/useAmount'
-import { fmtDateKhmer } from '../lib/format'
+import { fmtDateKhmer, fmtKHR } from '../lib/format'
 import { toast } from '../store/toastStore'
 import { haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
@@ -38,6 +38,14 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const { isLoading, transactions, remove, refetch } = useTransactions(month, filter)
   const { fmt } = useAmount()
+
+  // Show the currency the transaction was entered in (handles legacy broken KHR records too)
+  const fmtTx = (tx: import('../hooks/useTransactions').Transaction) => {
+    if (tx.currency_input === 'KHR' && tx.amount_khr && tx.amount_khr > 0) {
+      return fmtKHR(tx.amount_khr)
+    }
+    return fmt(tx.amount_cents)
+  }
 
   const handleLockToggle = async () => {
     if (!companyId || locking) return
@@ -207,7 +215,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                         subtitle={(tx.account_name || '') + (tx.receipt_url ? ' 📎' : '') + ((tx as any).is_personal ? ' 🏠' : '')}
                         icon={tx.type === 'income' ? '↗️' : '↘️'}
                         iconBg={tx.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)'}
-                        right={(tx.type === 'income' ? '+' : '-') + fmt(tx.amount_cents)}
+                        right={(tx.type === 'income' ? '+' : '-') + fmtTx(tx)}
                         rightColor={tx.type === 'income' ? 'var(--green)' : 'var(--red)'}
                         onPress={() => { haptic('light'); setSelectedTx(tx) }}
                       />
@@ -267,7 +275,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                 {selectedTx.type === 'income' ? t('tx_filter_income') : t('tx_filter_expense')}
               </div>
               <div className="text-3xl font-extrabold font-mono-num" style={{ color: selectedTx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                {(selectedTx.type === 'income' ? '+' : '-')}{fmt(selectedTx.amount_cents)}
+                {(selectedTx.type === 'income' ? '+' : '-')}{fmtTx(selectedTx)}
               </div>
             </div>
 

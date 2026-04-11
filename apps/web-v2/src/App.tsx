@@ -31,6 +31,14 @@ export default function App() {
   const { token, companyName, companyId, setAuth } = useAuthStore()
   const { isLoading: authLoading, isAuthenticated, error: authError } = useAuth()
   const t = useI18nStore(s => s.t)
+  const setUsdRate = useI18nStore(s => s.setUsdRate)
+
+  // Sync NBC exchange rate on load
+  useEffect(() => {
+    api.get<{ usd_to_khr: number }>('/exchange-rate')
+      .then(data => { if (data?.usd_to_khr) setUsdRate(data.usd_to_khr) })
+      .catch(() => {}) // silently ignore, keeps last persisted rate
+  }, [])
 
   const [devUser, setDevUser] = useState('')
   const [devPass, setDevPass] = useState('')

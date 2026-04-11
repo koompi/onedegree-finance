@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
-import { fmtKHR, fmtUSD } from '../lib/format'
+import { fmtKHR } from '../lib/format'
 
 export default function CurrencyInput({ value, onChange, placeholder, autoFocus, currency: currencyOverride }: {
   value: number; onChange: (v: number) => void; placeholder?: string; autoFocus?: boolean; currency?: 'USD' | 'KHR'
@@ -13,7 +13,7 @@ export default function CurrencyInput({ value, onChange, placeholder, autoFocus,
 
   const initDisplay = () => {
     if (value <= 0) return ''
-    return currency === 'USD' ? (value / rate).toFixed(2) : value.toLocaleString()
+    return currency === 'USD' ? (value / 100).toFixed(2) : value.toLocaleString()
   }
   const [display, setDisplay] = useState(initDisplay)
 
@@ -22,7 +22,7 @@ export default function CurrencyInput({ value, onChange, placeholder, autoFocus,
     if (prevCurrency.current === currency) return
     prevCurrency.current = currency
     if (value <= 0) { setDisplay(''); return }
-    setDisplay(currency === 'USD' ? (value / rate).toFixed(2) : value.toLocaleString())
+    setDisplay(currency === 'USD' ? (value / 100).toFixed(2) : value.toLocaleString())
   }, [currency, rate, value])
 
   const handleChange = (raw: string) => {
@@ -34,7 +34,7 @@ export default function CurrencyInput({ value, onChange, placeholder, autoFocus,
       const usd = parseFloat(cleaned)
       if (isNaN(usd) || usd > 10_000_000) return
       setDisplay(cleaned)
-      onChange(Math.round(usd * rate))
+      onChange(Math.round(usd * 100)) // store USD cents (e.g. $5.00 → 500)
     } else {
       const digits = raw.replace(/[^0-9]/g, '')
       if (digits === '') { setDisplay(''); onChange(0); return }
@@ -47,7 +47,10 @@ export default function CurrencyInput({ value, onChange, placeholder, autoFocus,
 
   // Show the equivalent amount in the other currency
   const equivalent = value > 0
-    ? (currency === 'USD' ? `≈ ${fmtKHR(value)}` : `≈ ${fmtUSD(value, rate)}`)
+    ? (currency === 'USD'
+        ? `≈ ${fmtKHR(Math.round((value / 100) * rate))}` // 500 USD cents → KHR
+        : `≈ $${((value / rate)).toFixed(2)}`             // KHR → USD display
+      )
     : null
 
   return (

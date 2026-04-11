@@ -1,103 +1,76 @@
 // Exchange rate service for USD/KHR conversion
+// Source: National Bank of Cambodia (NBC) official rate
 
-const EXCHANGE_RATE_API = 'https://open.er-api.com/v6/latest/USD'
-const DEFAULT_EXCHANGE_RATE = parseFloat(process.env.DEFAULT_EXCHANGE_RATE || '4100')
+const NBC_EXCHANGE_RATE_API = 'https://www.nbc.gov.kh/api/exRate.php'
+const DEFAULT_EXCHANGE_RATE = parseFloat(process.env.DEFAULT_EXCHANGE_RATE || '4000')
 const CACHE_DURATION = 6 * 60 * 60 * 1000 // 6 hours in ms
-
-interface ExchangeRateResponse {
-  rates: {
-    KHR: number
-  }
-  time_last_update_unix: number
-}
 
 class ExchangeRateService {
   private rate: number = DEFAULT_EXCHANGE_RATE
   private lastFetch: number = 0
   private fetching: boolean = false
 
-  /**
-   * Initialize the service - fetch rate on startup
-   */
   async init(): Promise<void> {
     await this.fetchRate()
-    // Refresh every 6 hours
     setInterval(() => this.fetchRate(), CACHE_DURATION)
   }
 
-  /**
-   * Fetch latest exchange rate from API
-   */
   private async fetchRate(): Promise<void> {
     if (this.fetching) return
     this.fetching = true
-
     try {
-      const response = await fetch(EXCHANGE_RATE_API)
-      if (!response.ok) throw new Error('API request failed')
+      const response = await fetch(NBC_EXCHANGE_RATE_API)
+      if (!response.ok) throw new Error(`NBC API returned ${response.status}`)
+      const xml = await response.text()
 
-      const data: ExchangeRateResponse = await response.json()
+      // Extract the USD/KHR average from XML using regex (avoids XML parser dependency)
+      // Structure: <key>USD/KHR</key>...<average>4000.00</average>
+      const usdBlock = xml.match(/<ex>[\s\S]*?<key>USD\/KHR<\/key>[\s\S]*?<\/ex>/)
+      if (!usdBlock) throw new Error('USD/KHR block not found in NBC response')
+      const avgMatch = usdBlock[0].match(/<average>([\d.]+)<\/average>/)
+      if (!avgMatch) throw new Error('average not found in USD/KHR block')
 
-      if (data.rates?.KHR) {
-        this.rate = data.rates.KHR
-        this.lastFetch = Date.now()
-        console.log(`Exchange rate updated: 1 USD = ${this.rate} KHR`)
-      }
+      const parsed = parseFloat(avgMatch[1])
+      if (isNaN(parsed) || parsed < 100) throw new Error(`Implausible rate: ${parsed}`)
+
+      this.rate = parsed
+      this.lastFetch = Date.now()
+      console.log(`[NBC] Exchange rate updated: 1 USD = ${this.rate} KHR`)
     } catch (error) {
-      console.error('Failed to fetch exchange rate, using default:', error)
-      this.rate = DEFAULT_EXCHANGE_RATE
+      console.error('[NBC] Failed to fetch exchange rate, keeping current:', error)
     } finally {
       this.fetching = false
     }
   }
 
-  /**
-   * Get current exchange rate
-   */
   getRate(): number {
     return this.rate
   }
 
-  /**
-   * Convert USD to KHR
-   */
   usdToKhr(usdCents: number): number {
-    return Math.round((usdCents / 100) * this.rate * 100) // Convert to KHR cents
+    return Math.round((usdCents / 100) * this.rate * 100)
   }
 
-  /**
-   * Convert KHR to USD
-   */
   khrToUsd(khrCents: number): number {
-    return Math.round((khrCents / 100) / this.rate * 100) // Convert to USD cents
+    return Math.round((khrCents / 100) / this.rate * 100)
   }
 
-  /**
-   * Calculate both amounts based on input currency
-   */
   calculateDualCurrency(amount: number, currencyInput: 'USD' | 'KHR'): {
     amount_cents: number
     amount_khr: number | null
     exchange_rate: number
   } {
     if (currencyInput === 'USD') {
-      return {
-        amount_cents: amount,
-        amount_khr: this.usdToKhr(amount),
-        exchange_rate: this.rate
-      }
+      // amount = USD cents (e.g. 500 for $5)
+      const khr = Math.round((amount / 100) * this.rate)
+      return { amount_cents: amount, amount_khr: khr, exchange_rate: this.rate }
     } else {
-      return {
-        amount_cents: this.khrToUsd(amount),
-        amount_khr: amount,
-        exchange_rate: this.rate
-      }
+      // amount = raw KHR (e.g. 20000)
+      const usdCents = Math.round((amount / this.rate) * 100)
+      return { amount_cents: usdCents, amount_khr: amount, exchange_rate: this.rate }
     }
   }
 
-  /**
-   * Format amount for display
-   */
   formatUSD(cents: number): string {
     return `$${(cents / 100).toFixed(2)}`
   }

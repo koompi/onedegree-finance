@@ -71,7 +71,7 @@ async function doFetch(method: string, path: string, token: string | null, body?
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   let p = path
   // The backend mounts business routes under /companies
-  if (!p.startsWith('/auth') && !p.startsWith('/health') && !p.startsWith('/companies') && p !== '/') {
+  if (!p.startsWith('/auth') && !p.startsWith('/health') && !p.startsWith('/exchange-rate') && !p.startsWith('/companies') && p !== '/') {
     p = `/companies${p}`
   }
 

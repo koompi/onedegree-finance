@@ -15,20 +15,20 @@ export function fmtKHRShort(amount: number): string {
   return amount.toLocaleString('km-KH') + ' ៛'
 }
 
-/** KHR to USD display */
-export function fmtUSD(khrAmount: number, rate: number = 4100): string {
-  return '$' + (khrAmount / rate).toFixed(2)
+/** Format USD amount: 500 → "$5.00" (input is USD cents) */
+export function fmtUSD(usdCents: number): string {
+  return '$' + (usdCents / 100).toFixed(2)
 }
 
-/** Unified amount formatter — amounts are always stored as KHR */
-export function fmtAmount(amount: number, currency: 'KHR' | 'USD' = 'KHR', rate: number = 4100): string {
-  return currency === 'USD' ? fmtUSD(amount, rate) : fmtKHR(amount)
+/** Unified amount formatter — USD expects cents (e.g. 500 = $5.00), KHR expects raw KHR */
+export function fmtAmount(amount: number, currency: 'KHR' | 'USD' = 'KHR', _rate?: number): string {
+  return currency === 'USD' ? fmtUSD(amount) : fmtKHR(amount)
 }
 
 /** Short unified amount */
-export function fmtAmountShort(amount: number, currency: 'KHR' | 'USD' = 'KHR', rate: number = 4100): string {
+export function fmtAmountShort(amount: number, currency: 'KHR' | 'USD' = 'KHR', _rate?: number): string {
   if (currency === 'USD') {
-    const u = amount / rate
+    const u = amount / 100
     if (u >= 1_000_000) return '$' + (u / 1_000_000).toFixed(1) + 'M'
     if (u >= 1_000) return '$' + (u / 1_000).toFixed(1) + 'K'
     return '$' + u.toFixed(2)
