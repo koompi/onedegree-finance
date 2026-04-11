@@ -206,6 +206,12 @@ auth.post('/pair-bot', zValidator('json', z.object({
   }
   const { user_id } = pairResult.rows[0]
 
+  // If another user already has this telegram_id (bot ghost user), remove it first
+  await pool.query(
+    `DELETE FROM users WHERE telegram_id = $1 AND id != $2`,
+    [telegramId, user_id]
+  )
+
   // Update the web-app user's telegram_id to this Telegram account
   await pool.query(
     `UPDATE users SET telegram_id = $1, name = $2, username = $3 WHERE id = $4`,
