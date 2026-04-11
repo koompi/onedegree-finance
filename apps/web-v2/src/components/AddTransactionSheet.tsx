@@ -38,13 +38,30 @@ export default function AddTransactionSheet({
   const [accountId, setAccountId] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [desc, setDesc] = useState('')
-  const [quickMode, setQuickMode] = useState(true)
+  const [newAccountName, setNewAccountName] = useState('')
+  const [creatingAccount, setCreatingAccount] = useState(false)
   const [receiptUrl, setReceiptUrl] = useState<string | null>(null)
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const { incomeCategories, expenseCategories } = useCategories()
   const { accounts } = useAccounts()
+
+  const handleCreateAccountAndSave = async (saveFn: (accId: string) => Promise<void>) => {
+    if (!newAccountName.trim()) {
+      toast.error(t('tx_form_acc_name_placeholder'))
+      return
+    }
+    setCreatingAccount(true)
+    try {
+      const created = await api.post<{ id: string }>(`/${companyId}/accounts`, { name: newAccountName.trim(), type: 'cash' })
+      await saveFn(created.id)
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to create account')
+    } finally {
+      setCreatingAccount(false)
+    }
+  }
   const { uploadReceipt, uploading, progress } = useReceiptUpload()
 
   const filteredCategories = type === 'income' ? incomeCategories : expenseCategories
@@ -59,9 +76,10 @@ export default function AddTransactionSheet({
       setAccountId('')
       setDate(new Date().toISOString().slice(0, 10))
       setDesc('')
+      setNewAccountName('')
+      setCreatingAccount(false)
       setReceiptUrl(null)
       setReceiptPreview(null)
-      setQuickMode(true)
       setTxCurrency(currency as 'USD' | 'KHR')
     }
   }, [isOpen, defaultType]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -92,14 +110,16 @@ export default function AddTransactionSheet({
       return
     }
     haptic('success')
-    try {
-      await api.post(`/${companyId}/transactions`, {
-        type,
-        amount_cents: amount,
-        currency_input: txCurrency,
-        is_personal: isPersonal,
-        category_id: categoryId || undefined,
-        account_id: accountId || undefined,
+
+    const doPost = async (resolvedAccountId?: string) => {
+      try {
+        await api.post(`/${companyId}/transactions`, {
+          type,
+          amount_cents: amount,
+          currency_input: txCurrency,
+          is_personal: isPersonal,
+          category_id: categoryId || undefined,
+          account_id: resolvedAccountId || accountId || undefined,
         occurred_at: new Date(date).toISOString(),
         note: desc || undefined,
         receipt_url: receiptUrl || undefined,
@@ -114,6 +134,13 @@ export default function AddTransactionSheet({
       } else {
         toast.error(e.message || 'Failed to save transaction')
       }
+    }
+    }
+
+    if (accounts.length === 0 && newAccountName.trim()) {
+      await handleCreateAccountAndSave(doPost)
+    } else {
+      await doPost()
     }
   }
 
@@ -162,26 +189,12 @@ export default function AddTransactionSheet({
             <span>{isPersonal ? t('tx_personal') : t('tx_business')}</span>
           </button>
 
-          <div className="flex items-center gap-2 p-1 rounded-xl" style={{ background: 'var(--border)' }}>
-            <button
-              onClick={() => { haptic('light'); setQuickMode(true) }}
-              className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all"
-              style={{ background: quickMode ? 'var(--card)' : 'transparent', color: quickMode ? 'var(--gold)' : 'var(--text-dim)' }}
-            >⚡ រហ័ស</button>
-            <button
-              onClick={() => { haptic('light'); setQuickMode(false) }}
-              className="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all"
-              style={{ background: !quickMode ? 'var(--card)' : 'transparent', color: !quickMode ? 'var(--gold)' : 'var(--text-dim)' }}
-            >📋 លម្អិត</button>
-          </div>
-
           <div>
             <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_amount')}</label>
             <CurrencyInput value={amount} onChange={setAmount} autoFocus currency={txCurrency} />
           </div>
 
-          {!quickMode && (
-            <>
+          <>
               <div>
                 <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_category')}</label>
                 <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
@@ -191,10 +204,23 @@ export default function AddTransactionSheet({
               </div>
               <div>
                 <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_account')}</label>
-                <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-                  <option value="">{t('tx_form_acc_placeholder')}</option>
-                  {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </select>
+                {accounts.length === 0 ? (
+                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--gold-med)', background: 'var(--gold-soft)' }}>
+                    <p className="text-xs px-4 pt-3 pb-2" style={{ color: 'var(--gold)' }}>{t('tx_form_acc_create_hint')}</p>
+                    <input
+                      value={newAccountName}
+                      onChange={e => setNewAccountName(e.target.value)}
+                      placeholder={t('tx_form_acc_name_placeholder')}
+                      className="w-full py-3 px-4 text-sm font-semibold outline-none"
+                      style={{ background: 'var(--input-bg)', borderTop: '1px solid var(--border)', color: 'var(--text)' }}
+                    />
+                  </div>
+                ) : (
+                  <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                    <option value="">{t('tx_form_acc_placeholder')}</option>
+                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                )}
               </div>
               <div>
                 <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_date')}</label>
@@ -241,10 +267,9 @@ export default function AddTransactionSheet({
                 )}
               </div>
             </>
-          )}
 
-          <button onClick={handleSave} disabled={uploading} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98] disabled:opacity-60" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>
-            {uploading ? `${progress}%…` : t('tx_form_save')}
+          <button onClick={handleSave} disabled={uploading || creatingAccount} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98] disabled:opacity-60" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>
+            {creatingAccount ? t('tx_form_acc_creating') : uploading ? `${progress}%…` : t('tx_form_save')}
           </button>
         </div>
       </BottomSheet>

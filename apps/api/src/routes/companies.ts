@@ -77,6 +77,7 @@ companies.post('/', zValidator('json', CompanyBody), async (c) => {
       SELECT $1, name, name_km, type, icon, FALSE
       FROM categories
       WHERE is_system = TRUE AND company_id IS NULL
+      ON CONFLICT (company_id, name, type) DO NOTHING
     `, [company.id])
 
     await client.query('COMMIT')
