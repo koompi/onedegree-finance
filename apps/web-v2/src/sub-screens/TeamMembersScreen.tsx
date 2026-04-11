@@ -28,7 +28,7 @@ interface RoleOption {
 
 export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
   const t = useI18nStore(s => s.t)
-  const { companyId } = useAuthStore()
+  const { companyId, token } = useAuthStore()
   const [isLoading, setIsLoading] = useState(true)
   const [members, setMembers] = useState<TeamMember[]>([])
   const [showInvite, setShowInvite] = useState(false)
@@ -55,10 +55,13 @@ export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
     try {
       const data = await api.get<TeamMember[]>(`/${companyId}/members`)
       setMembers(data || [])
-      // Set current user's role (first member is typically the current user in API response)
-      if (data && data.length > 0) {
-        // Find the owner to determine if current user is owner
-        // In real implementation, backend should return current_user_role
+      // Derive current user's role from members list using JWT sub
+      try {
+        const payload = JSON.parse(atob(token!.split('.')[1]))
+        const me = (data || []).find(m => m.user_id === payload.sub)
+        setUserRole(me?.role ?? 'owner') // default owner if not found (solo company)
+      } catch {
+        setUserRole('owner')
       }
     } catch (e) {
       console.error(e)
@@ -66,20 +69,6 @@ export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
     }
     setIsLoading(false)
   }
-
-  // Fetch current user role
-  useEffect(() => {
-    const fetchUserRole = async () => {
-      if (!companyId) return
-      try {
-        const data = await api.get<{ role: string }>(`/${companyId}/members/me`)
-        setUserRole(data?.role as 'owner' | 'admin' | 'manager' | 'staff' || null)
-      } catch {
-        setUserRole('staff') // Default to least permissive
-      }
-    }
-    fetchUserRole()
-  }, [companyId])
 
   useEffect(() => { fetchMembers() }, [companyId])
 
