@@ -157,7 +157,7 @@ auth.post('/pair-code', async (c) => {
   let userId: string
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    if (payload.type !== 'access') return c.json({ error: 'Invalid token' }, 401)
+    if (payload.type === 'refresh') return c.json({ error: 'Invalid token' }, 401)
     userId = payload.userId as string
   } catch {
     return c.json({ error: 'Invalid or expired token' }, 401)
