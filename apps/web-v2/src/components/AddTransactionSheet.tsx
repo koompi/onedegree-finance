@@ -28,6 +28,7 @@ export default function AddTransactionSheet({
   periodLocks = {},
 }: Props) {
   const t = useI18nStore(s => s.t)
+  const lang = useI18nStore(s => s.lang)
   const { companyId } = useAuthStore()
   const { currency } = useAmount()
   const [type, setType] = useState<'income' | 'expense'>(defaultType)
@@ -199,7 +200,7 @@ export default function AddTransactionSheet({
                 <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_category')}</label>
                 <select value={categoryId} onChange={e => setCategoryId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
                   <option value="">{t('tx_form_cat_placeholder')}</option>
-                  {filteredCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  {filteredCategories.map(c => <option key={c.id} value={c.id}>{lang === 'km' ? (c.name_km || c.name) : c.name}</option>)}
                 </select>
               </div>
               <div>

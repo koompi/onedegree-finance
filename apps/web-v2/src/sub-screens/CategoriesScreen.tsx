@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import ScreenHeader from '../components/ScreenHeader'
 import Pill from '../components/Pill'
-import Badge from '../components/Badge'
 import Icon from '../components/Icon'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
@@ -18,10 +17,12 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
   const [showAdd, setShowAdd] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [name, setName] = useState('')
+  const [nameKm, setNameKm] = useState('')
   const [emoji, setEmoji] = useState('📦')
 
   const { isLoading, incomeCategories, expenseCategories, create, remove } = useCategories()
   const t = useI18nStore(s => s.t)
+  const lang = useI18nStore(s => s.lang)
 
   const categories = tab === 'income' ? incomeCategories : expenseCategories
 
@@ -29,9 +30,9 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
     if (!name) return
     haptic('success')
     try {
-      await create({ name, type: tab, icon: emoji })
+      await create({ name, name_km: nameKm || undefined, type: tab, icon: emoji })
       toast.success(t('tx_saved_success'))
-      setShowAdd(false); setName(''); setEmoji('📦')
+      setShowAdd(false); setName(''); setNameKm(''); setEmoji('📦')
     } catch (e: any) {
       toast.error(e.message || 'Error')
     }
@@ -65,10 +66,9 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
           <div key={cat.id} className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <span className="text-xl shrink-0">{cat.icon || '📦'}</span>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{cat.name}</div>
+              <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{lang === 'km' ? (cat.name_km || cat.name) : cat.name}</div>
             </div>
-            {cat.is_system && <Badge variant="muted">{t('settings_security')}</Badge>}
-            {!cat.is_system && (deleteId === cat.id ? (
+            {deleteId === cat.id ? (
               <div className="flex gap-1">
                 <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
                 <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
@@ -77,7 +77,7 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
               <button onClick={() => setDeleteId(cat.id)} className="w-7 h-7 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
                 <Icon name="trash" size={12} color="var(--red)" />
               </button>
-            ))}
+            )}
           </div>
         ))}
       </div>
@@ -89,8 +89,12 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
       <BottomSheet isOpen={showAdd} onClose={() => setShowAdd(false)} title={t('tx_add_new')}>
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('categories_form_name')}</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="ឧ. អាហារពេលព្រឹក" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('categories_form_name')} (EN)</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Breakfast" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
+          </div>
+          <div>
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('categories_form_name')} (ខ្មែរ)</label>
+            <input value={nameKm} onChange={e => setNameKm(e.target.value)} placeholder="ឧ. អាហារពេលព្រឹក" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />
           </div>
           <div>
             <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>រូបសញ្ញា</label>
