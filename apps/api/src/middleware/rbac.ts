@@ -2,7 +2,7 @@ import { createMiddleware } from 'hono/factory'
 import { Context } from 'hono'
 import pool from '../db/client'
 
-type UserRole = 'owner' | 'manager' | 'staff'
+type UserRole = 'owner' | 'admin' | 'manager' | 'staff'
 
 interface TeamMember {
   id: string
@@ -73,19 +73,25 @@ export function checkTeamRole(allowedRoles: UserRole[]) {
 }
 
 /**
- * Owner-only middleware
+ * Owner-only middleware (e.g. delete company)
  */
 export const ownerOnly = checkTeamRole(['owner'])
 
 /**
- * Manager or owner middleware
+ * Admin or owner middleware (e.g. delete members, lock periods, delete accounts)
+ * Admin has full access except deleting the company itself
  */
-export const managerOrOwner = checkTeamRole(['owner', 'manager'])
+export const adminOrOwner = checkTeamRole(['owner', 'admin'])
 
 /**
- * Any team member middleware (owner, manager, or staff)
+ * Manager, admin, or owner middleware (create/edit, no delete for managers)
  */
-export const teamMember = checkTeamRole(['owner', 'manager', 'staff'])
+export const managerOrOwner = checkTeamRole(['owner', 'admin', 'manager'])
+
+/**
+ * Any team member middleware (owner, admin, manager, or staff)
+ */
+export const teamMember = checkTeamRole(['owner', 'admin', 'manager', 'staff'])
 
 /**
  * Check if user owns company (legacy - for backwards compatibility)

@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { authMiddleware } from '../middleware/auth'
-import { teamMember, managerOrOwner, ownerOnly } from '../middleware/rbac'
+import { teamMember, managerOrOwner, adminOrOwner } from '../middleware/rbac'
 import pool from '../db/client'
 
 type Variables = { userId: string; companyId?: string; userRole?: 'owner' | 'manager' | 'staff' }
@@ -35,8 +35,8 @@ categories.post('/:companyId/categories', managerOrOwner, zValidator('json', z.o
   return c.json(result.rows[0], 201)
 })
 
-// DELETE categories - owner only
-categories.delete('/:companyId/categories/:id', ownerOnly, async (c) => {
+// DELETE categories - admin or owner only
+categories.delete('/:companyId/categories/:id', adminOrOwner, async (c) => {
   const { companyId, id } = c.req.param()
   const result = await pool.query('DELETE FROM categories WHERE id = $1 AND company_id = $2 RETURNING *', [id, companyId])
   if (result.rows.length === 0) return c.json({ error: 'Not found' }, 404)

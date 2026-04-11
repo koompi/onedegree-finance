@@ -2,12 +2,17 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { authMiddleware } from '../middleware/auth'
-import { ownerOnly, teamMember } from '../middleware/rbac'
+import { ownerOnly, adminOrOwner, teamMember } from '../middleware/rbac'
 import pool from '../db/client'
+import crypto from 'crypto'
 
 type Variables = { userId: string; companyId?: string; userRole?: 'owner' | 'manager' | 'staff' }
 const companies = new Hono<{ Variables: Variables }>()
-companies.use('*', authMiddleware)
+companies.use('*', async (c, next) => {
+  // /join/:token is called by bot using BOT_AUTH_SECRET, no JWT needed
+  if (c.req.path.includes('/join/')) return next()
+  return authMiddleware(c, next)
+})
 
 // GET all companies - where user is owner or team member
 companies.get('/', async (c) => {
@@ -119,6 +124,101 @@ companies.delete('/:id', async (c) => {
 })
 
 // ============================================
+// INVITE LINK ROUTES
+// ============================================
+
+const InviteLinkBody = z.object({
+  role: z.enum(['admin', 'manager', 'staff']).default('staff'),
+})
+
+// POST generate invite link (admin or owner)
+companies.post('/:companyId/invite-link', adminOrOwner, zValidator('json', InviteLinkBody), async (c) => {
+  const { companyId } = c.req.param()
+  const { role } = c.req.valid('json')
+  const userId = c.get('userId')
+
+  const token = crypto.randomBytes(16).toString('hex') // 32-char hex token
+  await pool.query(
+    `INSERT INTO invite_tokens (company_id, role, created_by, token, expires_at)
+     VALUES ($1, $2, $3, $4, NOW() + INTERVAL '7 days')`,
+    [companyId, role, userId, token]
+  )
+
+  const botUsername = process.env.TELEGRAM_BOT_USERNAME || 'OneDegreeBot'
+  return c.json({
+    token,
+    role,
+    link: `https://t.me/${botUsername}?start=inv_${token}`,
+    expiresInDays: 7,
+  })
+})
+
+// POST redeem invite token (called by bot after user opens the start link)
+// This endpoint does NOT require auth middleware — bot authenticates via BOT_AUTH_SECRET
+companies.post('/join/:token', async (c) => {
+  const { token } = c.req.param()
+  const body = await c.req.json<{
+    telegramId: number
+    firstName: string
+    lastName?: string
+    username?: string
+    secret: string
+  }>()
+
+  if (body.secret !== (process.env.BOT_AUTH_SECRET || '')) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  // Look up valid (unexpired, unused) invite token
+  const inviteResult = await pool.query(
+    `SELECT id, company_id, role FROM invite_tokens
+     WHERE token = $1 AND used_at IS NULL AND expires_at > NOW()`,
+    [token]
+  )
+  if (inviteResult.rowCount === 0) {
+    return c.json({ error: 'Invalid or expired invite link' }, 400)
+  }
+  const { id: inviteId, company_id: companyId, role } = inviteResult.rows[0]
+
+  // Upsert the user
+  const userResult = await pool.query(
+    `INSERT INTO users (telegram_id, name, username)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (telegram_id) DO UPDATE SET name = EXCLUDED.name, username = EXCLUDED.username
+     RETURNING id`,
+    [body.telegramId, body.firstName + (body.lastName ? ' ' + body.lastName : ''), body.username || null]
+  )
+  const newUserId = userResult.rows[0].id
+
+  // Check not already a member
+  const existing = await pool.query(
+    'SELECT id, role FROM team_members WHERE user_id = $1 AND company_id = $2',
+    [newUserId, companyId]
+  )
+  if (existing.rowCount! > 0) {
+    // Already a member — just return company info
+    const co = await pool.query('SELECT name FROM companies WHERE id = $1', [companyId])
+    return c.json({ message: 'already_member', companyName: co.rows[0]?.name, role: existing.rows[0].role })
+  }
+
+  // Add to team
+  await pool.query(
+    `INSERT INTO team_members (user_id, company_id, role, invited_by, active)
+     VALUES ($1, $2, $3, $4, TRUE)`,
+    [newUserId, companyId, role, inviteResult.rows[0].id]
+  )
+
+  // Mark invite as used
+  await pool.query(
+    `UPDATE invite_tokens SET used_by = $1, used_at = NOW() WHERE id = $2`,
+    [newUserId, inviteId]
+  )
+
+  const co = await pool.query('SELECT name FROM companies WHERE id = $1', [companyId])
+  return c.json({ message: 'joined', companyName: co.rows[0]?.name, role }, 201)
+})
+
+// ============================================
 // TEAM MEMBERS ROUTES
 // ============================================
 
@@ -126,8 +226,8 @@ const InviteBody = z.object({
   telegram_id: z.number().int().positive(),
 })
 
-// POST invite team member (owner only)
-companies.post('/:companyId/invite', ownerOnly, zValidator('json', InviteBody), async (c) => {
+// POST invite team member (admin or owner)
+companies.post('/:companyId/invite', adminOrOwner, zValidator('json', InviteBody), async (c) => {
   const { companyId } = c.req.param()
   const body = c.req.valid('json')
   const inviterId = c.get('userId')
@@ -203,21 +303,33 @@ companies.get('/:companyId/members/me', teamMember, async (c) => {
 })
 
 const UpdateRoleBody = z.object({
-  role: z.enum(['owner', 'manager', 'staff']),
+  role: z.enum(['admin', 'manager', 'staff']),
 })
 
-// PATCH member role (owner only)
-companies.patch('/:companyId/members/:userId/role', ownerOnly, zValidator('json', UpdateRoleBody), async (c) => {
+// PATCH member role (admin or owner); cannot touch owner accounts or assign owner role
+companies.patch('/:companyId/members/:userId/role', adminOrOwner, zValidator('json', UpdateRoleBody), async (c) => {
   const { companyId, userId } = c.req.param()
   const { role } = c.req.valid('json')
   const currentUserId = c.get('userId')
+  const currentUserRole = c.get('userRole')
 
   // Cannot change own role
   if (userId === currentUserId) {
     return c.json({ error: 'Cannot change your own role' }, 400)
   }
 
-  // Check if target is a team member
+  // Check target member's current role — admin cannot touch owners
+  const targetCheck = await pool.query(
+    'SELECT role FROM team_members WHERE user_id = $1 AND company_id = $2',
+    [userId, companyId]
+  )
+  if (targetCheck.rows.length === 0) {
+    return c.json({ error: 'Team member not found' }, 404)
+  }
+  if (currentUserRole === 'admin' && targetCheck.rows[0].role === 'owner') {
+    return c.json({ error: 'Admins cannot change an owner\'s role' }, 403)
+  }
+
   const result = await pool.query(
     `UPDATE team_members
      SET role = $1
@@ -233,14 +345,26 @@ companies.patch('/:companyId/members/:userId/role', ownerOnly, zValidator('json'
   return c.json(result.rows[0])
 })
 
-// DELETE remove team member (owner only)
-companies.delete('/:companyId/members/:userId', ownerOnly, async (c) => {
+// DELETE remove team member (admin or owner); admin cannot remove owners
+companies.delete('/:companyId/members/:userId', adminOrOwner, async (c) => {
   const { companyId, userId } = c.req.param()
   const currentUserId = c.get('userId')
+  const currentUserRole = c.get('userRole')
 
   // Cannot remove yourself
   if (userId === currentUserId) {
     return c.json({ error: 'Cannot remove yourself' }, 400)
+  }
+
+  // Admin cannot remove an owner
+  if (currentUserRole === 'admin') {
+    const targetCheck = await pool.query(
+      'SELECT role FROM team_members WHERE user_id = $1 AND company_id = $2',
+      [userId, companyId]
+    )
+    if (targetCheck.rows[0]?.role === 'owner') {
+      return c.json({ error: 'Admins cannot remove an owner' }, 403)
+    }
   }
 
   await pool.query(
@@ -259,8 +383,8 @@ const LockBody = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/), // YYYY-MM
 })
 
-// POST lock period (owner only)
-companies.post('/:companyId/periods/:period/lock', ownerOnly, async (c) => {
+// POST lock period (admin or owner)
+companies.post('/:companyId/periods/:period/lock', adminOrOwner, async (c) => {
   const { companyId, period } = c.req.param()
   const userId = c.get('userId')
 
@@ -282,8 +406,8 @@ companies.post('/:companyId/periods/:period/lock', ownerOnly, async (c) => {
   }
 })
 
-// DELETE unlock period (owner only)
-companies.delete('/:companyId/periods/:period/lock', ownerOnly, async (c) => {
+// DELETE unlock period (admin or owner)
+companies.delete('/:companyId/periods/:period/lock', adminOrOwner, async (c) => {
   const { companyId, period } = c.req.param()
 
   await pool.query(

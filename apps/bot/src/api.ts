@@ -101,3 +101,11 @@ export async function pairBotCode(code: string, telegramId: number, firstName: s
     body: { code, telegramId, firstName, lastName, username, secret },
   })
 }
+
+export async function redeemInvite(token: string, telegramId: number, firstName: string, lastName?: string, username?: string): Promise<{ message: string; companyName: string; role: string }> {
+  const secret = process.env.BOT_AUTH_SECRET ?? ''
+  return apiRequest(`/companies/join/${token}`, {
+    method: 'POST',
+    body: { telegramId, firstName, lastName, username, secret },
+  })
+}

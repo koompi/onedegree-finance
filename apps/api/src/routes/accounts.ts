@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { authMiddleware } from '../middleware/auth'
-import { teamMember, managerOrOwner, ownerOnly } from '../middleware/rbac'
+import { teamMember, managerOrOwner, adminOrOwner } from '../middleware/rbac'
 import pool from '../db/client'
 
 type Variables = { userId: string; companyId?: string; userRole?: 'owner' | 'manager' | 'staff' }
@@ -49,8 +49,8 @@ accounts.patch('/:companyId/accounts/:id', managerOrOwner, zValidator('json', Ac
   return c.json(result.rows[0])
 })
 
-// DELETE accounts - owner only
-accounts.delete('/:companyId/accounts/:id', ownerOnly, async (c) => {
+// DELETE accounts - admin or owner only
+accounts.delete('/:companyId/accounts/:id', adminOrOwner, async (c) => {
   const { companyId, id } = c.req.param()
   const txCheck = await pool.query('SELECT id FROM transactions WHERE account_id = $1 LIMIT 1', [id])
   if (txCheck.rows.length > 0) return c.json({ error: 'Cannot delete account with transactions' }, 400)

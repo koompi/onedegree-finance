@@ -1,5 +1,5 @@
 import { sendMessage, quickActionsKeyboard } from './telegram'
-import { authenticate, getCompanies, getAccounts, getDailySummary, pairBotCode } from '../api'
+import { authenticate, getCompanies, getAccounts, getDailySummary, pairBotCode, redeemInvite } from '../api'
 
 interface TelegramUser {
   id: number
@@ -12,7 +12,7 @@ export async function handleCommand(chatId: number, command: string, user: Teleg
   const baseCmd = command.split('@')[0] // strip @botname suffix
   switch (baseCmd) {
     case '/start':
-      await handleStart(chatId, user)
+      await handleStart(chatId, user, args)
       break
     case '/balance':
       await handleBalance(chatId, user)
@@ -31,7 +31,39 @@ export async function handleCommand(chatId: number, command: string, user: Teleg
   }
 }
 
-async function handleStart(chatId: number, user: TelegramUser): Promise<void> {
+async function handleStart(chatId: number, user: TelegramUser, args?: string): Promise<void> {
+  // Handle invite link: /start inv_<token>
+  if (args?.startsWith('inv_')) {
+    const token = args.slice(4)
+    try {
+      const result = await redeemInvite(token, user.id, user.first_name, user.last_name, user.username)
+      if (result.message === 'already_member') {
+        await sendMessage(chatId, [
+          `ℹ️ <b>You're already a member of ${result.companyName}!</b>`,
+          `ℹ️ <b>អ្នកជាសមាជិករបស់ ${result.companyName} រួចហើយ!</b>`,
+        ].join('\n'), { parseMode: 'HTML', replyMarkup: quickActionsKeyboard })
+      } else {
+        const roleLabel = result.role === 'admin' ? 'Admin' : result.role === 'manager' ? 'Manager' : 'Staff'
+        await sendMessage(chatId, [
+          `✅ <b>Welcome to ${result.companyName}!</b>`,
+          `✅ <b>សូមស្វាគមន៍មកកាន់ ${result.companyName}!</b>`,
+          ``,
+          `You've joined as <b>${roleLabel}</b>. You can now log transactions for this business.`,
+          `អ្នកបានចូលក្នុងនាម <b>${roleLabel}</b>។ ឥឡូវអ្នកអាចកត់ត្រាប្រតិបត្តិការបាន។`,
+        ].join('\n'), { parseMode: 'HTML', replyMarkup: quickActionsKeyboard })
+      }
+    } catch {
+      await sendMessage(chatId, [
+        '❌ <b>Invalid or expired invite link.</b>',
+        '❌ <b>តំណភ្ជាប់មិនត្រឹមត្រូវ ឬផុតកំណត់ហើយ។</b>',
+        '',
+        'Ask the company owner to generate a new invite link.',
+        'សូមសុំម្ចាស់ក្រុមហ៊ុនបង្កើតតំណភ្ជាប់ថ្មី។',
+      ].join('\n'), { parseMode: 'HTML' })
+    }
+    return
+  }
+
   await sendMessage(chatId, [
     `<b>Welcome to OneDegree Finance, ${user.first_name}!</b>`,
     `<b>សូមស្វាគមន៍មកកាន់ OneDegree Finance, ${user.first_name}!</b>`,

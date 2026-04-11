@@ -4,7 +4,6 @@ import Icon from '../components/Icon'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 import BottomSheet from '../components/BottomSheet'
-import Pill from '../components/Pill'
 import { useAuthStore } from '../store/authStore'
 import { api, ApiError } from '../lib/api'
 import { toast } from '../store/toastStore'
@@ -16,12 +15,12 @@ interface TeamMember {
   name: string
   username?: string
   telegram_id?: string
-  role: 'owner' | 'manager' | 'staff'
+  role: 'owner' | 'admin' | 'manager' | 'staff'
   active: boolean
 }
 
 interface RoleOption {
-  key: 'owner' | 'manager' | 'staff'
+  key: 'admin' | 'manager' | 'staff'
   label: string
   color: string
   bgColor: string
@@ -35,13 +34,15 @@ export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
   const [showInvite, setShowInvite] = useState(false)
   const [showRoleChange, setShowRoleChange] = useState(false)
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
-  const [telegramId, setTelegramId] = useState('')
+  const [inviteRole, setInviteRole] = useState<'admin' | 'manager' | 'staff'>('staff')
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [inviteLoading, setInviteLoading] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   const [removeConfirmId, setRemoveConfirmId] = useState<string | null>(null)
-  const [userRole, setUserRole] = useState<'owner' | 'manager' | 'staff' | null>(null)
+  const [userRole, setUserRole] = useState<'owner' | 'admin' | 'manager' | 'staff' | null>(null)
 
   const ROLE_OPTIONS: RoleOption[] = [
-    { key: 'owner', label: t('team_role_owner'), color: 'var(--gold)', bgColor: 'var(--gold-soft)' },
+    { key: 'admin', label: t('team_role_admin'), color: 'var(--purple)', bgColor: 'var(--purple-soft)' },
     { key: 'manager', label: t('team_role_manager'), color: 'var(--blue)', bgColor: 'var(--blue-soft)' },
     { key: 'staff', label: t('team_role_staff'), color: 'var(--text-sec)', bgColor: 'var(--border)' },
   ]
@@ -72,7 +73,7 @@ export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
       if (!companyId) return
       try {
         const data = await api.get<{ role: string }>(`/${companyId}/members/me`)
-        setUserRole(data?.role as 'owner' | 'manager' | 'staff' || null)
+        setUserRole(data?.role as 'owner' | 'admin' | 'manager' | 'staff' || null)
       } catch {
         setUserRole('staff') // Default to least permissive
       }
@@ -82,29 +83,36 @@ export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
 
   useEffect(() => { fetchMembers() }, [companyId])
 
-  const handleInvite = async () => {
-    if (!telegramId.trim()) {
-      toast.error(t('team_invite_placeholder'))
-      return
-    }
+  const handleGenerateLink = async () => {
     setInviteLoading(true)
+    setInviteLink(null)
     try {
-      await api.post(`/${companyId}/invite`, { telegram_id: telegramId.trim() })
-      toast.success(t('team_invite_success'))
-      setShowInvite(false)
-      setTelegramId('')
-      await fetchMembers()
-    } catch (e: any) {
-      if (e instanceof ApiError && e.status === 404) {
-        toast.error(t('team_invite_error'))
-      } else {
-        toast.error(e.message || t('export_error'))
-      }
+      const res = await api.post<{ link: string }>(`/${companyId}/invite-link`, { role: inviteRole })
+      setInviteLink(res.link)
+    } catch {
+      toast.error(t('export_error'))
     }
     setInviteLoading(false)
   }
 
-  const handleChangeRole = async (newRole: 'owner' | 'manager' | 'staff') => {
+  function copyLink() {
+    if (!inviteLink) return
+    navigator.clipboard.writeText(inviteLink).then(() => {
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
+    })
+  }
+
+  function shareLink() {
+    if (!inviteLink) return
+    if (navigator.share) {
+      navigator.share({ title: 'Join OneDegree Finance', url: inviteLink })
+    } else {
+      copyLink()
+    }
+  }
+
+  const handleChangeRole = async (newRole: 'admin' | 'manager' | 'staff') => {
     if (!selectedMember) return
     try {
       await api.patch(`/${companyId}/members/${selectedMember.user_id}/role`, { role: newRole })
@@ -137,7 +145,7 @@ export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
     }
   }
 
-  const canManage = userRole === 'owner'
+  const canManage = userRole === 'owner' || userRole === 'admin'
 
   if (isLoading) {
     return (
@@ -180,10 +188,12 @@ export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
                     {member.username ? `@${member.username}` : member.telegram_id}
                   </div>
                 </div>
-                <Pill
-                  text={roleOpt.label}
-                  color={member.role === 'owner' ? 'gold' : member.role === 'manager' ? 'blue' : 'gray'}
-                />
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold" style={{
+                  background: member.role === 'owner' ? 'var(--gold-soft)' : member.role === 'admin' ? 'rgba(139,92,246,0.15)' : member.role === 'manager' ? 'var(--blue-soft)' : 'var(--border)',
+                  color: member.role === 'owner' ? 'var(--gold)' : member.role === 'admin' ? '#8b5cf6' : member.role === 'manager' ? 'var(--blue)' : 'var(--text-sec)',
+                }}>
+                  {member.role === 'owner' ? t('team_role_owner') : getRoleOption(member.role)?.label || member.role}
+                </span>
                 {canManage && member.role !== 'owner' && (
                   <div className="flex gap-1">
                     {removeConfirmId === member.user_id ? (
@@ -243,32 +253,61 @@ export default function TeamMembersScreen({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Invite BottomSheet */}
-      <BottomSheet isOpen={showInvite} onClose={() => setShowInvite(false)} title={t('team_invite')}>
+      <BottomSheet isOpen={showInvite} onClose={() => { setShowInvite(false); setInviteLink(null) }} title={t('team_invite')}>
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>
-              {t('team_invite_telegram_id')}
+            <label className="text-xs font-semibold mb-2 block" style={{ color: 'var(--text-sec)' }}>
+              {t('team_invite_role')}
             </label>
-            <input
-              value={telegramId}
-              onChange={e => setTelegramId(e.target.value)}
-              placeholder={t('team_invite_placeholder')}
-              className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none"
-              style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}
-              autoFocus
-            />
-            <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-dim)' }}>
-              Ask the person to start the OneDegree bot first, then enter their Telegram ID (e.g., 123456789)
+            <div className="grid grid-cols-3 gap-2">
+              {ROLE_OPTIONS.map(opt => (
+                <button key={opt.key} onClick={() => { setInviteRole(opt.key); setInviteLink(null) }}
+                  className="py-2.5 rounded-xl text-xs font-bold transition-all"
+                  style={{
+                    background: inviteRole === opt.key ? opt.bgColor : 'var(--card)',
+                    color: inviteRole === opt.key ? opt.color : 'var(--text-dim)',
+                    border: `1px solid ${inviteRole === opt.key ? opt.color : 'var(--border)'}`,
+                  }}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] mt-2" style={{ color: 'var(--text-dim)' }}>
+              {inviteRole === 'admin' ? t('team_role_admin_desc') : inviteRole === 'manager' ? t('team_role_manager_desc') : t('team_role_staff_desc')}
             </p>
           </div>
-          <button
-            onClick={handleInvite}
-            disabled={inviteLoading || !telegramId.trim()}
-            className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98] disabled:opacity-60"
-            style={{ background: 'var(--gold)', color: 'var(--bg)' }}
-          >
-            {inviteLoading ? t('auth_logging_in_btn') : t('tx_form_save')}
-          </button>
+
+          {inviteLink ? (
+            <div className="space-y-3">
+              <div className="rounded-xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                <div className="text-[10px] font-semibold mb-1" style={{ color: 'var(--text-dim)' }}>{t('team_invite_link')}</div>
+                <div className="text-[11px] break-all font-mono" style={{ color: 'var(--text)' }}>{inviteLink}</div>
+                <div className="text-[10px] mt-1" style={{ color: 'var(--text-dim)' }}>{t('team_invite_expires')}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={copyLink}
+                  className="py-3 rounded-xl text-sm font-bold active:scale-[0.98]"
+                  style={{ background: linkCopied ? 'var(--green-soft)' : 'var(--card)', color: linkCopied ? 'var(--green)' : 'var(--text)', border: '1px solid var(--border)' }}>
+                  {linkCopied ? t('pair_copied') : t('pair_copy')}
+                </button>
+                <button onClick={shareLink}
+                  className="py-3 rounded-xl text-sm font-bold active:scale-[0.98]"
+                  style={{ background: 'var(--gold)', color: 'var(--bg)' }}>
+                  {t('team_invite_share')}
+                </button>
+              </div>
+              <button onClick={() => setInviteLink(null)}
+                className="w-full py-2 text-xs font-semibold" style={{ color: 'var(--text-dim)' }}>
+                {t('team_invite_new_link')}
+              </button>
+            </div>
+          ) : (
+            <button onClick={handleGenerateLink} disabled={inviteLoading}
+              className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98] disabled:opacity-60"
+              style={{ background: 'var(--gold)', color: 'var(--bg)' }}>
+              {inviteLoading ? t('pair_generating') : t('team_invite_generate')}
+            </button>
+          )}
         </div>
       </BottomSheet>
 
