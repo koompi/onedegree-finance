@@ -27,12 +27,13 @@ async function ownsCompany(userId: string, companyId: string): Promise<boolean> 
 reports.get('/:companyId/reports/monthly', teamMember, async (c) => {
   const { companyId } = c.req.param()
   const month = c.req.query('month') || new Date().toISOString().slice(0, 7)
-  const currency = c.req.query('currency') || 'USD'
   // business_only=true excludes personal transactions from totals
   const businessOnly = c.req.query('business_only') === 'true'
   const personalFilter = businessOnly ? 'AND t.is_personal = FALSE' : ''
 
-  const [txResult, accountsResult, receivablesResult, payablesResult] = await Promise.all([
+  const currentRate = exchangeRateService.getRate()
+
+  const [txResult, exchangeDiffResult, accountsResult, receivablesResult, payablesResult] = await Promise.all([
     pool.query(
       `SELECT t.type, t.category_id, c.name as category_name, c.name_km as category_name_km,
               SUM(t.amount_cents)::BIGINT as total_cents,
@@ -44,6 +45,20 @@ reports.get('/:companyId/reports/monthly', teamMember, async (c) => {
          ${personalFilter}
        GROUP BY t.type, t.category_id, c.name, c.name_km`,
       [companyId, month]
+    ),
+    // Exchange gain/loss: difference between stored rate and current rate per category
+    pool.query(
+      `SELECT t.type, t.category_id, c.name as category_name, c.name_km as category_name_km,
+              ROUND(SUM(t.amount_cents / 100.0 * ($3::NUMERIC - t.exchange_rate)))::BIGINT as diff_khr
+       FROM transactions t
+       LEFT JOIN categories c ON t.category_id = c.id
+       WHERE t.company_id = $1 AND t.occurred_at >= ($2 || '-01')::DATE
+         AND t.occurred_at < (($2 || '-01')::DATE + INTERVAL '1 month')
+         AND t.exchange_rate IS NOT NULL AND t.exchange_rate > 0
+         ${personalFilter}
+       GROUP BY t.type, t.category_id, c.name, c.name_km
+       HAVING ROUND(SUM(t.amount_cents / 100.0 * ($3::NUMERIC - t.exchange_rate))) != 0`,
+      [companyId, month, currentRate]
     ),
     pool.query('SELECT id, name, type, balance_cents FROM accounts WHERE company_id = $1', [companyId]),
     pool.query(`SELECT COALESCE(SUM(amount_cents), 0)::BIGINT as total FROM receivables WHERE company_id = $1 AND status != 'paid'`, [companyId]),
@@ -57,34 +72,39 @@ reports.get('/:companyId/reports/monthly', teamMember, async (c) => {
   const totalIncomeKHR = income.reduce((s, r) => s + parseInt(r.total_khr), 0)
   const totalExpenseKHR = expense.reduce((s, r) => s + parseInt(r.total_khr), 0)
 
-  // Return amounts based on currency param
-  const totalIncome = currency === 'KHR' ? totalIncomeKHR : totalIncomeUSD
-  const totalExpense = currency === 'KHR' ? totalExpenseKHR : totalExpenseUSD
+  const exchangeDifferences = exchangeDiffResult.rows.map(r => {
+    const diffKhr = parseInt(r.diff_khr)
+    return {
+      category_name: r.category_name,
+      category_name_km: r.category_name_km,
+      type: r.type,
+      diff_khr: diffKhr,
+      diff_usd: Math.round(diffKhr / currentRate * 100), // USD cents
+    }
+  })
 
   return c.json({
     month,
-    currency,
-    total_income_cents: totalIncome,
-    total_expense_cents: totalExpense,
+    current_exchange_rate: currentRate,
     total_income_usd: totalIncomeUSD,
     total_expense_usd: totalExpenseUSD,
     total_income_khr: totalIncomeKHR,
     total_expense_khr: totalExpenseKHR,
-    net_profit_cents: totalIncome - totalExpense,
+    net_profit_usd: totalIncomeUSD - totalExpenseUSD,
+    net_profit_khr: totalIncomeKHR - totalExpenseKHR,
     income_by_category: income.map(r => ({
       category_name: r.category_name,
       category_name_km: r.category_name_km,
-      amount_cents: currency === 'KHR' ? parseInt(r.total_khr) : parseInt(r.total_cents),
       amount_usd: parseInt(r.total_cents),
-      amount_khr: parseInt(r.total_khr)
+      amount_khr: parseInt(r.total_khr),
     })),
     expense_by_category: expense.map(r => ({
       category_name: r.category_name,
       category_name_km: r.category_name_km,
-      amount_cents: currency === 'KHR' ? parseInt(r.total_khr) : parseInt(r.total_cents),
       amount_usd: parseInt(r.total_cents),
-      amount_khr: parseInt(r.total_khr)
+      amount_khr: parseInt(r.total_khr),
     })),
+    exchange_differences: exchangeDifferences,
     accounts: accountsResult.rows,
     receivables_total_cents: parseInt(receivablesResult.rows[0].total),
     payables_total_cents: parseInt(payablesResult.rows[0].total),
@@ -115,7 +135,7 @@ reports.get('/:companyId/reports/dashboard-bundle', teamMember, async (c) => {
       [companyId]
     ),
     pool.query(
-      `SELECT type, SUM(amount_cents)::BIGINT as total FROM transactions
+      `SELECT type, SUM(amount_cents)::BIGINT as total, COALESCE(SUM(amount_khr), 0)::BIGINT as total_khr FROM transactions
        WHERE company_id = $1 AND occurred_at >= ($2 || '-01')::DATE
        AND occurred_at < (($2 || '-01')::DATE + INTERVAL '1 month')
        GROUP BY type`,
@@ -142,7 +162,9 @@ reports.get('/:companyId/reports/dashboard-bundle', teamMember, async (c) => {
 
   const currentSummary = {
     income: parseInt(currentReport.rows.find(r => r.type === 'income')?.total || '0'),
-    expense: parseInt(currentReport.rows.find(r => r.type === 'expense')?.total || '0')
+    expense: parseInt(currentReport.rows.find(r => r.type === 'expense')?.total || '0'),
+    income_khr: parseInt(currentReport.rows.find(r => r.type === 'income')?.total_khr || '0'),
+    expense_khr: parseInt(currentReport.rows.find(r => r.type === 'expense')?.total_khr || '0'),
   }
 
   return c.json({

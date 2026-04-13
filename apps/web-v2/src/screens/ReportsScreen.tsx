@@ -12,14 +12,31 @@ import { toast } from '../store/toastStore'
 
 const MONTHS_KM = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
 
+interface ExchangeDiff {
+  category_name: string
+  category_name_km?: string
+  type: 'income' | 'expense'
+  diff_khr: number
+  diff_usd: number
+}
+
+interface CategoryItem {
+  category_id: string
+  category_name: string
+  category_name_km?: string
+  type: string
+  total_usd: number
+  total_khr: number
+}
+
 interface ReportData {
-  income: number
-  expense: number
-  income_usd?: number
-  expense_usd?: number
-  income_khr?: number
-  expense_khr?: number
-  by_category: Array<{ category_id: string; category_name: string; type: string; total: number }>
+  income_usd: number
+  expense_usd: number
+  income_khr: number
+  expense_khr: number
+  current_exchange_rate: number
+  by_category: CategoryItem[]
+  exchange_differences: ExchangeDiff[]
 }
 
 export default function ReportsScreen({ onBack }: { onBack: () => void }) {
@@ -31,6 +48,7 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'pl' | 'cashflow'>('pl')
   const [businessOnly, setBusinessOnly] = useState(false)
+  const [viewCurrency, setViewCurrency] = useState<'USD' | 'KHR'>('USD')
   const [periodLocks, setPeriodLocks] = useState<Record<string, { locked_by: string; locked_at: string }>>({})
   const [isOwner, setIsOwner] = useState(false)
   const [locking, setLocking] = useState(false)
@@ -91,24 +109,28 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
     try {
       const raw = await api.get<any>(`/${companyId}/reports/monthly?month=${m}${businessOnly ? '&business_only=true' : ''}`)
       setReport({
-        income: raw.total_income_cents ?? raw.total_income_khr ?? raw.income ?? 0,
-        expense: raw.total_expense_cents ?? raw.total_expense_khr ?? raw.expense ?? 0,
         income_usd: raw.total_income_usd ?? 0,
         expense_usd: raw.total_expense_usd ?? 0,
-        income_khr: raw.total_income_khr ?? raw.total_income_cents ?? raw.income ?? 0,
-        expense_khr: raw.total_expense_khr ?? raw.total_expense_cents ?? raw.expense ?? 0,
+        income_khr: raw.total_income_khr ?? 0,
+        expense_khr: raw.total_expense_khr ?? 0,
+        current_exchange_rate: raw.current_exchange_rate ?? 4000,
+        exchange_differences: raw.exchange_differences ?? [],
         by_category: [
           ...(raw.income_by_category || []).map((c: any) => ({
             category_id: c.category_id || c.category_name,
             category_name: c.category_name,
+            category_name_km: c.category_name_km,
             type: 'income',
-            total: c.amount_cents ?? c.amount_khr ?? c.total ?? 0,
+            total_usd: c.amount_usd ?? 0,
+            total_khr: c.amount_khr ?? 0,
           })),
           ...(raw.expense_by_category || []).map((c: any) => ({
             category_id: c.category_id || c.category_name,
             category_name: c.category_name,
+            category_name_km: c.category_name_km,
             type: 'expense',
-            total: c.amount_cents ?? c.amount_khr ?? c.total ?? 0,
+            total_usd: c.amount_usd ?? 0,
+            total_khr: c.amount_khr ?? 0,
           })),
         ],
       })
@@ -120,13 +142,20 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
   const prevMonth = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1); }
   const nextMonth = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1); }
 
-  const income = report?.income || 0
-  const expense = report?.expense || 0
+  const incomeUSD = report?.income_usd || 0
+  const expenseUSD = report?.expense_usd || 0
+  const incomeKHR = report?.income_khr || 0
+  const expenseKHR = report?.expense_khr || 0
+  const income = viewCurrency === 'KHR' ? incomeKHR : incomeUSD
+  const expense = viewCurrency === 'KHR' ? expenseKHR : expenseUSD
   const profit = income - expense
-  const margin = calcProfitMargin(income, expense)
+  const margin = calcProfitMargin(incomeUSD, expenseUSD)
   const incomeByCat = report?.by_category?.filter(c => c.type === 'income') || []
   const expenseByCat = report?.by_category?.filter(c => c.type === 'expense') || []
-  const maxCat = Math.max(...incomeByCat.map(c => c.total), ...expenseByCat.map(c => c.total), 1)
+  const catVal = (c: CategoryItem) => viewCurrency === 'KHR' ? c.total_khr : c.total_usd
+  const maxCat = Math.max(...incomeByCat.map(catVal), ...expenseByCat.map(catVal), 1)
+  const exchangeDiffs = report?.exchange_differences || []
+  const fmtView = (usdCents: number, khr: number) => viewCurrency === 'KHR' ? fmtKHR(khr) : fmtUSD(usdCents)
 
   const exportCSV = async () => {
     const m = `${year}-${String(month + 1).padStart(2, '0')}`
@@ -213,35 +242,48 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
             </button>
             {/* P&L Statement */}
             <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-              <div className="px-4 py-3" style={{ background: 'var(--gold-soft)', borderBottom: '1px solid var(--gold-med)' }}>
+              <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'var(--gold-soft)', borderBottom: '1px solid var(--gold-med)' }}>
                 <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--gold)' }}>P&amp;L Statement</div>
+                <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--gold-med)' }}>
+                  {(['USD', 'KHR'] as const).map(vc => (
+                    <button
+                      key={vc}
+                      onClick={() => setViewCurrency(vc)}
+                      className="px-2.5 py-1 text-[10px] font-bold"
+                      style={{
+                        background: viewCurrency === vc ? 'var(--gold)' : 'transparent',
+                        color: viewCurrency === vc ? 'var(--bg)' : 'var(--gold)',
+                      }}
+                    >{vc === 'USD' ? '$ USD' : '៛ KHR'}</button>
+                  ))}
+                </div>
               </div>
               <div className="px-4 py-3 space-y-2">
                 <div className="flex justify-between items-start py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span className="text-xs font-semibold" style={{ color: 'var(--text-sec)' }}>{t('reports_total_income')}</span>
                   <div className="text-right">
-                    <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--green)' }}>+ {fmt(income)}</div>
-                    {report?.income_usd && (
-                      <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>${report.income_usd.toFixed(2)}</div>
+                    <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--green)' }}>+ {fmtView(incomeUSD, incomeKHR)}</div>
+                    {viewCurrency === 'KHR' && incomeUSD > 0 && (
+                      <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>${(incomeUSD / 100).toFixed(2)}</div>
                     )}
                   </div>
                 </div>
                 <div className="flex justify-between items-start py-1.5" style={{ borderBottom: '1px solid var(--border)' }}>
                   <span className="text-xs font-semibold" style={{ color: 'var(--text-sec)' }}>{t('reports_total_expense')}</span>
                   <div className="text-right">
-                    <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--red)' }}>- {fmt(expense)}</div>
-                    {report?.expense_usd && (
-                      <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>${report.expense_usd.toFixed(2)}</div>
+                    <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--red)' }}>- {fmtView(expenseUSD, expenseKHR)}</div>
+                    {viewCurrency === 'KHR' && expenseUSD > 0 && (
+                      <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>${(expenseUSD / 100).toFixed(2)}</div>
                     )}
                   </div>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-xs font-black" style={{ color: 'var(--text)' }}>{t('reports_profit')}</span>
                   <div className="text-right">
-                    <div className="text-base font-black font-mono-num" style={{ color: profit >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(profit)}</div>
-                    {report?.income_usd && report?.expense_usd && (
+                    <div className="text-base font-black font-mono-num" style={{ color: profit >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmtView(incomeUSD - expenseUSD, incomeKHR - expenseKHR)}</div>
+                    {viewCurrency === 'KHR' && (incomeUSD - expenseUSD) !== 0 && (
                       <div className="text-[10px] font-mono-num" style={{ color: profit >= 0 ? 'var(--green)' : 'var(--red)' }}>
-                        ${(report.income_usd - report.expense_usd).toFixed(2)}
+                        {incomeUSD - expenseUSD >= 0 ? '+' : ''}${((incomeUSD - expenseUSD) / 100).toFixed(2)}
                       </div>
                     )}
                     <div className="text-[10px] font-bold" style={{ color: 'var(--text-dim)' }}>{t('reports_margin')}: {margin}%</div>
@@ -257,9 +299,9 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
                   <div key={c.category_id} className="flex items-center gap-3 mb-2">
                     <span className="text-[11px] w-24 truncate" style={{ color: 'var(--text-sec)' }}>{c.category_name}</span>
                     <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-                      <div className="h-full rounded-full" style={{ width: `${(c.total / maxCat) * 100}%`, background: 'var(--green)' }} />
+                      <div className="h-full rounded-full" style={{ width: `${(catVal(c) / maxCat) * 100}%`, background: 'var(--green)' }} />
                     </div>
-                    <span className="text-[11px] font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmt(c.total)}</span>
+                    <span className="text-[11px] font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmtView(c.total_usd, c.total_khr)}</span>
                   </div>
                 ))}
               </div>
@@ -272,11 +314,40 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
                   <div key={c.category_id} className="flex items-center gap-3 mb-2">
                     <span className="text-[11px] w-24 truncate" style={{ color: 'var(--text-sec)' }}>{c.category_name}</span>
                     <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--border)' }}>
-                      <div className="h-full rounded-full" style={{ width: `${(c.total / maxCat) * 100}%`, background: 'var(--red)' }} />
+                      <div className="h-full rounded-full" style={{ width: `${(catVal(c) / maxCat) * 100}%`, background: 'var(--red)' }} />
                     </div>
-                    <span className="text-[11px] font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmt(c.total)}</span>
+                    <span className="text-[11px] font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmtView(c.total_usd, c.total_khr)}</span>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {exchangeDiffs.length > 0 && (
+              <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+                <div className="px-4 py-3 flex items-center justify-between" style={{ background: 'rgba(228,180,75,0.08)', borderBottom: '1px solid var(--border)' }}>
+                  <div>
+                    <div className="text-[10px] font-black uppercase tracking-widest" style={{ color: 'var(--gold)' }}>{t('reports_exchange_diff')}</div>
+                    <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>1 USD = {report?.current_exchange_rate?.toLocaleString()} ៛ ({t('reports_exchange_rate_now')})</div>
+                  </div>
+                </div>
+                <div className="px-4 py-3 space-y-2.5">
+                  {exchangeDiffs.map((d, i) => (
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold" style={{ color: 'var(--text-sec)' }}>{d.category_name}</span>
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: d.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)', color: d.type === 'income' ? 'var(--green)' : 'var(--red)' }}>{d.type}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-[11px] font-bold font-mono-num" style={{ color: d.diff_khr >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                          {d.diff_khr >= 0 ? '+' : ''}{fmtKHR(Math.abs(d.diff_khr))}
+                        </div>
+                        <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>
+                          {d.diff_usd >= 0 ? '+' : '-'}${(Math.abs(d.diff_usd) / 100).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

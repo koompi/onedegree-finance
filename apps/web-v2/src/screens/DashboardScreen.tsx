@@ -6,6 +6,8 @@ import { useAmount } from '../hooks/useAmount'
 import { getGreeting, haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
 
+import { fmtKHR } from '../lib/format'
+
 const QUICK = [
   { label: 'ប្រតិបត្តិការ', icon: 'transactions' as const, key: 'transactions' },
   { label: 'អ្នកជំពាក់', icon: 'receivable' as const, key: 'receivables' },
@@ -14,8 +16,11 @@ const QUICK = [
 ]
 
 export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
-  const { isLoading, transactions, monthlyData, receivablesCount, income, expense, profitMargin, getMonthLabel } = useDashboard()
-  const { fmt } = useAmount()
+  const { isLoading, transactions, monthlyData, receivablesCount, income, expense, incomeKhr, expenseKhr, profitMargin, getMonthLabel } = useDashboard()
+  const { fmt, currency: baseCurrency } = useAmount()
+
+  const fmtSummary = (usdCents: number, khr: number) =>
+    baseCurrency === 'KHR' ? fmtKHR(khr) : fmt(usdCents)
   const [tipIdx, setTipIdx] = useState(0)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [quickAddType, setQuickAddType] = useState<'income' | 'expense'>('income')
@@ -40,7 +45,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
         {isLoading ? (
           <div className="h-10 w-40 mt-1 rounded-lg animate-pulse" style={{ background: 'rgba(0,0,0,0.1)' }} />
         ) : (
-          <div className="text-4xl font-black font-mono-num mt-1" style={{ color: '#000000', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-1px' }}>{fmt(income - expense)}</div>
+          <div className="text-4xl font-black font-mono-num mt-1" style={{ color: '#000000', fontFamily: "'JetBrains Mono', monospace", letterSpacing: '-1px' }}>{fmtSummary(income - expense, incomeKhr - expenseKhr)}</div>
         )}
         <div className="flex gap-3 mt-6">
           <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'rgba(0,0,0,0.06)' }}>
@@ -48,7 +53,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
             {isLoading ? (
               <div className="h-5 w-20 mt-0.5 rounded animate-pulse" style={{ background: 'rgba(0,0,0,0.1)' }} />
             ) : (
-              <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{fmt(income)}</div>
+              <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{fmtSummary(income, incomeKhr)}</div>
             )}
           </div>
           <div className="flex-1 rounded-2xl px-4 py-3" style={{ background: 'rgba(0,0,0,0.06)' }}>
@@ -56,7 +61,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
             {isLoading ? (
               <div className="h-5 w-20 mt-0.5 rounded animate-pulse" style={{ background: 'rgba(0,0,0,0.1)' }} />
             ) : (
-              <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{fmt(expense)}</div>
+              <div className="text-sm font-black font-mono-num mt-0.5" style={{ color: '#000000' }}>{fmtSummary(expense, expenseKhr)}</div>
             )}
           </div>
         </div>
@@ -150,7 +155,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
                 <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{tx.occurred_at?.substring(0, 10)}</div>
               </div>
               <div className="text-sm font-bold font-mono-num" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                {tx.type === 'income' ? '+' : '-'}{fmt(tx.amount_cents)}
+                {tx.type === 'income' ? '+' : '-'}{baseCurrency === 'KHR' && tx.amount_khr && tx.amount_khr > 0 ? fmtKHR(tx.amount_khr) : fmt(tx.amount_cents)}
               </div>
             </div>
           ))}

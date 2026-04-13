@@ -37,11 +37,12 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const now = new Date()
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const { isLoading, transactions, remove, refetch } = useTransactions(month, filter)
-  const { fmt } = useAmount()
+  const { fmt, currency: baseCurrency } = useAmount()
 
-  // Show the currency the transaction was entered in (handles legacy broken KHR records too)
+  // When base currency is KHR, show the KHR equivalent (amount_khr is stored for all transactions).
+  // When base currency is USD, always show the USD amount_cents value.
   const fmtTx = (tx: import('../hooks/useTransactions').Transaction) => {
-    if (tx.currency_input === 'KHR' && tx.amount_khr && tx.amount_khr > 0) {
+    if (baseCurrency === 'KHR' && tx.amount_khr && tx.amount_khr > 0) {
       return fmtKHR(tx.amount_khr)
     }
     return fmt(tx.amount_cents)

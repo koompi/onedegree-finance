@@ -2,11 +2,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 
-interface Tx { id: string; type: string; amount_cents: number; category_id?: string; category_name?: string; account_id?: string; account_name?: string; occurred_at: string; description?: string; status?: string }
+interface Tx { id: string; type: string; amount_cents: number; amount_khr?: number; currency_input?: string; category_id?: string; category_name?: string; account_id?: string; account_name?: string; occurred_at: string; description?: string; status?: string }
 interface MonthData { month: string; income: number; expense: number }
 
 interface DashboardBundle {
-  summary: { income: number; expense: number };
+  summary: { income: number; expense: number; income_khr: number; expense_khr: number };
   recent_transactions: Tx[];
   monthly_stats: MonthData[];
   overdue_count: number;
@@ -38,8 +38,10 @@ export function useDashboard() {
   const receivablesCount = data?.overdue_count || 0
   const income = data?.summary.income || 0
   const expense = data?.summary.expense || 0
+  const incomeKhr = data?.summary.income_khr || 0
+  const expenseKhr = data?.summary.expense_khr || 0
   const report = data ? { income, expense, by_category: [] } : null
   const profitMargin = income > 0 ? Math.round(((income - expense) / income) * 1000) / 10 : 0
 
-  return { isLoading, transactions, report, monthlyData, receivablesCount, income, expense, profitMargin, fetchAll, getMonthLabel }
+  return { isLoading, transactions, report, monthlyData, receivablesCount, income, expense, incomeKhr, expenseKhr, profitMargin, fetchAll, getMonthLabel }
 }
