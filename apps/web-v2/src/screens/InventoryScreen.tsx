@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import ScreenHeader from '../components/ScreenHeader'
 import Pill from '../components/Pill'
-import Badge from '../components/Badge'
 import Icon from '../components/Icon'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
@@ -79,18 +78,18 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
     <div className="h-screen flex flex-col animate-fadeIn overflow-hidden">
       <ScreenHeader title={t('nav_inventory')} onBack={onBack} />
       <div className="flex-1 overflow-y-auto no-scrollbar pb-40">
-        <div className="px-4 space-y-3">
+        <div className="px-4 space-y-2 pt-2">
           <div className="grid grid-cols-3 gap-2">
-          <div className="rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_total_value')}</div>
+          <div className="rounded-xl p-2.5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <div className="text-[9px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_total_value')}</div>
             <div className="text-sm font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--text)' }}>{fmt(totalValue)}</div>
           </div>
-          <div className="rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_items_count')}</div>
+          <div className="rounded-xl p-2.5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <div className="text-[9px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_items_count')}</div>
             <div className="text-sm font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--text)' }}>{items.length}</div>
           </div>
-          <div className="rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_low_stock')}</div>
+          <div className="rounded-xl p-2.5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <div className="text-[9px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('inventory_low_stock')}</div>
             <div className="text-sm font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--orange)' }}>{lowStockCount}</div>
           </div>
         </div>
@@ -113,42 +112,57 @@ export default function InventoryScreen({ onBack }: { onBack: () => void }) {
         </div>
         {filtered.length === 0 ? (
           <EmptyState icon="📦" title={t('inventory_empty_title')} action={{ label: t('tx_add_new'), onClick: () => setShowAdd(true) }} />
-        ) : filtered.map(item => (
-          <div key={item.id} className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'var(--gold-soft)' }}>
-                <Icon name="package" size={16} color="var(--gold)" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{item.name}</span>
-                  {item.current_qty <= item.reorder_level && item.current_qty > 0 && <Badge variant="warning">{t('inventory_badge_low')}</Badge>}
-                  {item.current_qty === 0 && <Badge variant="error">{t('inventory_badge_out')}</Badge>}
+        ) : (
+          <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            {filtered.map((item, i) => {
+              const isOut = item.current_qty === 0
+              const isLow = !isOut && item.current_qty <= item.reorder_level
+              const accentColor = isOut ? 'var(--red)' : isLow ? 'var(--orange)' : 'var(--gold)'
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center gap-2.5 px-3 py-2.5 active:bg-white/5 transition-colors cursor-pointer"
+                  style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none' }}
+                  onClick={() => { setStockItemId(item.id); setShowStock(true) }}
+                >
+                  {/* Status accent bar */}
+                  <div className="w-[3px] self-stretch rounded-full shrink-0" style={{ background: accentColor, minHeight: '28px' }} />
+                  {/* Name + badges */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5 leading-tight">
+                      <span className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{item.name}</span>
+                      {isLow && <span className="text-[9px] font-bold px-1 rounded" style={{ background: 'var(--orange-soft,#fff3e0)', color: 'var(--orange)' }}>{t('inventory_badge_low')}</span>}
+                      {isOut && <span className="text-[9px] font-bold px-1 rounded" style={{ background: 'var(--red-soft)', color: 'var(--red)' }}>{t('inventory_badge_out')}</span>}
+                    </div>
+                    <div className="text-[10px] opacity-40 leading-tight mt-0.5" style={{ color: 'var(--text-dim)' }}>
+                      WAC {fmt(item.wac_cost)} · {fmt(item.current_qty * item.wac_cost)}
+                    </div>
+                  </div>
+                  {/* Qty */}
+                  <div className="text-right shrink-0">
+                    <div className="text-[15px] font-black font-mono-num leading-tight" style={{ color: isOut ? 'var(--red)' : isLow ? 'var(--orange)' : 'var(--text)' }}>{item.current_qty}</div>
+                    <div className="text-[9px] opacity-40 leading-tight" style={{ color: 'var(--text-dim)' }}>{item.unit || t('inventory_unit')}</div>
+                  </div>
+                  {/* Delete inline */}
+                  {deleteId === item.id ? (
+                    <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                      <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
+                      <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeleteId(item.id) }}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg shrink-0"
+                      style={{ background: 'var(--red-soft)' }}
+                    >
+                      <Icon name="trash" size={11} color="var(--red)" />
+                    </button>
+                  )}
                 </div>
-                <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>WAC: {fmt(item.wac_cost)} / {item.unit || t('inventory_unit')}</div>
-              </div>
-              <div className="text-right shrink-0">
-                <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--text)' }}>{item.current_qty}</div>
-                <div className="text-[10px] font-mono-num" style={{ color: 'var(--text-dim)' }}>{fmt(item.current_qty * item.wac_cost)}</div>
-              </div>
-            </div>
-            <div className="flex gap-2 mt-3">
-              <button onClick={() => { setStockItemId(item.id); setShowStock(true) }} className="flex-1 py-2 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1 active:scale-95" style={{ background: 'var(--gold-soft)', color: 'var(--gold)' }}>
-                <Icon name="refresh" size={12} /> {t('inventory_move_btn')}
-              </button>
-              {deleteId === item.id ? (
-                <div className="flex gap-1">
-                  <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>
-                  <button onClick={() => setDeleteId(null)} className="px-2 py-1 rounded-lg text-[10px] font-bold" style={{ background: 'var(--border)', color: 'var(--text-sec)' }}>{t('tx_delete_cancel')}</button>
-                </div>
-              ) : (
-                <button onClick={() => setDeleteId(item.id)} className="w-8 h-8 flex items-center justify-center rounded-lg" style={{ background: 'var(--red-soft)' }}>
-                  <Icon name="trash" size={12} color="var(--red)" />
-                </button>
-              )}
-            </div>
+              )
+            })}
           </div>
-        ))}        </div>      </div>
+        )}        </div>      </div>
 
       <div className="fixed fab-bottom right-6 z-40">
         <button 

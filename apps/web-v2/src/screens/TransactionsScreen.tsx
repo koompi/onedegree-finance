@@ -150,7 +150,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
         />
       </div>
       
-      <div className="px-4 space-y-4 pt-2">
+      <div className="px-4 space-y-2 pt-1">
         {searchOpen && (
           <div className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all focus-within:ring-2 focus-within:ring-gold/20" 
                style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
@@ -172,12 +172,12 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
           </div>
         )}
 
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
           {FILTERS.map(f => (
             <button
               key={f.key}
               onClick={() => { haptic('light'); setFilter(f.key) }}
-              className={`px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-widest transition-all shrink-0 ${
+              className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all shrink-0 ${
                 filter === f.key ? 'shadow-gold' : 'opacity-60'
               }`}
               style={{ 
@@ -201,37 +201,44 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
             />
           </div>
         ) : (
-          <div className="space-y-6">
-            {grouped.map(([dateKey, txs]) => (
-              <div key={dateKey} className="animate-slideUp">
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <div className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--gold)' }} />
-                  <span className="text-[11px] font-black uppercase tracking-widest opacity-60" style={{ color: 'var(--text-sec)' }}>{fmtDateKhmer(dateKey)}</span>
+          <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            {grouped.map(([dateKey, txs], gi) => (
+              <div key={dateKey}>
+                {/* Date separator */}
+                <div
+                  className="flex items-center gap-2 px-3 py-1"
+                  style={{ background: 'var(--border)', borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}
+                >
+                  <span className="text-[10px] font-black uppercase tracking-widest opacity-60" style={{ color: 'var(--text-dim)' }}>
+                    {fmtDateKhmer(dateKey)}
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  {txs.map((tx) => (
-                    <div key={tx.id} className="relative group">
-                      <ListItem
-                        title={tx.note || tx.description || tx.category_name || t('tx_default_title')}
-                        subtitle={(tx.account_name || '') + (tx.receipt_url ? ' 📎' : '') + ((tx as any).is_personal ? ' 🏠' : '')}
-                        icon={tx.type === 'income' ? '↗️' : '↘️'}
-                        iconBg={tx.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)'}
-                        right={(tx.type === 'income' ? '+' : '-') + fmtTx(tx)}
-                        rightColor={tx.type === 'income' ? 'var(--green)' : 'var(--red)'}
-                        onPress={() => { haptic('light'); setSelectedTx(tx) }}
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); haptic('medium'); setSelectedTx(tx) }}
-                          className="w-8 h-8 flex items-center justify-center rounded-xl"
-                          style={{ background: 'var(--border)' }}
-                        >
-                          <Icon name="chevron" size={14} color="var(--text-dim)" />
-                        </button>
-                      </div>
+                {txs.map((tx, i) => (
+                  <div
+                    key={tx.id}
+                    onClick={() => { haptic('light'); setSelectedTx(tx) }}
+                    className="flex items-center gap-2 px-3 py-[7px] active:bg-white/5 transition-colors cursor-pointer"
+                    style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}
+                  >
+                    {/* Color dot */}
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }} />
+                    {/* Title + account inline */}
+                    <div className="flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
+                      <span className="text-[13px] font-semibold truncate shrink-0 max-w-[55%]" style={{ color: 'var(--text)' }}>
+                        {tx.note || tx.description || tx.category_name || t('tx_default_title')}
+                      </span>
+                      {tx.account_name && (
+                        <span className="text-[10px] truncate opacity-40 font-medium" style={{ color: 'var(--text-sec)' }}>
+                          {tx.account_name}{tx.receipt_url ? ' 📎' : ''}{(tx as any).is_personal ? ' 🏠' : ''}
+                        </span>
+                      )}
                     </div>
-                  ))}
-                </div>
+                    {/* Amount */}
+                    <span className="text-[13px] font-bold font-mono-num shrink-0" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
+                      {tx.type === 'income' ? '+' : '-'}{fmtTx(tx)}
+                    </span>
+                  </div>
+                ))}
               </div>
             ))}
           </div>

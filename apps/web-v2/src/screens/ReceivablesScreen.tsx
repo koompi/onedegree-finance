@@ -111,16 +111,16 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
       <div className="sticky top-0 z-30">
         <ScreenHeader title={t('nav_receivables')} onBack={onBack} />
       </div>
-      <div className="px-4 space-y-3 pt-2">
+      <div className="px-4 space-y-2 pt-2">
         <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-              <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_total')}</div>
-              <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--text)' }}>{fmt(totalOwed)}</div>
+            <div className="rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+              <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_total')}</div>
+              <div className="text-lg font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--text)' }}>{fmt(totalOwed)}</div>
             </div>
-            <div className="rounded-2xl p-4" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-              <div className="text-[11px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_collected')}</div>
-              <div className="text-xl font-extrabold font-mono-num mt-1" style={{ color: 'var(--green)' }}>{fmt(totalCollected)}</div>
-              {overdueCount > 0 && <div className="text-[10px] font-semibold mt-1" style={{ color: 'var(--red)' }}>{overdueCount} {lang === 'km' ? 'នាក់ហួសកំណត់' : 'overdue'}</div>}
+            <div className="rounded-2xl p-3" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+              <div className="text-[10px] font-semibold" style={{ color: 'var(--text-dim)' }}>{t('receivables_collected')}</div>
+              <div className="text-lg font-extrabold font-mono-num mt-0.5" style={{ color: 'var(--green)' }}>{fmt(totalCollected)}</div>
+              {overdueCount > 0 && <div className="text-[10px] font-semibold mt-0.5" style={{ color: 'var(--red)' }}>{overdueCount} {lang === 'km' ? 'នាក់ហួសកំណត់' : 'overdue'}</div>}
             </div>
           </div>
 
@@ -134,36 +134,39 @@ export default function ReceivablesScreen({ onBack }: { onBack: () => void }) {
             <EmptyState icon="💸" title={t('receivables_empty_title')}
               subtitle={sort === 'paid' ? (lang === 'km' ? 'មិនទាន់មានការទូទាត់ណាមួយ' : 'No collected payments yet.') : t('receivables_empty_subtitle')}
               action={sort !== 'paid' ? { label: t('tx_add_new'), onClick: () => setShowAdd(true) } : undefined} />
-          ) : filtered.map(r => {
-            const isPaid = r.status === 'paid'
-            const days = isPaid ? 0 : daysUntilDue(r.due_date)
-            return (
-              <button key={r.id} onClick={() => { haptic('light'); setSelectedR(r); setDeleteConfirm(false); setCollectConfirm(false) }}
-                className="w-full rounded-2xl p-4 text-left active:scale-[0.98] transition-transform"
-                style={{ background: 'var(--card)', border: '1px solid var(--border)', opacity: isPaid ? 0.85 : 1 }}>
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0"
-                    style={{ background: isPaid ? 'var(--green-soft)' : 'var(--gold-soft)' }}>
-                    <Icon name={isPaid ? 'check' : 'receivable'} size={16} color={isPaid ? 'var(--green)' : 'var(--gold)'} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{r.contact_name}</span>
-                      {isPaid && <Badge variant="success">{t('status_paid')}</Badge>}
-                      {!isPaid && days < 0 && <Badge variant="error">{overdueBadgeText(days)}</Badge>}
-                      {!isPaid && days >= 0 && days <= 3 && <Badge variant="warning">{overdueBadgeText(days)}</Badge>}
+          ) : (
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+              {filtered.map((r, i) => {
+                const isPaid = r.status === 'paid'
+                const days = isPaid ? 0 : daysUntilDue(r.due_date)
+                const accentColor = isPaid ? 'var(--green)' : days < 0 ? 'var(--red)' : 'var(--gold)'
+                const amountColor = isPaid ? 'var(--green)' : days < 0 ? 'var(--red)' : 'var(--gold)'
+                return (
+                  <div
+                    key={r.id}
+                    onClick={() => { haptic('light'); setSelectedR(r); setDeleteConfirm(false); setCollectConfirm(false) }}
+                    className="flex items-center gap-2.5 px-3 py-2.5 active:bg-white/5 transition-colors cursor-pointer"
+                    style={{ borderBottom: i < filtered.length - 1 ? '1px solid var(--border)' : 'none', opacity: isPaid ? 0.7 : 1 }}
+                  >
+                    <div className="w-[3px] self-stretch rounded-full shrink-0" style={{ background: accentColor, minHeight: '28px' }} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-semibold truncate leading-tight" style={{ color: 'var(--text)' }}>
+                        {r.contact_name}
+                      </div>
+                      <div className="text-[11px] truncate leading-tight mt-0.5 opacity-50" style={{ color: days < 0 && !isPaid ? 'var(--red)' : 'var(--text-sec)' }}>
+                        {fmtDateKhmer(r.due_date)}{r.note ? ` · ${r.note}` : ''}{r.receipt_url ? ' 📎' : ''}
+                        {isPaid && ` · ${t('status_paid')}`}
+                        {!isPaid && days < 0 && ` · ${overdueBadgeText(days)}`}
+                      </div>
                     </div>
-                    <div className="text-[10px] mt-0.5" style={{ color: 'var(--text-dim)' }}>
-                      {t('tx_form_date')}: {fmtDateKhmer(r.due_date)}
-                      {r.note && <span className="ml-2 opacity-70">· {r.note}</span>}
-                      {r.receipt_url && <span className="ml-2">📎</span>}
+                    <div className="text-[13px] font-bold font-mono-num shrink-0" style={{ color: amountColor }}>
+                      {fmt(r.amount_cents)}
                     </div>
                   </div>
-                  <div className="text-sm font-bold font-mono-num shrink-0" style={{ color: isPaid ? 'var(--green)' : 'var(--gold)' }}>{fmt(r.amount_cents)}</div>
-                </div>
-              </button>
-            )
-          })}
+                )
+              })}
+            </div>
+          )}
         </div>
 
       {/* FAB */}
