@@ -32,7 +32,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
   const maxBar = Math.max(...monthlyData.map(m => Math.max(m.income, m.expense)), 1)
 
   return (
-    <div className="px-4 space-y-4 animate-fadeIn">
+    <div className="px-4 space-y-4 pb-40 animate-fadeIn">
       <div className="mt-2">
         <div className="text-[10px] font-bold uppercase tracking-[2px]" style={{ color: 'var(--text-dim)' }}>OneDegree Finance</div>
         <div className="text-xl font-black mt-0.5" style={{ color: 'var(--text)' }}>{getGreeting()}</div>

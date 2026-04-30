@@ -10,10 +10,10 @@ export default function ListItem({ icon, iconBg, title, subtitle, right, rightSu
   return (
     <div 
       onClick={() => { if (onPress) { haptic('light'); onPress() } }} 
-      className="flex items-center gap-4 px-4 py-4 active:scale-[0.98] active:bg-white/5 transition-all rounded-2xl mb-1 group" 
+      className="flex items-center gap-4 px-4 py-3 active:scale-[0.98] active:bg-white/5 transition-all rounded-2xl mb-1 group" 
       style={{ cursor: onPress ? 'pointer' : 'default', background: 'var(--card)', border: '1px solid var(--border)' }}
     >
-      <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 transition-transform group-active:scale-95" 
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shrink-0 transition-transform group-active:scale-95" 
            style={{ background: iconBg || 'var(--gold-soft)', border: '1px solid var(--border-light)' }}>
         {icon}
       </div>
@@ -22,7 +22,7 @@ export default function ListItem({ icon, iconBg, title, subtitle, right, rightSu
         {subtitle && <div className="text-[11px] font-medium truncate mt-0.5 opacity-60" style={{ color: 'var(--text-sec)' }}>{subtitle}</div>}
       </div>
       <div className="text-right shrink-0">
-        {right && <div className="text-[15px] font-black font-mono-num tracking-tighter" style={{ color: rightColor || 'var(--text)' }}>{right}</div>}
+        {right && <div className="text-[13px] font-black font-mono-num tracking-tighter" style={{ color: rightColor || 'var(--text)' }}>{right}</div>}
         {rightSub && <div className="text-[10px] font-bold uppercase tracking-wider opacity-50 mt-0.5" style={{ color: 'var(--text-dim)' }}>{rightSub}</div>}
       </div>
       {showChevron && (

@@ -176,20 +176,6 @@ export default function AddTransactionSheet({
             ))}
           </div>
 
-          {/* Business / Personal toggle */}
-          <button
-            onClick={() => { haptic('light'); setIsPersonal(p => !p) }}
-            className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all"
-            style={{
-              background: isPersonal ? 'var(--border)' : 'var(--gold-soft)',
-              color: isPersonal ? 'var(--text-dim)' : 'var(--gold)',
-              border: `1px solid ${isPersonal ? 'var(--border)' : 'var(--gold-med)'}`,
-            }}
-          >
-            <span>{isPersonal ? '🏠' : '💼'}</span>
-            <span>{isPersonal ? t('tx_personal') : t('tx_business')}</span>
-          </button>
-
           <div>
             <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_amount')}</label>
             <CurrencyInput value={amount} onChange={setAmount} autoFocus currency={txCurrency} />
