@@ -8,6 +8,8 @@ interface TelegramUser {
   username?: string
 }
 
+import { userStates } from './state'
+
 export async function handleCallbackQuery(
   chatId: number,
   data: string,
@@ -25,39 +27,29 @@ export async function handleCallbackQuery(
       await handleQuickSummary(chatId, user)
       break
     case 'quick_income_help':
+      userStates.set(chatId, 'income')
       await sendMessage(
         chatId,
         [
-          '💰 <b>Log Income / កត់ត្រាចំណូល</b>',
+          '💰 <b>Logging Income / កត់ត្រាចំណូល</b>',
           '',
-          'Just send a message describing your income:',
-          'គ្រាន់តែផ្ញើសារពិពណ៌នាចំណូលរបស់អ្នក:',
-          '',
-          '<b>Examples / ឧទាហរណ៍:</b>',
-          '  • "sold rice $50"',
-          '  • "income 200000 riel delivery"',
-          '  • "លក់ទំនិញ $120"',
-          '  • "ទទួលប្រាក់ 500000 រៀល"',
+          'Please send the amount and note (e.g. "50$ sold rice" or "10000 riel tip").',
+          'សូមផ្ញើចំនួនទឹកប្រាក់ និងចំណាំ។',
         ].join('\n'),
-        { parseMode: 'HTML', replyMarkup: quickActionsKeyboard }
+        { parseMode: 'HTML' }
       )
       break
     case 'quick_expense_help':
+      userStates.set(chatId, 'expense')
       await sendMessage(
         chatId,
         [
-          '💸 <b>Log Expense / កត់ត្រាចំណាយ</b>',
+          '💸 <b>Logging Expense / កត់ត្រាចំណាយ</b>',
           '',
-          'Just send a message describing your expense:',
-          'គ្រាន់តែផ្ញើសារពិពណ៌នាចំណាយរបស់អ្នក:',
-          '',
-          '<b>Examples / ឧទាហរណ៍:</b>',
-          '  • "bought supplies $30"',
-          '  • "expense 80000 riel food"',
-          '  • "ទិញទំនិញ $45"',
-          '  • "ចំណាយ 150000 រៀល ម្ហូបអាហារ"',
+          'Please send the amount and note (e.g. "15$ bought supplies" or "20000 riel food").',
+          'សូមផ្ញើចំនួនទឹកប្រាក់ និងចំណាំ។',
         ].join('\n'),
-        { parseMode: 'HTML', replyMarkup: quickActionsKeyboard }
+        { parseMode: 'HTML' }
       )
       break
     default:

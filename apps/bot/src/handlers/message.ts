@@ -1,6 +1,7 @@
 import { parseTransaction } from '../gemini'
 import { authenticate, getCompanies, getAccounts, logTransaction } from '../api'
 import { sendMessage, quickActionsKeyboard } from './telegram'
+import { userStates } from './state'
 
 interface TelegramUser {
   id: number
@@ -33,7 +34,43 @@ async function ensureAuth(user: TelegramUser): Promise<{ token: string; companyI
 }
 
 export async function handleTextMessage(chatId: number, text: string, user: TelegramUser): Promise<void> {
-  const parsed = await parseTransaction(text)
+  let parsed: any
+
+  const state = userStates.get(chatId)
+  if (state) {
+    userStates.delete(chatId) // Clear state immediately
+
+    const regex = /(?:(\$|usd|riel|r|khr)\s*)?(\d+(?:,\d{3})*(?:\.\d+)?)(?:\s*(\$|usd|riel|r|khr))?/i
+    const match = text.match(regex)
+
+    if (match) {
+      const numStr = match[2].replace(/,/g, '')
+      const currencyStr = (match[1] || match[3] || '').toLowerCase()
+
+      let currency: 'USD' | 'KHR' = 'USD'
+      if (['riel', 'r', 'khr'].includes(currencyStr)) {
+        currency = 'KHR'
+      } else if (numStr && parseFloat(numStr) >= 100 && currencyStr === '') {
+        currency = 'KHR' // Fallback heuristic: large numbers without symbol = KHR
+      }
+
+      const note = text.replace(match[0], '').trim() || (state === 'income' ? 'Income' : 'Expense')
+
+      parsed = {
+        type: state,
+        amount: parseFloat(numStr),
+        currency,
+        note,
+        note_km: note,
+        confidence: 1.0,
+      }
+    } else {
+      await sendMessage(chatId, `❌ Could not find an amount in your message. Please try again. / រកមិនឃើញចំនួនទឹកប្រាក់។`, { replyMarkup: quickActionsKeyboard })
+      return
+    }
+  } else {
+    parsed = await parseTransaction(text)
+  }
 
   if (parsed.type === 'unclear' || parsed.confidence < 0.7) {
     await sendMessage(chatId, [
