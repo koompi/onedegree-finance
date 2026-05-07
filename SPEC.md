@@ -21,8 +21,8 @@ Allow user record transaction for past or custom date via UI date picker.
 ## §T
 id | status | task | cites
 ---|---|---|---
-T1 | . | Add date picker to frontend transaction forms | §I, §V.3
-T2 | . | Bind date picker value to `occurred_at` in submission payload | §V.1, §V.2
+T1 | x | Add date picker to frontend transaction forms | §I, §V.3
+T2 | x | Bind date picker value to `occurred_at` in submission payload | §V.1, §V.2
 
 ## §B
 id | date | cause | fix
