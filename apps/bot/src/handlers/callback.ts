@@ -1,5 +1,6 @@
 import { sendMessage, answerCallbackQuery, quickActionsKeyboard } from './telegram'
 import { authenticate, getCompanies, getAccounts, getDailySummary } from '../api'
+import { userStates, userActiveCompany } from './state'
 
 interface TelegramUser {
   id: number
@@ -7,8 +8,6 @@ interface TelegramUser {
   last_name?: string
   username?: string
 }
-
-import { userStates } from './state'
 
 export async function handleCallbackQuery(
   chatId: number,
@@ -19,14 +18,17 @@ export async function handleCallbackQuery(
   // Acknowledge the button tap immediately (removes loading spinner)
   await answerCallbackQuery(callbackQueryId)
 
-  switch (data) {
-    case 'quick_balance':
+  switch (true) {
+    case data === 'quick_balance':
       await handleQuickBalance(chatId, user)
       break
-    case 'quick_summary':
+    case data === 'quick_summary':
       await handleQuickSummary(chatId, user)
       break
-    case 'quick_income_help':
+    case data.startsWith('switch_co_'):
+      await handleSwitchCompany(chatId, user, data.replace('switch_co_', ''))
+      break
+    case data === 'quick_income_help':
       userStates.set(chatId, 'income')
       await sendMessage(
         chatId,
@@ -39,7 +41,7 @@ export async function handleCallbackQuery(
         { parseMode: 'HTML' }
       )
       break
-    case 'quick_expense_help':
+    case data === 'quick_expense_help':
       userStates.set(chatId, 'expense')
       await sendMessage(
         chatId,
@@ -60,17 +62,30 @@ export async function handleCallbackQuery(
 async function handleQuickBalance(chatId: number, user: TelegramUser): Promise<void> {
   try {
     const auth = await authenticate(user.id, user.first_name, user.last_name, user.username)
+    
+    let targetCompanyId: string
+    const active = userActiveCompany.get(user.id)
     const companies = await getCompanies(auth.accessToken)
+
     if (companies.length === 0) {
       await sendMessage(chatId, 'No business found.\nមិនមានអាជីវកម្មទេ។', { replyMarkup: quickActionsKeyboard })
       return
     }
-    const accounts = await getAccounts(auth.accessToken, companies[0].id)
+
+    if (active) {
+      targetCompanyId = active.companyId
+    } else {
+      targetCompanyId = companies[0].id
+    }
+
+    const accounts = await getAccounts(auth.accessToken, targetCompanyId)
     if (accounts.length === 0) {
       await sendMessage(chatId, 'No accounts found.\nគ្មានគណនីទេ។', { replyMarkup: quickActionsKeyboard })
       return
     }
-    const lines = [`<b>Balance / សមតុល្យ — ${companies[0].name}</b>`, '']
+
+    const companyName = companies.find(c => c.id === targetCompanyId)?.name || 'Business'
+    const lines = [`<b>Balance / សមតុល្យ — ${companyName}</b>`, '']
     for (const acc of accounts) {
       lines.push(`  ${acc.name}: <b>$${(acc.balance_cents / 100).toFixed(2)}</b>`)
     }
@@ -83,16 +98,28 @@ async function handleQuickBalance(chatId: number, user: TelegramUser): Promise<v
 async function handleQuickSummary(chatId: number, user: TelegramUser): Promise<void> {
   try {
     const auth = await authenticate(user.id, user.first_name, user.last_name, user.username)
+    
+    let targetCompanyId: string
+    const active = userActiveCompany.get(user.id)
     const companies = await getCompanies(auth.accessToken)
+
     if (companies.length === 0) {
       await sendMessage(chatId, 'No business found.\nមិនមានអាជីវកម្មទេ។', { replyMarkup: quickActionsKeyboard })
       return
     }
-    const report = await getDailySummary(auth.accessToken, companies[0].id)
+
+    if (active) {
+      targetCompanyId = active.companyId
+    } else {
+      targetCompanyId = companies[0].id
+    }
+
+    const report = await getDailySummary(auth.accessToken, targetCompanyId)
+    const companyName = companies.find(c => c.id === targetCompanyId)?.name || 'Business'
     const profit = report.net_profit_cents
     const lines = [
       `<b>📅 ${report.month} Summary / សង្ខេប</b>`,
-      `<b>${companies[0].name}</b>`,
+      `<b>${companyName}</b>`,
       '',
       `💰 Income / ចំណូល: <b>$${(report.total_income_cents / 100).toFixed(2)}</b>`,
       `💸 Expense / ចំណាយ: <b>$${(report.total_expense_cents / 100).toFixed(2)}</b>`,
@@ -101,5 +128,33 @@ async function handleQuickSummary(chatId: number, user: TelegramUser): Promise<v
     await sendMessage(chatId, lines.join('\n'), { parseMode: 'HTML', replyMarkup: quickActionsKeyboard })
   } catch {
     await sendMessage(chatId, 'Failed to get summary.\nមិនអាចទាញសង្ខេបបានទេ។', { replyMarkup: quickActionsKeyboard })
+  }
+}
+
+async function handleSwitchCompany(chatId: number, user: TelegramUser, companyId: string): Promise<void> {
+  try {
+    const auth = await authenticate(user.id, user.first_name, user.last_name, user.username)
+    const companies = await getCompanies(auth.accessToken)
+    
+    const company = companies.find(c => c.id === companyId)
+    if (!company) {
+      await sendMessage(chatId, 'Business not found or access denied.', { replyMarkup: quickActionsKeyboard })
+      return
+    }
+
+    const accounts = await getAccounts(auth.accessToken, companyId)
+    if (accounts.length === 0) {
+      await sendMessage(chatId, 'No accounts found in this business.', { replyMarkup: quickActionsKeyboard })
+      return
+    }
+
+    userActiveCompany.set(user.id, { companyId: company.id, accountId: accounts[0].id })
+
+    await sendMessage(chatId, `✅ Switched to <b>${company.name}</b>. All new transactions will be saved here.`, { 
+      parseMode: 'HTML', 
+      replyMarkup: quickActionsKeyboard 
+    })
+  } catch {
+    await sendMessage(chatId, 'Failed to switch business. Please try again.', { replyMarkup: quickActionsKeyboard })
   }
 }

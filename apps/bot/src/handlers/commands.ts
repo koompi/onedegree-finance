@@ -8,6 +8,8 @@ interface TelegramUser {
   username?: string
 }
 
+import { userActiveCompany } from './state'
+
 export async function handleCommand(chatId: number, command: string, user: TelegramUser, args?: string): Promise<void> {
   const baseCmd = command.split('@')[0] // strip @botname suffix
   switch (baseCmd) {
@@ -22,6 +24,9 @@ export async function handleCommand(chatId: number, command: string, user: Teleg
       break
     case '/pair':
       await handlePair(chatId, user, args)
+      break
+    case '/switch':
+      await handleSwitch(chatId, user)
       break
     case '/help':
       await handleHelp(chatId)
@@ -86,19 +91,30 @@ async function handleStart(chatId: number, user: TelegramUser, args?: string): P
 async function handleBalance(chatId: number, user: TelegramUser): Promise<void> {
   try {
     const auth = await authenticate(user.id, user.first_name, user.last_name, user.username)
+    
+    let targetCompanyId: string
+    const active = userActiveCompany.get(user.id)
     const companies = await getCompanies(auth.accessToken)
+
     if (companies.length === 0) {
       await sendMessage(chatId, 'No business found. Please set up in the OneDegree app.\nមិនមានអាជីវកម្មទេ។ សូមបង្កើតក្នុង OneDegree app។', { replyMarkup: quickActionsKeyboard })
       return
     }
 
-    const accounts = await getAccounts(auth.accessToken, companies[0].id)
+    if (active) {
+      targetCompanyId = active.companyId
+    } else {
+      targetCompanyId = companies[0].id
+    }
+
+    const accounts = await getAccounts(auth.accessToken, targetCompanyId)
     if (accounts.length === 0) {
       await sendMessage(chatId, 'No accounts found.\nគ្មានគណនីទេ។', { replyMarkup: quickActionsKeyboard })
       return
     }
 
-    const lines = [`<b>Balance / សមតុល្យ — ${companies[0].name}</b>`, '']
+    const companyName = companies.find(c => c.id === targetCompanyId)?.name || 'Business'
+    const lines = [`<b>Balance / សមតុល្យ — ${companyName}</b>`, '']
     for (const acc of accounts) {
       lines.push(`  ${acc.name}: <b>$${(acc.balance_cents / 100).toFixed(2)}</b>`)
     }
@@ -112,17 +128,28 @@ async function handleBalance(chatId: number, user: TelegramUser): Promise<void> 
 async function handleSummary(chatId: number, user: TelegramUser): Promise<void> {
   try {
     const auth = await authenticate(user.id, user.first_name, user.last_name, user.username)
+    
+    let targetCompanyId: string
+    const active = userActiveCompany.get(user.id)
     const companies = await getCompanies(auth.accessToken)
+
     if (companies.length === 0) {
       await sendMessage(chatId, 'No business found.\nមិនមានអាជីវកម្មទេ។', { replyMarkup: quickActionsKeyboard })
       return
     }
 
-    const report = await getDailySummary(auth.accessToken, companies[0].id)
+    if (active) {
+      targetCompanyId = active.companyId
+    } else {
+      targetCompanyId = companies[0].id
+    }
+
+    const report = await getDailySummary(auth.accessToken, targetCompanyId)
+    const companyName = companies.find(c => c.id === targetCompanyId)?.name || 'Business'
     const profit = report.net_profit_cents
     const lines = [
       `<b>📅 ${report.month} Summary / សង្ខេប</b>`,
-      `<b>${companies[0].name}</b>`,
+      `<b>${companyName}</b>`,
       ``,
       `💰 Income / ចំណូល: <b>$${(report.total_income_cents / 100).toFixed(2)}</b>`,
       `💸 Expense / ចំណាយ: <b>$${(report.total_expense_cents / 100).toFixed(2)}</b>`,
@@ -172,6 +199,29 @@ async function handlePair(chatId: number, user: TelegramUser, args?: string): Pr
   }
 }
 
+async function handleSwitch(chatId: number, user: TelegramUser): Promise<void> {
+  try {
+    const auth = await authenticate(user.id, user.first_name, user.last_name, user.username)
+    const companies = await getCompanies(auth.accessToken)
+    if (companies.length === 0) {
+      await sendMessage(chatId, 'No business found.\nមិនមានអាជីវកម្មទេ។', { replyMarkup: quickActionsKeyboard })
+      return
+    }
+
+    const inline_keyboard = companies.map(c => ([{
+      text: c.name,
+      callback_data: `switch_co_${c.id}`
+    }]))
+
+    await sendMessage(chatId, '🏢 <b>Select a Business / ជ្រើសរើសអាជីវកម្ម:</b>', {
+      parseMode: 'HTML',
+      replyMarkup: { inline_keyboard }
+    })
+  } catch {
+    await sendMessage(chatId, 'Failed to fetch businesses. Please try again.', { replyMarkup: quickActionsKeyboard })
+  }
+}
+
 async function handleHelp(chatId: number): Promise<void> {
   await sendMessage(chatId, [
     '<b>OneDegree Bot Commands / ពាក្យបញ្ជា:</b>',
@@ -179,6 +229,7 @@ async function handleHelp(chatId: number): Promise<void> {
     '/start — Welcome / សូមស្វាគមន៍',
     '/balance — Account balances / សមតុល្យគណនី',
     '/summary — Monthly summary / សង្ខេបប្រចាំខែ',
+    '/switch — Switch active business / ផ្លាស់ប្តូរអាជីវកម្ម',
     '/pair 123456 — Link your account / ភ្ជាប់គណនី',
     '/help — This message / សារនេះ',
     '',

@@ -1,7 +1,7 @@
 import { parseTransaction } from '../gemini'
 import { authenticate, getCompanies, getAccounts, logTransaction } from '../api'
 import { sendMessage, quickActionsKeyboard } from './telegram'
-import { userStates } from './state'
+import { userStates, userActiveCompany, ActiveCompanyState } from './state'
 
 interface TelegramUser {
   id: number
@@ -10,13 +10,14 @@ interface TelegramUser {
   username?: string
 }
 
-const tokenCache = new Map<number, { token: string; companyId: string; accountId: string }>()
-
 async function ensureAuth(user: TelegramUser): Promise<{ token: string; companyId: string; accountId: string }> {
-  const cached = tokenCache.get(user.id)
-  if (cached) return cached
-
   const auth = await authenticate(user.id, user.first_name, user.last_name, user.username)
+  
+  const active = userActiveCompany.get(user.id)
+  if (active) {
+    return { token: auth.accessToken, companyId: active.companyId, accountId: active.accountId }
+  }
+
   const companies = await getCompanies(auth.accessToken)
   if (companies.length === 0) {
     throw new Error('NO_COMPANY')
@@ -29,7 +30,7 @@ async function ensureAuth(user: TelegramUser): Promise<{ token: string; companyI
   }
 
   const entry = { token: auth.accessToken, companyId, accountId: accounts[0].id }
-  tokenCache.set(user.id, entry)
+  userActiveCompany.set(user.id, { companyId: entry.companyId, accountId: entry.accountId })
   return entry
 }
 
