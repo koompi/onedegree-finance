@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS categories (
   type TEXT NOT NULL,
   icon TEXT,
   is_system BOOLEAN DEFAULT FALSE,
+  default_amount_cents BIGINT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

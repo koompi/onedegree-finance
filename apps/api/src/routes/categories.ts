@@ -25,12 +25,13 @@ categories.post('/:companyId/categories', managerOrOwner, zValidator('json', z.o
   name_km: z.string().optional(),
   type: z.enum(['income', 'expense']),
   icon: z.string().optional(),
+  default_amount_cents: z.number().int().nonnegative().optional(),
 })), async (c) => {
   const { companyId } = c.req.param()
   const body = c.req.valid('json')
   const result = await pool.query(
-    'INSERT INTO categories (company_id, name, name_km, type, icon, is_system) VALUES ($1, $2, $3, $4, $5, FALSE) RETURNING *',
-    [companyId, body.name, body.name_km || null, body.type, body.icon || null]
+    'INSERT INTO categories (company_id, name, name_km, type, icon, is_system, default_amount_cents) VALUES ($1, $2, $3, $4, $5, FALSE, $6) RETURNING *',
+    [companyId, body.name, body.name_km || null, body.type, body.icon || null, body.default_amount_cents || null]
   )
   return c.json(result.rows[0], 201)
 })

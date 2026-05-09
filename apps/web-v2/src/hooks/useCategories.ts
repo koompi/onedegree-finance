@@ -3,7 +3,7 @@ import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
-export interface Category { id: string; name: string; name_km?: string; type: string; icon?: string; is_system?: boolean }
+export interface Category { id: string; name: string; name_km?: string; type: string; icon?: string; is_system?: boolean; default_amount_cents?: number }
 
 export function useCategories() {
   const companyId = useAuthStore(s => s.companyId)
