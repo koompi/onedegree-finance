@@ -162,8 +162,8 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
     try {
       await api.post(`/${companyId}/reports/export`, { month: m, type: 'excel' })
       toast.success(t('export_success'))
-    } catch (e) {
-      toast.error(t('export_error'))
+    } catch (e: any) {
+      toast.error(e.message || t('export_error'))
     }
   }
 
@@ -172,8 +172,8 @@ export default function ReportsScreen({ onBack }: { onBack: () => void }) {
     try {
       await api.post(`/${companyId}/reports/export`, { month: m, type: 'pdf' })
       toast.success(t('export_success'))
-    } catch (e) {
-      toast.error(t('export_error'))
+    } catch (e: any) {
+      toast.error(e.message || t('export_error'))
     }
   }
 

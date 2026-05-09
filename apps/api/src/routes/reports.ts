@@ -502,8 +502,14 @@ reports.post(
       })
 
       if (!response.ok) {
-        console.error("Telegram bot API error:", await response.text())
-        return c.json({ error: 'Failed to send to Telegram' }, 500)
+        const tgBody = await response.json().catch(() => ({}))
+        const tgDesc: string = (tgBody as any)?.description || 'Failed to send to Telegram'
+        console.error('Telegram bot API error:', tgDesc)
+        // Common case: user never started the bot
+        if (tgDesc.includes('Forbidden') || tgDesc.includes('initiate')) {
+          return c.json({ error: 'Please open the bot first: send /start to the bot, then try again.' }, 400)
+        }
+        return c.json({ error: tgDesc }, 500)
       }
     } else {
       return c.json({ error: 'Telegram bot token not configured' }, 500)
