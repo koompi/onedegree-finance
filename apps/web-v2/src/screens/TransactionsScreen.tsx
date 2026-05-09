@@ -319,7 +319,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
             </div>
 
             {/* Detail rows */}
-            <div className="rounded-2xl divide-y" style={{ background: 'var(--card)', border: '1px solid var(--border)', divideColor: 'var(--border)' }}>
+            <div className="rounded-2xl divide-y" style={{ background: 'var(--card)', border: '1px solid var(--border)', borderColor: 'var(--border)' }}>
               <div className="flex items-center gap-3 px-4 py-3">
                 <span className="text-base">📁</span>
                 <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_category')}</span>
