@@ -35,9 +35,23 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   const [selectedTx, setSelectedTx] = useState<import('../hooks/useTransactions').Transaction | null>(null)
 
   const now = new Date()
-  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const { isLoading, transactions, remove, refetch } = useTransactions(month, filter)
+  const [currentMonth, setCurrentMonth] = useState(now.getMonth())
+  const [currentYear, setCurrentYear] = useState(now.getFullYear())
+
+  const prevMonth = () => {
+    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1) }
+    else setCurrentMonth(m => m - 1)
+  }
+  const nextMonth = () => {
+    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1) }
+    else setCurrentMonth(m => m + 1)
+  }
+
+  const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
+  const { isLoading, transactions, remove, refetch } = useTransactions(monthStr, filter)
   const { fmt, currency: baseCurrency } = useAmount()
+
+  const MONTHS_KM = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
 
   // When base currency is KHR, show the KHR equivalent (amount_khr is stored for all transactions).
   // When base currency is USD, always show the USD amount_cents value.
@@ -52,16 +66,16 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
     if (!companyId || locking) return
     setLocking(true)
     try {
-      if (periodLocks[month]) {
-        await api.delete(`/${companyId}/periods/locks/${month}`)
+      if (periodLocks[monthStr]) {
+        await api.delete(`/${companyId}/periods/locks/${monthStr}`)
         const newLocks = { ...periodLocks }
-        delete newLocks[month]
+        delete newLocks[monthStr]
         setPeriodLocks(newLocks)
-        toast.success(t('period_unlock_success', { period: month }))
+        toast.success(t('period_unlock_success', { period: monthStr }))
       } else {
-        await api.post(`/${companyId}/periods/locks/${month}`, {})
-        setPeriodLocks({ ...periodLocks, [month]: { locked_by: 'me', locked_at: new Date().toISOString() } })
-        toast.success(t('period_lock_success', { period: month }))
+        await api.post(`/${companyId}/periods/locks/${monthStr}`, {})
+        setPeriodLocks({ ...periodLocks, [monthStr]: { locked_by: 'me', locked_at: new Date().toISOString() } })
+        toast.success(t('period_lock_success', { period: monthStr }))
       }
     } catch (e: any) {
       toast.error(e.message || 'Failed to toggle period lock')
@@ -109,7 +123,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
       setDeleteId(null)
     } catch (e: any) {
       if (e instanceof ApiError && e.code === 'PeriodLocked') {
-        toast.error(t('period_locked_error', { period: month }))
+        toast.error(t('period_locked_error', { period: monthStr }))
       } else {
         toast.error(e.message || 'Failed to delete transaction')
       }
@@ -134,12 +148,12 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                   onClick={handleLockToggle}
                   disabled={locking}
                   className={`w-9 h-9 flex items-center justify-center rounded-xl transition-all ${locking ? 'opacity-50' : ''}`}
-                  style={{ background: periodLocks[month] ? 'var(--red-soft)' : 'var(--gold-soft)' }}
+                  style={{ background: periodLocks[monthStr] ? 'var(--red-soft)' : 'var(--gold-soft)' }}
                 >
-                  <Icon name={periodLocks[month] ? 'lock' : 'unlock'} size={16} color={periodLocks[month] ? 'var(--red)' : 'var(--gold)'} />
+                  <Icon name={periodLocks[monthStr] ? 'lock' : 'unlock'} size={16} color={periodLocks[monthStr] ? 'var(--red)' : 'var(--gold)'} />
                 </button>
               )}
-              {periodLocks[month] && !isOwner && (
+              {periodLocks[monthStr] && !isOwner && (
                 <span className="text-[11px] font-bold px-2 py-1 rounded-lg" style={{ background: 'var(--red-soft)', color: 'var(--red)' }}>
                   🔒
                 </span>
@@ -148,6 +162,23 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
             </div>
           }
         />
+        
+        {/* Month Selector */}
+        <div className="flex items-center justify-between px-4 py-2" style={{ background: 'var(--bg)' }}>
+          <button onClick={prevMonth} className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition-transform" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <div style={{ transform: 'rotate(180deg)' }}>
+              <Icon name="chevron" size={16} />
+            </div>
+          </button>
+          <div className="text-center">
+            <div className="text-sm font-bold tracking-tight" style={{ color: 'var(--text)' }}>
+              {MONTHS_KM[currentMonth]} {currentYear}
+            </div>
+          </div>
+          <button onClick={nextMonth} className="w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition-transform" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <Icon name="chevron" size={16} />
+          </button>
+        </div>
       </div>
       
       <div className="px-4 space-y-2 pt-1">
@@ -246,7 +277,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="fixed fab-bottom right-6 z-40">
-        {!periodLocks[month] ? (
+        {!periodLocks[monthStr] ? (
           <button
             onClick={() => { haptic('medium'); setShowAdd(true) }}
             className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-gold transition-all active:scale-95 group"
@@ -256,7 +287,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
           </button>
         ) : (
           <button
-            onClick={() => toast.error(t('period_locked_error', { period: month }))}
+            onClick={() => toast.error(t('period_locked_error', { period: monthStr }))}
             className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all active:scale-95"
             style={{ background: 'var(--border)', opacity: 0.5 }}
             disabled
