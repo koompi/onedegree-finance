@@ -187,12 +187,6 @@ export default function AddTransactionSheet({
                 <select value={categoryId} onChange={e => {
                   const val = e.target.value;
                   setCategoryId(val);
-                  if (type === 'income' && val) {
-                    const selectedCat = incomeCategories.find(c => c.id === val);
-                    if (selectedCat && selectedCat.default_amount_cents && selectedCat.default_amount_cents > 0) {
-                      setAmount(selectedCat.default_amount_cents / 100);
-                    }
-                  }
                 }} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
                   <option value="">{t('tx_form_cat_placeholder')}</option>
                   {filteredCategories.map(c => <option key={c.id} value={c.id}>{lang === 'km' ? (c.name_km || c.name) : c.name}</option>)}
