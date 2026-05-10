@@ -108,6 +108,15 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
 
   const grouped = useMemo(() => {
     let txs = transactions
+
+    // deduplicate
+    const seen = new Set<string>()
+    txs = txs.filter(t => {
+      if (seen.has(t.id)) return false
+      seen.add(t.id)
+      return true
+    })
+
     if (search) txs = txs.filter(t => (t.category_name || t.description || '').toLowerCase().includes(search.toLowerCase()))
     const groups: Record<string, typeof txs> = {}
     txs.forEach(t => { const d = t.occurred_at?.substring(0, 10) || ''; (groups[d] = groups[d] || []).push(t) })

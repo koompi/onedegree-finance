@@ -104,23 +104,7 @@ export default function CategoriesScreen({ onBack }: { onBack: () => void }) {
               ))}
             </div>
           </div>
-          {tab === 'income' && (
-            <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_amount') as any} (Default)</label>
-              <input type="number" step="0.01" min="0" placeholder="0.00" className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} onChange={e => {
-                const val = parseFloat(e.target.value);
-                if (!isNaN(val)) {
-                  // Attach directly to a state later, using a dataset or new state
-                  (e.target as any).dataset.cents = Math.round(val * 100).toString();
-                }
-              }} id="default-price-input" />
-            </div>
-          )}
-          <button onClick={() => {
-            const priceInput = document.getElementById('default-price-input') as HTMLInputElement;
-            const cents = priceInput?.dataset?.cents ? parseInt(priceInput.dataset.cents) : undefined;
-            handleSave(cents);
-          }} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{t('tx_form_save')}</button>
+          <button onClick={() => handleSave()} className="w-full py-3.5 rounded-xl text-sm font-bold active:scale-[0.98]" style={{ background: 'var(--gold)', color: 'var(--bg)' }}>{t('tx_form_save')}</button>
         </div>
       </BottomSheet>
     </div>

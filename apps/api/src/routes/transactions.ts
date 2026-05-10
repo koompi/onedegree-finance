@@ -159,7 +159,7 @@ transactions.delete(
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
-      const tx = await pool.query('SELECT * FROM transactions WHERE id = $1 AND company_id = $2', [id, companyId])
+      const tx = await client.query('SELECT * FROM transactions WHERE id = $1 AND company_id = $2', [id, companyId])
       if (tx.rows.length === 0) { await client.query('ROLLBACK'); return c.json({ error: 'Not found' }, 404) }
       const t = tx.rows[0]
       const delta = t.type === 'income' ? -t.amount_cents : t.amount_cents
