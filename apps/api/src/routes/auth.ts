@@ -89,6 +89,15 @@ auth.post('/telegram', zValidator('json', z.object({ initData: z.string() })), a
     createJWT(user.id),
     createRefreshToken(user.id),
   ])
+  // Ensure owner has a team_members entry for every company they own (backfill guard)
+  await pool.query(
+    `INSERT INTO team_members (user_id, company_id, role, invited_by, active)
+     SELECT $1, c.id, 'owner', $1, TRUE FROM companies c
+     WHERE c.owner_id = $1
+     ON CONFLICT DO NOTHING`,
+    [user.id]
+  )
+
   // Fetch user's first company (if any) for v2 compatibility
   let companyResult = await pool.query(
     'SELECT id, name FROM companies WHERE owner_id = $1 ORDER BY created_at ASC LIMIT 1',
