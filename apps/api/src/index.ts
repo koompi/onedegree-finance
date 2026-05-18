@@ -17,11 +17,23 @@ import recurring from './routes/recurring'
 
 const app = new Hono()
 
+let dbReady = false
+
 app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PATCH', 'DELETE'] }))
 app.use('*', logger())
 
+// Block all business routes until DB migrations are done
+app.use('/companies/*', async (c, next) => {
+  if (!dbReady) return c.json({ error: 'Server is starting up, please retry' }, 503)
+  return next()
+})
+app.use('/auth/*', async (c, next) => {
+  if (!dbReady) return c.json({ error: 'Server is starting up, please retry' }, 503)
+  return next()
+})
+
 app.get('/', (c) => c.json({ service: '1° OneDegree Finance API', status: 'ok', version: '1.0.0' }))
-app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }))
+app.get('/health', (c) => c.json({ status: dbReady ? 'ok' : 'starting', timestamp: new Date().toISOString() }))
 
 // GET exchange rate
 app.get('/exchange-rate', (c) => {
@@ -55,5 +67,6 @@ serve({ fetch: app.fetch, port }, async () => {
   } catch (err) {
     console.error('Startup error (server still running):', err)
   }
+  dbReady = true
   console.log(`1° OneDegree API running on port ${port}`)
 })

@@ -77,6 +77,12 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   let res = await doFetch(method, p, getToken(), body)
 
+  // On 503 (server still starting up), wait and retry once
+  if (res.status === 503) {
+    await new Promise(r => setTimeout(r, 2000))
+    res = await doFetch(method, p, getToken(), body)
+  }
+
   // On 401, attempt a single token refresh and retry
   if (res.status === 401 && !p.startsWith('/auth')) {
     const newToken = await tryRefreshToken()
