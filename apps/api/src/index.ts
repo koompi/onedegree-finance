@@ -22,6 +22,11 @@ let dbReady = false
 app.use('*', cors({ origin: '*', allowMethods: ['GET', 'POST', 'PATCH', 'DELETE'] }))
 app.use('*', logger())
 
+app.onError((err, c) => {
+  console.error('[ERROR]', c.req.method, c.req.path, err.message, err.stack)
+  return c.json({ error: err.message }, 500)
+})
+
 // Block all business routes until DB migrations are done
 app.use('/companies/*', async (c, next) => {
   if (!dbReady) return c.json({ error: 'Server is starting up, please retry' }, 503)
