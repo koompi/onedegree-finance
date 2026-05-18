@@ -49,7 +49,11 @@ import { initDb } from './db/client'
 
 const port = parseInt(process.env.PORT || '3001')
 serve({ fetch: app.fetch, port }, async () => {
-  await initDb()
-  await initExchangeRate()
+  try {
+    await initDb()
+    await initExchangeRate()
+  } catch (err) {
+    console.error('Startup error (server still running):', err)
+  }
   console.log(`1° OneDegree API running on port ${port}`)
 })

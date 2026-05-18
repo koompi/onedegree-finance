@@ -10,7 +10,13 @@ const pool = new Pool({
 
 export async function initDb() {
   console.log('--- Database Initialization ---')
-  const client = await pool.connect()
+  let client: any
+  try {
+    client = await pool.connect()
+  } catch (err) {
+    console.error('Database connection refused during init — server will still run:', err.message)
+    return
+  }
   try {
     // 1. Core Schema
     const schemaPath = path.join(__dirname, 'schema.sql')
