@@ -16,17 +16,23 @@ companies.use('*', async (c, next) => {
 
 // GET all companies - where user is owner or team member
 companies.get('/', async (c) => {
-  const userId = c.get('userId')
-  const result = await pool.query(
-    `SELECT DISTINCT c.*,
-      COALESCE(tm.role, 'owner') as user_role
-     FROM companies c
-     LEFT JOIN team_members tm ON tm.company_id = c.id AND tm.user_id = $1 AND tm.active = TRUE
-     WHERE c.owner_id = $1 OR tm.user_id = $1
-     ORDER BY c.created_at ASC`,
-    [userId]
-  )
-  return c.json(result.rows)
+  try {
+    const userId = c.get('userId')
+    console.log('[companies GET /] userId:', userId)
+    const result = await pool.query(
+      `SELECT DISTINCT c.*,
+        COALESCE(tm.role, 'owner') as user_role
+       FROM companies c
+       LEFT JOIN team_members tm ON tm.company_id = c.id AND tm.user_id = $1 AND tm.active = TRUE
+       WHERE c.owner_id = $1 OR tm.user_id = $1
+       ORDER BY c.created_at ASC`,
+      [userId]
+    )
+    return c.json(result.rows)
+  } catch (err: any) {
+    console.error('[companies GET /] error:', err.message)
+    return c.json({ error: err.message }, 500)
+  }
 })
 
 const CompanyBody = z.object({

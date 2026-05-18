@@ -68,10 +68,11 @@ const port = parseInt(process.env.PORT || '3001')
 serve({ fetch: app.fetch, port }, async () => {
   try {
     await initDb()
-    await initExchangeRate()
   } catch (err) {
-    console.error('Startup error (server still running):', err)
+    console.error('DB init error (server still running):', err)
   }
   dbReady = true
   console.log(`1° OneDegree API running on port ${port}`)
+  // Exchange rate loads in background — does not block dbReady
+  initExchangeRate().catch(err => console.error('Exchange rate init failed:', err))
 })
