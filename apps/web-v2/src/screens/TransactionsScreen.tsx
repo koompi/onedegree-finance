@@ -56,15 +56,16 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
 
   const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
   const { isLoading, transactions, remove, refetch } = useTransactions(monthStr, filter, tagFilter)
-  const { fmt, currency: baseCurrency } = useAmount()
+  const { fmt, currency: baseCurrency, rate } = useAmount()
 
   const MONTHS_KM = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
 
-  // When base currency is KHR, show the KHR equivalent (amount_khr is stored for all transactions).
-  // When base currency is USD, always show the USD amount_cents value.
   const fmtTx = (tx: import('../hooks/useTransactions').Transaction) => {
-    if (baseCurrency === 'KHR' && tx.amount_khr && tx.amount_khr > 0) {
-      return fmtKHR(tx.amount_khr)
+    if (baseCurrency === 'KHR') {
+      const khr = tx.amount_khr && tx.amount_khr > 0
+        ? tx.amount_khr
+        : Math.round((tx.amount_cents / 100) * rate)
+      return fmtKHR(khr)
     }
     return fmt(tx.amount_cents)
   }

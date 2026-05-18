@@ -17,10 +17,12 @@ const QUICK = [
 export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
   const [tagFilter, setTagFilter] = useState<'all' | 'business' | 'personal'>('all')
   const { isLoading, transactions, monthlyData, receivablesCount, income, expense, incomeKhr, expenseKhr, profitMargin, getMonthLabel } = useDashboard(tagFilter)
-  const { fmt, currency: baseCurrency } = useAmount()
+  const { fmt, currency: baseCurrency, rate } = useAmount()
 
   const fmtSummary = (usdCents: number, khr: number) =>
-    baseCurrency === 'KHR' ? fmtKHR(khr) : fmt(usdCents)
+    baseCurrency === 'KHR'
+      ? fmtKHR(khr > 0 ? khr : Math.round((usdCents / 100) * rate))
+      : fmt(usdCents)
   const [tipIdx, setTipIdx] = useState(0)
   const [showQuickAdd, setShowQuickAdd] = useState(false)
   const [quickAddType, setQuickAddType] = useState<'income' | 'expense'>('income')
@@ -166,7 +168,7 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
                 <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{tx.occurred_at?.substring(0, 10)}</div>
               </div>
               <div className="text-sm font-bold font-mono-num" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                {tx.type === 'income' ? '+' : '-'}{baseCurrency === 'KHR' && tx.amount_khr && tx.amount_khr > 0 ? fmtKHR(tx.amount_khr) : fmt(tx.amount_cents)}
+                {tx.type === 'income' ? '+' : '-'}{baseCurrency === 'KHR' ? fmtKHR(tx.amount_khr && tx.amount_khr > 0 ? tx.amount_khr : Math.round((tx.amount_cents / 100) * rate)) : fmt(tx.amount_cents)}
               </div>
             </div>
           ))}
