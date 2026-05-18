@@ -76,7 +76,7 @@ export default function AccountsScreen({ onBack }: { onBack: () => void }) {
               <div className="text-[13px] font-semibold truncate" style={{ color: 'var(--text)' }}>{acc.name}</div>
               <div className="text-[10px]" style={{ color: 'var(--text-dim)' }}>{TYPE_LABELS[acc.type || 'other'] || acc.type}{acc.account_number ? ` • ${acc.account_number}` : ''}</div>
             </div>
-            <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmt(acc.balance || 0)}</div>
+            <div className="text-sm font-bold font-mono-num" style={{ color: 'var(--text)' }}>{fmt(acc.balance_cents || 0)}</div>
             {deleteId === acc.id ? (
               <div className="flex gap-1">
                 <button onClick={handleDelete} className="px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: 'var(--red)' }}>{t('tx_delete_confirm')}</button>

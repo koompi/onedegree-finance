@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   type TEXT NOT NULL DEFAULT 'cash',
+  account_number TEXT,
   balance_cents BIGINT DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
   account_id UUID NOT NULL REFERENCES accounts(id),
+  to_account_id UUID REFERENCES accounts(id),
   category_id UUID REFERENCES categories(id),
   type TEXT NOT NULL CHECK (type IN ('income', 'expense', 'transfer')),
   amount_cents BIGINT NOT NULL,
@@ -53,8 +55,11 @@ CREATE TABLE IF NOT EXISTS transactions (
   exchange_rate NUMERIC(12,4),
   currency_input TEXT DEFAULT 'USD',
   note TEXT,
+  is_personal BOOLEAN DEFAULT FALSE,
+  receipt_url TEXT,
   occurred_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ,
   synced_at TIMESTAMPTZ
 );
 

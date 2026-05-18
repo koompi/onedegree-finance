@@ -5,7 +5,6 @@ import { useDashboard } from '../hooks/useDashboard'
 import { useAmount } from '../hooks/useAmount'
 import { getGreeting, haptic } from '../lib/telegram'
 import { useI18nStore } from '../store/i18nStore'
-
 import { fmtKHR } from '../lib/format'
 
 const QUICK = [
@@ -16,7 +15,8 @@ const QUICK = [
 ]
 
 export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) => void }) {
-  const { isLoading, transactions, monthlyData, receivablesCount, income, expense, incomeKhr, expenseKhr, profitMargin, getMonthLabel } = useDashboard()
+  const [tagFilter, setTagFilter] = useState<'all' | 'business' | 'personal'>('all')
+  const { isLoading, transactions, monthlyData, receivablesCount, income, expense, incomeKhr, expenseKhr, profitMargin, getMonthLabel } = useDashboard(tagFilter)
   const { fmt, currency: baseCurrency } = useAmount()
 
   const fmtSummary = (usdCents: number, khr: number) =>
@@ -36,6 +36,17 @@ export default function DashboardScreen({ onNavigate }: { onNavigate: (s: any) =
       <div className="mt-2">
         <div className="text-[10px] font-bold uppercase tracking-[2px]" style={{ color: 'var(--text-dim)' }}>OneDegree Finance</div>
         <div className="text-xl font-black mt-0.5" style={{ color: 'var(--text)' }}>{getGreeting()}</div>
+      </div>
+
+      {/* Business/Personal filter */}
+      <div className="flex gap-2">
+        {(['all', 'business', 'personal'] as const).map(k => (
+          <button key={k} onClick={() => { haptic('light'); setTagFilter(k) }}
+            className="flex-1 py-1.5 rounded-xl text-xs font-bold transition-all"
+            style={{ background: tagFilter === k ? 'var(--gold-soft)' : 'var(--card)', color: tagFilter === k ? 'var(--gold)' : 'var(--text-sec)', border: `1px solid ${tagFilter === k ? 'var(--gold-med)' : 'var(--border)'}` }}>
+            {k === 'all' ? t('tx_filter_all') : k === 'business' ? `💼 ${t('tx_filter_business')}` : `🏠 ${t('tx_filter_personal')}`}
+          </button>
+        ))}
       </div>
 
       {/* Hero Card */}

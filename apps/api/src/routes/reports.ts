@@ -114,6 +114,15 @@ reports.get('/:companyId/reports/monthly', teamMember, async (c) => {
 // GET dashboard bundle
 reports.get('/:companyId/reports/dashboard-bundle', teamMember, async (c) => {
   const { companyId } = c.req.param()
+  const { is_personal } = c.req.query()
+
+  let personalFilter = ''
+  if (is_personal === 'false') personalFilter = 'AND is_personal = FALSE'
+  else if (is_personal === 'true') personalFilter = 'AND is_personal = TRUE'
+
+  let personalFilterT = ''
+  if (is_personal === 'false') personalFilterT = 'AND t.is_personal = FALSE'
+  else if (is_personal === 'true') personalFilterT = 'AND t.is_personal = TRUE'
 
   const now = new Date()
   const currentMonth = now.toISOString().slice(0, 7)
@@ -126,11 +135,13 @@ reports.get('/:companyId/reports/dashboard-bundle', teamMember, async (c) => {
 
   const [txRecent, currentReport, historicalReports, receivables] = await Promise.all([
     pool.query(
-      `SELECT t.*, c.name as category_name, c.name_km as category_name_km, a.name as account_name
+      `SELECT t.*, c.name as category_name, c.name_km as category_name_km, a.name as account_name,
+              ta.name as to_account_name
        FROM transactions t
        LEFT JOIN categories c ON t.category_id = c.id
        LEFT JOIN accounts a ON t.account_id = a.id
-       WHERE t.company_id = $1
+       LEFT JOIN accounts ta ON t.to_account_id = ta.id
+       WHERE t.company_id = $1 ${personalFilterT}
        ORDER BY t.occurred_at DESC LIMIT 15`,
       [companyId]
     ),
@@ -138,6 +149,7 @@ reports.get('/:companyId/reports/dashboard-bundle', teamMember, async (c) => {
       `SELECT type, SUM(amount_cents)::BIGINT as total, COALESCE(SUM(amount_khr), 0)::BIGINT as total_khr FROM transactions
        WHERE company_id = $1 AND occurred_at >= ($2 || '-01')::DATE
        AND occurred_at < (($2 || '-01')::DATE + INTERVAL '1 month')
+       AND type IN ('income', 'expense') ${personalFilter}
        GROUP BY type`,
       [companyId, currentMonth]
     ),
@@ -145,6 +157,7 @@ reports.get('/:companyId/reports/dashboard-bundle', teamMember, async (c) => {
       `SELECT to_char(occurred_at, 'YYYY-MM') as month, type, SUM(amount_cents)::BIGINT as total
        FROM transactions
        WHERE company_id = $1 AND occurred_at >= ($2 || '-01')::DATE
+       AND type IN ('income', 'expense') ${personalFilter}
        GROUP BY 1, 2 ORDER BY 1 DESC`,
       [companyId, months[2]]
     ),

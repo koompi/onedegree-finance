@@ -14,13 +14,18 @@ interface DashboardBundle {
 
 const MONTHS_KM = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
 
-export function useDashboard() {
+export function useDashboard(isPersonal?: 'all' | 'business' | 'personal') {
   const companyId = useAuthStore(s => s.companyId)
   const queryClient = useQueryClient()
 
+  const params = new URLSearchParams()
+  if (isPersonal === 'business') params.set('is_personal', 'false')
+  else if (isPersonal === 'personal') params.set('is_personal', 'true')
+  const qs = params.toString() ? `?${params}` : ''
+
   const { data, isLoading } = useQuery<DashboardBundle>({
-    queryKey: ['dashboard', companyId],
-    queryFn: () => api.get<DashboardBundle>(`/${companyId}/reports/dashboard-bundle`),
+    queryKey: ['dashboard', companyId, isPersonal],
+    queryFn: () => api.get<DashboardBundle>(`/${companyId}/reports/dashboard-bundle${qs}`),
     enabled: !!companyId,
     staleTime: 30_000,
     retry: 2,
@@ -31,7 +36,7 @@ export function useDashboard() {
     return MONTHS_KM[parseInt(mo) - 1]
   }
 
-  const fetchAll = () => queryClient.invalidateQueries({ queryKey: ['dashboard', companyId] })
+  const fetchAll = () => queryClient.invalidateQueries({ queryKey: ['dashboard'] })
 
   const transactions = data?.recent_transactions || []
   const monthlyData = data?.monthly_stats || []

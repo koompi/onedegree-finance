@@ -52,10 +52,11 @@ transactions.get('/:companyId/transactions', teamMember, async (c) => {
 
   const result = await pool.query(
     `SELECT t.*, c.name as category_name, c.name_km as category_name_km, c.icon as category_icon,
-            a.name as account_name
+            a.name as account_name, ta.name as to_account_name
      FROM transactions t
      LEFT JOIN categories c ON t.category_id = c.id
      LEFT JOIN accounts a ON t.account_id = a.id
+     LEFT JOIN accounts ta ON t.to_account_id = ta.id
      WHERE ${conditions.join(' AND ')}
      ORDER BY t.occurred_at DESC
      LIMIT $${i++} OFFSET $${i}`,
@@ -76,6 +77,7 @@ transactions.get('/:companyId/transactions', teamMember, async (c) => {
 
 const TxBody = z.object({
   account_id: z.string().uuid().optional(),
+  to_account_id: z.string().uuid().optional(),
   category_id: z.string().uuid().optional(),
   type: z.enum(['income', 'expense', 'transfer']),
   amount_cents: z.number().int().positive().optional(),
@@ -116,19 +118,24 @@ transactions.post(
       body.currency_input
     )
 
+    const toAccountId = body.to_account_id || null
+
     const client = await pool.connect()
     try {
       await client.query('BEGIN')
       const result = await client.query(
-        `INSERT INTO transactions (company_id, account_id, category_id, type, amount_cents, amount_khr, exchange_rate, currency_input, note, occurred_at, receipt_url, is_personal)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
-        [companyId, accountId, body.category_id || null, body.type, amount_cents,
+        `INSERT INTO transactions (company_id, account_id, to_account_id, category_id, type, amount_cents, amount_khr, exchange_rate, currency_input, note, occurred_at, receipt_url, is_personal)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING *`,
+        [companyId, accountId, toAccountId, body.category_id || null, body.type, amount_cents,
          amount_khr, exchange_rate, body.currency_input, body.note || null, body.occurred_at,
          body.receipt_url || null, body.is_personal ?? false]
       )
-      const delta = body.type === 'income' ? amount_cents : -amount_cents
-      if (accountId) {
-        await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, accountId])
+      if (body.type === 'transfer') {
+        if (accountId) await client.query('UPDATE accounts SET balance_cents = balance_cents - $1 WHERE id = $2', [amount_cents, accountId])
+        if (toAccountId) await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [amount_cents, toAccountId])
+      } else {
+        const delta = body.type === 'income' ? amount_cents : -amount_cents
+        if (accountId) await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, accountId])
       }
       await client.query('COMMIT')
       return c.json(result.rows[0], 201)
@@ -162,8 +169,13 @@ transactions.delete(
       const tx = await client.query('SELECT * FROM transactions WHERE id = $1 AND company_id = $2', [id, companyId])
       if (tx.rows.length === 0) { await client.query('ROLLBACK'); return c.json({ error: 'Not found' }, 404) }
       const t = tx.rows[0]
-      const delta = t.type === 'income' ? -t.amount_cents : t.amount_cents
-      await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, t.account_id])
+      if (t.type === 'transfer') {
+        if (t.account_id) await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [t.amount_cents, t.account_id])
+        if (t.to_account_id) await client.query('UPDATE accounts SET balance_cents = balance_cents - $1 WHERE id = $2', [t.amount_cents, t.to_account_id])
+      } else {
+        const delta = t.type === 'income' ? -t.amount_cents : t.amount_cents
+        await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [delta, t.account_id])
+      }
       await client.query('DELETE FROM transactions WHERE id = $1', [id])
       await client.query('COMMIT')
       return c.json({ ok: true })
@@ -184,10 +196,11 @@ transactions.get('/:companyId/transactions/:id', teamMember, async (c) => {
 
   const result = await pool.query(
     `SELECT t.*, c.name as category_name, c.name_km as category_name_km, c.icon as category_icon,
-            a.name as account_name
+            a.name as account_name, ta.name as to_account_name
      FROM transactions t
      LEFT JOIN categories c ON t.category_id = c.id
      LEFT JOIN accounts a ON t.account_id = a.id
+     LEFT JOIN accounts ta ON t.to_account_id = ta.id
      WHERE t.id = $1 AND t.company_id = $2`,
     [id, companyId]
   )
@@ -204,6 +217,7 @@ transactions.get('/:companyId/transactions/:id', teamMember, async (c) => {
 
 const PatchTxBody = z.object({
   account_id: z.string().uuid().optional(),
+  to_account_id: z.string().uuid().optional().nullable(),
   category_id: z.string().uuid().optional(),
   type: z.enum(['income', 'expense', 'transfer']).optional(),
   amount_cents: z.number().int().positive().optional(),
@@ -238,8 +252,13 @@ transactions.patch(
       const old = existing.rows[0]
 
       // Reverse old balance effect
-      const oldDelta = old.type === 'income' ? -old.amount_cents : old.amount_cents
-      await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [oldDelta, old.account_id])
+      if (old.type === 'transfer') {
+        if (old.account_id) await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [old.amount_cents, old.account_id])
+        if (old.to_account_id) await client.query('UPDATE accounts SET balance_cents = balance_cents - $1 WHERE id = $2', [old.amount_cents, old.to_account_id])
+      } else {
+        const oldDelta = old.type === 'income' ? -old.amount_cents : old.amount_cents
+        await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [oldDelta, old.account_id])
+      }
 
       // Calculate new amounts if currency_input or amount provided
       let newAmount = body.amount_cents ?? old.amount_cents
@@ -252,21 +271,27 @@ transactions.patch(
 
       const newType = body.type ?? old.type
       const newAccountId = body.account_id ?? old.account_id
+      const newToAccountId = body.to_account_id !== undefined ? body.to_account_id : old.to_account_id
 
       const result = await client.query(
         `UPDATE transactions SET
-          account_id = $1, category_id = $2, type = $3, amount_cents = $4,
-          currency_input = $5, note = $6, is_personal = $7, updated_at = NOW()
-         WHERE id = $8 AND company_id = $9 RETURNING *`,
-        [newAccountId, body.category_id ?? old.category_id, newType, newAmount,
+          account_id = $1, to_account_id = $2, category_id = $3, type = $4, amount_cents = $5,
+          currency_input = $6, note = $7, is_personal = $8, updated_at = NOW()
+         WHERE id = $9 AND company_id = $10 RETURNING *`,
+        [newAccountId, newToAccountId, body.category_id ?? old.category_id, newType, newAmount,
          currencyInput, body.note !== undefined ? body.note : old.note,
          body.is_personal !== undefined ? body.is_personal : old.is_personal,
          id, companyId]
       )
 
       // Apply new balance effect
-      const newDelta = newType === 'income' ? newAmount : -newAmount
-      await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [newDelta, newAccountId])
+      if (newType === 'transfer') {
+        if (newAccountId) await client.query('UPDATE accounts SET balance_cents = balance_cents - $1 WHERE id = $2', [newAmount, newAccountId])
+        if (newToAccountId) await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [newAmount, newToAccountId])
+      } else {
+        const newDelta = newType === 'income' ? newAmount : -newAmount
+        await client.query('UPDATE accounts SET balance_cents = balance_cents + $1 WHERE id = $2', [newDelta, newAccountId])
+      }
       await client.query('COMMIT')
       return c.json(result.rows[0])
     } catch (e) {

@@ -15,7 +15,7 @@ import { haptic } from '../lib/telegram'
 interface Props {
   isOpen: boolean
   onClose: () => void
-  defaultType?: 'income' | 'expense'
+  defaultType?: 'income' | 'expense' | 'transfer'
   onSaved?: () => void
   periodLocks?: Record<string, { locked_by: string; locked_at: string }>
 }
@@ -31,12 +31,13 @@ export default function AddTransactionSheet({
   const lang = useI18nStore(s => s.lang)
   const { companyId } = useAuthStore()
   const { currency } = useAmount()
-  const [type, setType] = useState<'income' | 'expense'>(defaultType)
+  const [type, setType] = useState<'income' | 'expense' | 'transfer'>(defaultType)
   const [amount, setAmount] = useState(0)
   const [txCurrency, setTxCurrency] = useState<'USD' | 'KHR'>(currency as 'USD' | 'KHR')
   const [isPersonal, setIsPersonal] = useState(false)
   const [categoryId, setCategoryId] = useState('')
   const [accountId, setAccountId] = useState('')
+  const [toAccountId, setToAccountId] = useState('')
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
   const [desc, setDesc] = useState('')
   const [newAccountName, setNewAccountName] = useState('')
@@ -75,6 +76,7 @@ export default function AddTransactionSheet({
       setIsPersonal(false)
       setCategoryId('')
       setAccountId('')
+      setToAccountId('')
       setDate(new Date().toISOString().slice(0, 10))
       setDesc('')
       setNewAccountName('')
@@ -119,12 +121,13 @@ export default function AddTransactionSheet({
           amount_cents: amount,
           currency_input: txCurrency,
           is_personal: isPersonal,
-          category_id: categoryId || undefined,
+          category_id: type !== 'transfer' ? (categoryId || undefined) : undefined,
           account_id: resolvedAccountId || accountId || undefined,
-        occurred_at: new Date(date).toISOString(),
-        note: desc || undefined,
-        receipt_url: receiptUrl || undefined,
-      })
+          to_account_id: type === 'transfer' ? (toAccountId || undefined) : undefined,
+          occurred_at: new Date(date).toISOString(),
+          note: desc || undefined,
+          receipt_url: receiptUrl || undefined,
+        })
       toast.success(t('tx_saved_success'))
       onClose()
       onSaved?.()
@@ -147,17 +150,31 @@ export default function AddTransactionSheet({
 
   return (
     <>
-      <BottomSheet isOpen={isOpen} onClose={onClose} title={type === 'income' ? 'ចំណូលថ្មី' : 'ចំណាយថ្មី'}>
+      <BottomSheet isOpen={isOpen} onClose={onClose} title={type === 'income' ? 'ចំណូលថ្មី' : type === 'transfer' ? 'ផ្ទេរប្រាក់' : 'ចំណាយថ្មី'}>
         <div className="space-y-4">
-          {/* Income / Expense type toggle */}
+          {/* Income / Expense / Transfer type toggle */}
           <div className="flex gap-2">
-            {(['income', 'expense'] as const).map(t_alias => (
+            {(['income', 'expense', 'transfer'] as const).map(t_alias => (
               <button key={t_alias} onClick={() => setType(t_alias)} className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all"
                 style={{ background: type === t_alias ? 'var(--gold)' : 'var(--border)', color: type === t_alias ? 'var(--bg)' : 'var(--text-sec)' }}>
-                {t_alias === 'income' ? t('tx_filter_income') : t('tx_filter_expense')}
+                {t_alias === 'income' ? t('tx_filter_income') : t_alias === 'transfer' ? t('tx_filter_transfer') : t('tx_filter_expense')}
               </button>
             ))}
           </div>
+
+          {/* Business / Personal tag */}
+          {type !== 'transfer' && (
+            <div className="flex gap-2">
+              <button onClick={() => setIsPersonal(false)} className="flex-1 py-2 rounded-xl text-xs font-bold transition-all"
+                style={{ background: !isPersonal ? 'var(--gold-soft)' : 'var(--border)', color: !isPersonal ? 'var(--gold)' : 'var(--text-sec)', border: `1px solid ${!isPersonal ? 'var(--gold-med)' : 'var(--border)'}` }}>
+                💼 {t('tx_filter_business')}
+              </button>
+              <button onClick={() => setIsPersonal(true)} className="flex-1 py-2 rounded-xl text-xs font-bold transition-all"
+                style={{ background: isPersonal ? 'var(--gold-soft)' : 'var(--border)', color: isPersonal ? 'var(--gold)' : 'var(--text-sec)', border: `1px solid ${isPersonal ? 'var(--gold-med)' : 'var(--border)'}` }}>
+                🏠 {t('tx_filter_personal')}
+              </button>
+            </div>
+          )}
 
           {/* Currency toggle (per-transaction) */}
           <div className="flex gap-2 p-1 rounded-xl" style={{ background: 'var(--border)' }}>
@@ -182,36 +199,57 @@ export default function AddTransactionSheet({
           </div>
 
           <>
-              <div>
-                <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_category')}</label>
-                <select value={categoryId} onChange={e => {
-                  const val = e.target.value;
-                  setCategoryId(val);
-                }} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-                  <option value="">{t('tx_form_cat_placeholder')}</option>
-                  {filteredCategories.map(c => <option key={c.id} value={c.id}>{lang === 'km' ? (c.name_km || c.name) : c.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_account')}</label>
-                {accounts.length === 0 ? (
-                  <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--gold-med)', background: 'var(--gold-soft)' }}>
-                    <p className="text-xs px-4 pt-3 pb-2" style={{ color: 'var(--gold)' }}>{t('tx_form_acc_create_hint')}</p>
-                    <input
-                      value={newAccountName}
-                      onChange={e => setNewAccountName(e.target.value)}
-                      placeholder={t('tx_form_acc_name_placeholder')}
-                      className="w-full py-3 px-4 text-sm font-semibold outline-none"
-                      style={{ background: 'var(--input-bg)', borderTop: '1px solid var(--border)', color: 'var(--text)' }}
-                    />
-                  </div>
-                ) : (
-                  <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
-                    <option value="">{t('tx_form_acc_placeholder')}</option>
-                    {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+              {/* Category — hidden for transfer */}
+              {type !== 'transfer' && (
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_category')}</label>
+                  <select value={categoryId} onChange={e => { setCategoryId(e.target.value) }} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                    <option value="">{t('tx_form_cat_placeholder')}</option>
+                    {filteredCategories.map(c => <option key={c.id} value={c.id}>{lang === 'km' ? (c.name_km || c.name) : c.name}</option>)}
                   </select>
-                )}
-              </div>
+                </div>
+              )}
+
+              {/* Account(s) */}
+              {type === 'transfer' ? (
+                <>
+                  <div>
+                    <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_from_account')}</label>
+                    <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                      <option value="">{t('tx_form_acc_placeholder')}</option>
+                      {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_to_account')}</label>
+                    <select value={toAccountId} onChange={e => setToAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                      <option value="">{t('tx_form_acc_placeholder')}</option>
+                      {accounts.filter(a => a.id !== accountId).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_account')}</label>
+                  {accounts.length === 0 ? (
+                    <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--gold-med)', background: 'var(--gold-soft)' }}>
+                      <p className="text-xs px-4 pt-3 pb-2" style={{ color: 'var(--gold)' }}>{t('tx_form_acc_create_hint')}</p>
+                      <input
+                        value={newAccountName}
+                        onChange={e => setNewAccountName(e.target.value)}
+                        placeholder={t('tx_form_acc_name_placeholder')}
+                        className="w-full py-3 px-4 text-sm font-semibold outline-none"
+                        style={{ background: 'var(--input-bg)', borderTop: '1px solid var(--border)', color: 'var(--text)' }}
+                      />
+                    </div>
+                  ) : (
+                    <select value={accountId} onChange={e => setAccountId(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                      <option value="">{t('tx_form_acc_placeholder')}</option>
+                      {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  )}
+                </div>
+              )}
               <div>
                 <label className="text-xs font-semibold mb-1.5 block" style={{ color: 'var(--text-sec)' }}>{t('tx_form_date')}</label>
                 <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full py-3.5 px-4 rounded-xl text-sm font-semibold outline-none" style={{ background: 'var(--input-bg)', border: '1px solid var(--border)', color: 'var(--text)' }} />

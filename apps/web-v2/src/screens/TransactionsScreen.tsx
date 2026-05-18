@@ -26,8 +26,15 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
     { key: 'all', label: t('tx_filter_all') },
     { key: 'income', label: t('tx_filter_income') },
     { key: 'expense', label: t('tx_filter_expense') },
+    { key: 'transfer', label: t('tx_filter_transfer') },
+  ]
+  const TAG_FILTERS = [
+    { key: 'all', label: t('tx_filter_all') },
+    { key: 'business', label: t('tx_filter_business') },
+    { key: 'personal', label: t('tx_filter_personal') },
   ]
   const [filter, setFilter] = useState('all')
+  const [tagFilter, setTagFilter] = useState<'all' | 'business' | 'personal'>('all')
   const [showAdd, setShowAdd] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -48,7 +55,7 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
   }
 
   const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
-  const { isLoading, transactions, remove, refetch } = useTransactions(monthStr, filter)
+  const { isLoading, transactions, remove, refetch } = useTransactions(monthStr, filter, tagFilter)
   const { fmt, currency: baseCurrency } = useAmount()
 
   const MONTHS_KM = ['មករា', 'កុម្ភៈ', 'មីនា', 'មេសា', 'ឧសភា', 'មិថុនា', 'កក្កដា', 'សីហា', 'កញ្ញា', 'តុលា', 'វិច្ឆិកា', 'ធ្នូ']
@@ -220,10 +227,26 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
               className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest transition-all shrink-0 ${
                 filter === f.key ? 'shadow-gold' : 'opacity-60'
               }`}
-              style={{ 
-                background: filter === f.key ? 'var(--gold)' : 'var(--card)', 
+              style={{
+                background: filter === f.key ? 'var(--gold)' : 'var(--card)',
                 color: filter === f.key ? '#000000' : 'var(--text-sec)',
                 border: filter === f.key ? 'none' : '1px solid var(--border)'
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+          {TAG_FILTERS.map(f => (
+            <button
+              key={f.key}
+              onClick={() => { haptic('light'); setTagFilter(f.key as any) }}
+              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all shrink-0 ${tagFilter === f.key ? '' : 'opacity-60'}`}
+              style={{
+                background: tagFilter === f.key ? 'var(--gold-soft)' : 'var(--card)',
+                color: tagFilter === f.key ? 'var(--gold)' : 'var(--text-sec)',
+                border: `1px solid ${tagFilter === f.key ? 'var(--gold-med)' : 'var(--border)'}`
               }}
             >
               {f.label}
@@ -261,21 +284,21 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                     style={{ borderBottom: i < txs.length - 1 ? '1px solid var(--border)' : 'none' }}
                   >
                     {/* Color dot */}
-                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }} />
+                    <div className="w-2 h-2 rounded-full shrink-0" style={{ background: tx.type === 'income' ? 'var(--green)' : tx.type === 'transfer' ? 'var(--gold)' : 'var(--red)' }} />
                     {/* Title + account inline */}
                     <div className="flex-1 min-w-0 flex items-baseline gap-1.5 overflow-hidden">
                       <span className="text-[13px] font-semibold truncate shrink-0 max-w-[55%]" style={{ color: 'var(--text)' }}>
-                        {tx.note || tx.description || tx.category_name || t('tx_default_title')}
+                        {tx.note || tx.description || tx.category_name || (tx.type === 'transfer' ? t('tx_filter_transfer') : t('tx_default_title'))}
                       </span>
-                      {tx.account_name && (
-                        <span className="text-[10px] truncate opacity-40 font-medium" style={{ color: 'var(--text-sec)' }}>
-                          {tx.account_name}{tx.receipt_url ? ' 📎' : ''}{(tx as any).is_personal ? ' 🏠' : ''}
-                        </span>
-                      )}
+                      <span className="text-[10px] truncate opacity-40 font-medium" style={{ color: 'var(--text-sec)' }}>
+                        {tx.type === 'transfer'
+                          ? `${tx.account_name || ''} → ${tx.to_account_name || ''}`
+                          : `${tx.account_name || ''}${tx.receipt_url ? ' 📎' : ''}${tx.is_personal ? ' 🏠' : ''}`}
+                      </span>
                     </div>
                     {/* Amount */}
-                    <span className="text-[13px] font-bold font-mono-num shrink-0" style={{ color: tx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                      {tx.type === 'income' ? '+' : '-'}{fmtTx(tx)}
+                    <span className="text-[13px] font-bold font-mono-num shrink-0" style={{ color: tx.type === 'income' ? 'var(--green)' : tx.type === 'transfer' ? 'var(--gold)' : 'var(--red)' }}>
+                      {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '⇄' : '-'}{fmtTx(tx)}
                     </span>
                   </div>
                 ))}
@@ -318,12 +341,12 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
         {selectedTx && (
           <div className="space-y-4">
             {/* Amount hero */}
-            <div className="rounded-2xl p-5 flex flex-col items-center" style={{ background: selectedTx.type === 'income' ? 'var(--green-soft)' : 'var(--red-soft)' }}>
-              <div className="text-[11px] font-bold mb-1 opacity-60" style={{ color: selectedTx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                {selectedTx.type === 'income' ? t('tx_filter_income') : t('tx_filter_expense')}
+            <div className="rounded-2xl p-5 flex flex-col items-center" style={{ background: selectedTx.type === 'income' ? 'var(--green-soft)' : selectedTx.type === 'transfer' ? 'var(--gold-soft)' : 'var(--red-soft)' }}>
+              <div className="text-[11px] font-bold mb-1 opacity-60" style={{ color: selectedTx.type === 'income' ? 'var(--green)' : selectedTx.type === 'transfer' ? 'var(--gold)' : 'var(--red)' }}>
+                {selectedTx.type === 'income' ? t('tx_filter_income') : selectedTx.type === 'transfer' ? t('tx_filter_transfer') : t('tx_filter_expense')}
               </div>
-              <div className="text-3xl font-extrabold font-mono-num" style={{ color: selectedTx.type === 'income' ? 'var(--green)' : 'var(--red)' }}>
-                {(selectedTx.type === 'income' ? '+' : '-')}{fmtTx(selectedTx)}
+              <div className="text-3xl font-extrabold font-mono-num" style={{ color: selectedTx.type === 'income' ? 'var(--green)' : selectedTx.type === 'transfer' ? 'var(--gold)' : 'var(--red)' }}>
+                {selectedTx.type === 'income' ? '+' : selectedTx.type === 'transfer' ? '⇄' : '-'}{fmtTx(selectedTx)}
               </div>
             </div>
 
@@ -334,11 +357,26 @@ export default function TransactionsScreen({ onBack }: { onBack: () => void }) {
                 <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_category')}</span>
                 <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedTx.category_name || t('tx_detail_no_category')}</span>
               </div>
-              <div className="flex items-center gap-3 px-4 py-3">
-                <span className="text-base">🏦</span>
-                <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_account')}</span>
-                <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedTx.account_name || t('tx_detail_no_account')}</span>
-              </div>
+              {selectedTx.type === 'transfer' ? (
+                <>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <span className="text-base">🏦</span>
+                    <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_from_account')}</span>
+                    <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedTx.account_name || t('tx_detail_no_account')}</span>
+                  </div>
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <span className="text-base">🏦</span>
+                    <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_to_account')}</span>
+                    <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedTx.to_account_name || t('tx_detail_no_account')}</span>
+                  </div>
+                </>
+              ) : (
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <span className="text-base">🏦</span>
+                  <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_account')}</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--text)' }}>{selectedTx.account_name || t('tx_detail_no_account')}</span>
+                </div>
+              )}
               <div className="flex items-center gap-3 px-4 py-3">
                 <span className="text-base">📅</span>
                 <span className="text-xs font-semibold flex-1" style={{ color: 'var(--text-dim)' }}>{t('tx_form_date')}</span>

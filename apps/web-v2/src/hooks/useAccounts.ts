@@ -3,7 +3,7 @@ import { api, ApiError } from '../lib/api'
 import { useAuthStore } from '../store/authStore'
 import { toast } from '../store/toastStore'
 
-export interface Account { id: string; name: string; type?: string; account_number?: string; balance: number }
+export interface Account { id: string; name: string; type?: string; account_number?: string; balance_cents: number }
 
 export function useAccounts() {
   const companyId = useAuthStore(s => s.companyId)
@@ -20,7 +20,7 @@ export function useAccounts() {
 
   useEffect(() => { fetch() }, [fetch])
 
-  const totalBalance = accounts.reduce((s, a) => s + (a.balance || 0), 0)
+  const totalBalance = accounts.reduce((s, a) => s + (a.balance_cents || 0), 0)
 
   const create = async (body: any) => { await api.post(`/${companyId}/accounts`, body); await fetch() }
   const update = async (id: string, body: any) => { await api.patch(`/${companyId}/accounts/${id}`, body); await fetch() }
